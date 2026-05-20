@@ -1,0 +1,14 @@
+target/
+*.class
+
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+.vscode/*
+!.vscode/extensions.json
+
+.DS_Store
+Thumbs.db
