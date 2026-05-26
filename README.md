@@ -69,4 +69,6 @@ A Desktop Application for managing Music Tracks, Playlists, Playback and Advance
 
 
 ## Project Docs
-Nothing for now.
+docs/User-Stories.md
+## Project links    
+Trello: https://trello.com/b/hoal9I6i/scrum-process-sad-25-26-gruppo14
