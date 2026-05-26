@@ -73,5 +73,9 @@ A Desktop Application for managing Music Tracks, Playlists, Playback and Advance
   - Contains the product backlog with all the user stories. 
 - `docs/Dod.md`
   - Contains the Definition Of Done.
+- `docs/Planning.md`
+ - Contains the Planning of the project. Currently only the pre-game phase planning.
+- `docs/Architecture.md`
+- Contains the main Architecture of the project. Currently Empty.
 ## Project links    
 Trello: https://trello.com/b/hoal9I6i/scrum-process-sad-25-26-gruppo14
