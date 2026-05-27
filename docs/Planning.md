@@ -3,7 +3,7 @@
 Project: Music Playlist Manager  
 Course: Software Architecture Design — A.Y. 2025/2026  
 Process: Scrum  
-Planning status: Pre-game phase
+Planning status: Pre-game phase DONE
 
 ---
 
@@ -50,16 +50,16 @@ Planning status: Pre-game phase
 - [x] Use story points only as relative complexity, not as fixed hours.
 - [x] Keep the estimates visible in the Product Backlog.
 
-### 4. Trello Board
+### 4. Trello Board / Excel
 
 - [x] Create the Trello board for the project.
 - [x] Create lists for Scrum workflow.
 - [x] Add Product Backlog cards.
-- [ ] Add Sprint 1 selected user stories.
-- [ ] Add task cards for Sprint 1.
-- [ ] Assign team members to Sprint 1 tasks.
-- [ ] Track task status during the sprint.
+- [x] Add Sprint 1 selected user stories.
+- [x] Add task cards for Sprint 1 in Excel
+- [x] Track task status during the sprint in Excel
 - [x] Add the Trello link to README.md.
+- [x] Add the Excel document
 
 ### 5. Definition of Done
 
@@ -73,22 +73,10 @@ Planning status: Pre-game phase
 
 ### 6. Software Architecture Description
 
-- [ ] Define the initial architecture.
-- [ ] Identify the first main domain classes.
-- [ ] Add an initial architecture diagram if useful.
-- [ ] Save the document in `docs/Architecture.md`.
-
-### 7. Presentation for 28 May
-
-- [ ] Prepare a 5-minute presentation.
-- [ ] Show repository structure.
-- [ ] Show Trello board.
-- [ ] Show initial Product Backlog.
-- [ ] Explain Planning Poker and estimation scale.
-- [ ] Show Sprint 1 selected stories.
-- [ ] Explain initial software architecture.
-- [ ] Explain Definition of Done.
-- [ ] State the expected Sprint 1 release goal.
+- [x] Define the initial architecture.
+- [x] Identify the first main domain classes.
+- [x] Add an initial architecture diagram if useful.
+- [x] Save the document in `docs/PreGame/Architecture.md`.
 
 ---
 
@@ -98,12 +86,11 @@ Planning status: Pre-game phase
 - [x] `pom.xml`
 - [x] `src/main/java/...`
 - [x] `src/test/java/...`
-- [x] `docs/User-Stories.md`
-- [x] `docs/Definition-of-Done.md`
-- [ ] `docs/Architecture.md`
-- [ ] `docs/Sprint-1-Backlog.md`
+- [x] `docs/PreGame/Product Backlog.md`
+- [x] `docs/PreGame/DoD.md`
+- [x] `docs/PreGame/Architecture.md`
+- [x] `docs/Sprint1/SprintBacklog.md`
 - [x] `docs/Planning.md`
-- [ ] Presentation file or link
 - [x] Trello board link in README.md
 
 ---

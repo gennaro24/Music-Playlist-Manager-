@@ -8,6 +8,7 @@ A Desktop Application for managing Music Tracks, Playlists, Playback and Advance
 - **Language:** Java 17
 - **Build Tool:** Maven
 - **Testing:** JUnit 5
+- **Persistence:** SQLite
 - **SCRUM tool:** Trello
 
 ## Project Structure
