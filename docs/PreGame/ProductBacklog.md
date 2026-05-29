@@ -234,25 +234,27 @@ As a user, I want to remove a track from a playlist without deleting it from the
 
 ---
 
-### 🔴US-09 — Resume simulated playback of a single track
+### 🔴US-09 — Play a Single Track
 
 **Description:**
 
-As a user, I want to resume simulated playback of a single track, so that I can start listening without losing the current track.
+As a music player user, I want to start the simulated playback of a single track, so that I can start listening without losing the current track.
 
 **Acceptance criteria:**
 
-**Scenario 1 - Playback resume**  
-**Given** a track is in Paused state  
-**When** I press Resume  
-**Then** the state returns to Playing  
-**And** the current track remains unchanged  
+**Scenario 1 — Normal playback**
 
-**Scenario 2 - Resume when the player is not Paused**  
-**Given** playback is in Stopped state  
-**When** I press Resume  
-**Then** the state remains Stopped  
-**And** no error is generated  
+**Given** a track has been selected  
+**When** I press Play  
+**Then** the playback state becomes Playing  
+**And** the selected track becomes the current track  
+
+**Scenario 2 — Resume playback**
+
+**Given** a track is in Paused state  
+**When** I press Play  
+**Then** the playback state becomes Playing  
+**And** the current track remains unchanged  
 
 ---
 
