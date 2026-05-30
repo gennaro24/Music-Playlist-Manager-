@@ -25,22 +25,15 @@
     </top>
 
     <left>
-        <VBox spacing="10" prefWidth="240.0" style="-fx-padding: 12;">
-            <Label style="-fx-font-weight: bold;" text="Le tue Playlist"/>
-            <ListView fx:id="listPlaylists" VBox.vgrow="ALWAYS"/>
-            <Button fx:id="btnCreatePlaylist" maxWidth="Infinity" text="Nuova Playlist"/>
-            <Button fx:id="btnRemovePlaylist" maxWidth="Infinity" text="Rimuovi Playlist"/>
-            <Button fx:id="btnUndo" maxWidth="Infinity" text="Annulla Azione"/>
-        </VBox>
+        <fx:include fx:id="playlistView" source="PlaylistView.fxml"/>
     </left>
 
     <center>
         <VBox spacing="8.0" style="-fx-padding: 12;">
             <Label style="-fx-font-weight: bold;" text="Catalogo Tracce"/>
             <ToolBar>
-                <Button fx:id="btnCreateSong" onAction="#handleCreateSong" text="Visualizza Catalogo"/>
+                <Button fx:id="btnShowTracks" onAction="#handleShowTracks" text="Visualizza Catalogo"/>
                 <Button fx:id="btnUpdateSong" text="Aggiorna"/>
-                <Button fx:id="btnDeleteSong" text="Elimina"/>
                 <Region prefWidth="12"/>
             </ToolBar>
             <fx:include fx:id="trackForm" source="TrackView.fxml" visible="false" managed="false"/>

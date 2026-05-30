@@ -44,11 +44,11 @@ public class PlaybackController {
         switch (currentState) {
             case PLAYING:
                 lblPlaybackStatus.setText("Riproduzione in corso");
-                btnPlayPause.setText("▶");
+                btnPlayPause.setText("⏸");
                 break;
             case PAUSED:
                 lblPlaybackStatus.setText("In pausa");
-                btnPlayPause.setText("⏸");
+                btnPlayPause.setText("▶");
                 break;
             case STOPPED:
                 lblPlaybackStatus.setText("Riproduzione fermata");
@@ -57,16 +57,4 @@ public class PlaybackController {
         }
     }
 
-    private String setPlaybackStateIcon(PlaybackState state) {
-        switch (state) {
-            case PLAYING:
-                return "⏸️";
-       
-            case PAUSED:
-                return "▶️";
-            case STOPPED:
-                return "⏹️";
-        }
-        return "";
-    }
 }
