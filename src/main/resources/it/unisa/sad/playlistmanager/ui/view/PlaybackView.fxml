@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+
+<HBox xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/17"
+      fx:controller="it.unisa.sad.playlistmanager.ui.controller.PlaybackController"
+      alignment="CENTER_LEFT"
+      spacing="10.0"
+      style="-fx-padding: 10;">
+    <Label fx:id="lblPlaybackStatus" text="Nessuna traccia in riproduzione"/>
+    <Region HBox.hgrow="ALWAYS"/>
+    <Button fx:id="btnPlayPause" text="▶" onAction="#handlePlayPause"/>
+    <Button fx:id="btnNext" text="Next" onAction="#handleNext"/>
+</HBox>

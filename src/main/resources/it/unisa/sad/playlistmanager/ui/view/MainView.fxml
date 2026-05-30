@@ -1,13 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="it.unisa.sad.playlistmanager.ui.controller.MainViewController">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/17"
+            fx:controller="it.unisa.sad.playlistmanager.ui.controller.MainViewController"
+            prefHeight="720.0" prefWidth="1280.0">
+
+    <top>
+        <ToolBar>
+            <Label style="-fx-font-weight: bold;" text="Music Playlist Manager"/>
+            <Region HBox.hgrow="ALWAYS"/>
+        </ToolBar>
+    </top>
+
+    <left>
+        <VBox spacing="10" prefWidth="240.0" style="-fx-padding: 12;">
+            <Label style="-fx-font-weight: bold;" text="Le tue Playlist"/>
+            <ListView fx:id="listPlaylists" VBox.vgrow="ALWAYS"/>
+            <Button fx:id="btnCreatePlaylist" maxWidth="Infinity" text="Nuova Playlist"/>
+            <Button fx:id="btnRemovePlaylist" maxWidth="Infinity" text="Rimuovi Playlist"/>
+            <Button fx:id="btnUndo" maxWidth="Infinity" text="Annulla Azione"/>
+        </VBox>
+    </left>
 
     <center>
-        <Label text="Music Playlist Manager" />
+        <VBox spacing="8.0" style="-fx-padding: 12;">
+            <Label style="-fx-font-weight: bold;" text="Catalogo Tracce"/>
+            <ToolBar>
+                <Button fx:id="btnCreateSong" onAction="#handleCreateSong" text="Visualizza Catalogo"/>
+                <Button fx:id="btnUpdateSong" text="Aggiorna"/>
+                <Button fx:id="btnDeleteSong" text="Elimina"/>
+                <Region prefWidth="12"/>
+            </ToolBar>
+            <fx:include fx:id="trackForm" source="TrackView.fxml" visible="false" managed="false"/>
+            <Label fx:id="lblFeedback" text="" style="-fx-text-fill: red;"/>
+        </VBox>
     </center>
+
+    <bottom>
+        <fx:include fx:id="playbackView" source="PlaybackView.fxml"/>
+    </bottom>
 
 </BorderPane>
