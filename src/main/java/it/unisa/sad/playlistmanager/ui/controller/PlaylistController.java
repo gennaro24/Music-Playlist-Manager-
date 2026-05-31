@@ -132,9 +132,10 @@ public class PlaylistController {
         lblPlaylistFeedback.setText("Playlist creata con successo.");
         */
         if (facade != null) {
-            facade.addPlaylist(name);
+            //facade.addPlaylist(name);
             // Sincronizzazione atomica dei nodi della ListView
-            listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists2()));
+            //listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists2()));
+            
             
             lblPlaylistFeedback.setStyle("-fx-text-fill: green;");
             lblPlaylistFeedback.setText("Playlist '" + name + "' creata con successo.");
@@ -169,7 +170,7 @@ public class PlaylistController {
         //interrogo il facade per ottenere tutte le tracce e le setto nella tabella
         //quanto invoco il setItems, la tabella si aggiorna con i dati della facade
         //i dati vengono inseriti nella colonna corretta tramite PropertyValueFactory definito in initialize
-        listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists2()));
+        //listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists2()));
 
 
     }

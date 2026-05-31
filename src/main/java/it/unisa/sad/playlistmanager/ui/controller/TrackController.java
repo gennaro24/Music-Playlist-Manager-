@@ -102,8 +102,7 @@ public class TrackController {
 
                     // Aggiorna la ComboBox con le playlist disponibili
                     if (facade != null && dropdownPlaylists != null) {
-                        dropdownPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists2()));
-                        System.out.println("Playlists caricate nel dropdown: " + facade.getAllPlaylists2());
+                        //dropdownPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists2()));
                     }
 
                     // Mostra l'HBox per aggiungere alla playlist
@@ -146,7 +145,7 @@ public class TrackController {
             int duration = Integer.parseInt(txtDuration.getText().trim());
             int year = Integer.parseInt(txtYear.getText().trim());
 
-            facade.addTrack2(title, author, duration, genre, year);
+            //facade.addTrack2(title, author, duration, genre, year);
             clearForm();
             lblFeedback.setStyle("-fx-text-fill: green;");
             lblFeedback.setText("Traccia aggiunta con successo.");
@@ -190,7 +189,7 @@ public class TrackController {
         if (facade == null || tableTracks == null) {
             return;
         }
-        tableTracks.setItems(FXCollections.observableArrayList(facade.getAllTracks2()));
+        //tableTracks.setItems(FXCollections.observableArrayList(facade.getAllTracks2()));
     }
 
     public void showCatalogView() {
