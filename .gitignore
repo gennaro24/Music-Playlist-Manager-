@@ -10,5 +10,9 @@ target/
 .vscode/*
 !.vscode/extensions.json
 
+data/
+*.db
+*.sqlite
+
 .DS_Store
 Thumbs.db
