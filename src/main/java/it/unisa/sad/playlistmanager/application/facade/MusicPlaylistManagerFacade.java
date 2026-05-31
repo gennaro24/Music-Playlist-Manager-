@@ -1,21 +1,48 @@
 package it.unisa.sad.playlistmanager.application.facade;
 
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
+import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
+import it.unisa.sad.playlistmanager.domain.model.Track;
 
 /**
- * Facciata principale del modulo applicativo (Facade Pattern).
- * Fornisce un'interfaccia unificata per isolare la UI dai servizi interni. */
+ * Facciata principale dell'applicazione (Facade Pattern).
+ * Fornisce un'interfaccia unificata e semplificata per il Presentation Layer,
+ * centralizzando l'accesso a tutti i servizi del modulo Application.
+ * @version 1.0
+ */
 public class MusicPlaylistManagerFacade {
 
+    /** Riferimento al servizio applicativo per la gestione delle tracce. */
+    private final TrackService trackService;
     private final PlaylistService playlistService;
 
     /**
-     * Costruttore con inversione delle dipendenze.
-     * @param playlistService Il servizio di coordinamento delle playlist.
+     * Costruttore della Facade. Inietta le dipendenze dei servizi necessari.
+     *
+     * @param trackService Il servizio incaricato della logica di business delle tracce.
+     * @param playlistService Il servizio incaricato della logica di business delle playlist.
      */
-    public MusicPlaylistManagerFacade(PlaylistService playlistService) {
+    public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService) {
+        this.trackService = trackService;
         this.playlistService = playlistService;
+    }
+
+    /**
+     * Espone al Presentation Layer la funzionalità di aggiunta di una nuova traccia nel catalogo.
+     * Svolge il ruolo di pass-through verso il servizio specializzato {@link TrackService}.
+     *
+     * @param title    Il titolo della canzone da aggiungere.
+     * @param author   L'artista della canzone.
+     * @param duration La durata complessiva in secondi.
+     * @param genre    Il genere della canzone.
+     * @param year     L'anno di pubblicazione.
+     * @return L'oggetto {@link Track} creato, validato e salvato.
+     * @throws IllegalArgumentException Se i parametri violano le regole di validazione del dominio.
+     */
+    public Track addTrack(String title, String author, int duration, String genre, int year) {
+        // Il pattern Facade si limita a delegare l'operazione al servizio competente
+        return this.trackService.addTrack(title, author, duration, genre, year);
     }
 
     /**
