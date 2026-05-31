@@ -1,19 +1,47 @@
 package it.unisa.sad.playlistmanager.ui.controller;
+
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
+import it.unisa.sad.playlistmanager.domain.model.Track;
+import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
+//import it.unisa.sad.playlistmanager.application.service.PlayBackService;
 
 public class PlaybackController {
+    
+    
     private MusicPlaylistManagerFacade facade;
+    //private PlayBackService playBackService;
+
+
     @FXML
     private Label lblPlaybackStatus;
+    
     @FXML
-    private Button btnPlayPause;
+    private Label labelTitle;
+    
+    @FXML
+    private Label timerTrack;
+    
+    @FXML
+    private Label durationTrack;
+    
+    @FXML
+    private Button btnPlayPauseTrack;
+    
+    @FXML
+    private Label labelArtist;
+    
+    @FXML
+    private Button skipButton;
+
 
     public void setFacade(MusicPlaylistManagerFacade facade) {
         this.facade = facade;
+        //this.playBackService = facade.getPlayBackService();
+
     }
 
     private enum PlaybackState {
@@ -22,39 +50,68 @@ public class PlaybackController {
 
     private PlaybackState currentState = PlaybackState.STOPPED;
 
-    @FXML
-    private void handleNext(ActionEvent event) {
-        // Quando premi Next, la riproduzione va in stop prima di ripartire (oppure puoi scegliere la logica che vuoi)
-        setPlaybackState(PlaybackState.STOPPED);
-        // logica per ripartire subito (esempio passa subito a PLAYING)
-        setPlaybackState(PlaybackState.PLAYING);
-    }
 
+    /**
+     * Metodo per il play/pause della traccia
+     * @param event quando clicco il pulsante play/pause nel playback view
+     */
     @FXML
-    private void handlePlayPause(ActionEvent event) {
+    private void PlayPauseTrack(ActionEvent event) {
+        //se la traccia è in riproduzione, setto come nuovo stato la pausa
         if (currentState == PlaybackState.PLAYING) {
             setPlaybackState(PlaybackState.PAUSED);
-        } else if (currentState == PlaybackState.PAUSED || currentState == PlaybackState.STOPPED) {
+            //facade.pause();
+        } else {
+            //se la traccia è in pausa, setto come nuovo stato play
             setPlaybackState(PlaybackState.PLAYING);
+            //facade.play();
         }
     }
 
+    @FXML
+    private void handleNext(ActionEvent event) {
+        //
+    }
+
+    /**
+     * metodo che gestisce il playback in base allo stato corrente
+     * @param newState
+     */
     private void setPlaybackState(PlaybackState newState) {
         currentState = newState;
+        
+        if (btnPlayPauseTrack == null || labelArtist == null || labelTitle == null) {
+            return;
+        }
+
+        //switch per gestire il playback in base allo stato corrente
         switch (currentState) {
             case PLAYING:
-                lblPlaybackStatus.setText("Riproduzione in corso");
-                btnPlayPause.setText("⏸");
+                //setto il titolo della traccia in riproduzione
+                //labelTitle.setText(playBackService.getTrack().getTitle() + " in riproduzione");
+                labelTitle.setText("Titolo traccia in riproduzione");
+                labelArtist.setVisible(true);
+                labelArtist.setManaged(true);
+                labelArtist.setText("Artista traccia in riproduzione");
+                labelTitle.setText("Titolo traccia in riproduzione");
+                btnPlayPauseTrack.setText("⏸");
                 break;
-            case PAUSED:
-                lblPlaybackStatus.setText("In pausa");
-                btnPlayPause.setText("▶");
-                break;
-            case STOPPED:
-                lblPlaybackStatus.setText("Riproduzione fermata");
                 
+            case PAUSED:
+                labelTitle.setText("Titolo traccia in pausa");
+                btnPlayPauseTrack.setText("▶");
+                labelArtist.setText("Artista traccia in pausa");
+                labelArtist.setVisible(true);
+                labelArtist.setManaged(true);
+                break;
+                
+            case STOPPED:
+                // Opzionale: nasconde nuovamente il titolo se la riproduzione viene interrotta
+                labelTitle.setVisible(false);
+                labelTitle.setManaged(false);
+                labelArtist.setVisible(false);
+                labelArtist.setManaged(false);
                 break;
         }
     }
-
 }

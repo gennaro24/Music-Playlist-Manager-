@@ -33,10 +33,9 @@
             <Label style="-fx-font-weight: bold;" text="Catalogo Tracce"/>
             <ToolBar>
                 <Button fx:id="btnShowTracks" onAction="#handleShowTracks" text="Visualizza Catalogo"/>
-                <Button fx:id="btnUpdateSong" text="Aggiorna"/>
                 <Region prefWidth="12"/>
             </ToolBar>
-            <fx:include fx:id="trackForm" source="TrackView.fxml" visible="false" managed="false"/>
+            <fx:include fx:id="trackContainer" source="TrackView.fxml" visible="false" managed="false" VBox.vgrow="ALWAYS"/>
             <Label fx:id="lblFeedback" text="" style="-fx-text-fill: red;"/>
         </VBox>
     </center>
