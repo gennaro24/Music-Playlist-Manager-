@@ -2,16 +2,19 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="10" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/26" fx:controller="it.unisa.sad.playlistmanager.ui.controller.TrackController">
+<VBox spacing="10" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="it.unisa.sad.playlistmanager.ui.controller.TrackController">
 
     <padding>
         <Insets bottom="10" left="10" right="10" top="10" />
@@ -48,8 +51,23 @@
                <RowConstraints />
             </rowConstraints>
             </GridPane>
-
-            <Button onAction="#handleTrackAddition" text="Aggiungi" />
+         <HBox prefHeight="0.0" prefWidth="662.0">
+            <children>
+               <HBox prefHeight="100.0" prefWidth="200.0">
+                  <children>
+            
+                        <Button onAction="#handleTrackAddition" text="Aggiungi traccia" />
+                  </children>
+               </HBox>
+               <Region prefHeight="26.0" prefWidth="257.0" />
+               <HBox fx:id="hboxAddtoPlaylist" prefHeight="26.0" prefWidth="263.0" spacing="15.0" visible="false">
+                  <children>
+                     <ComboBox fx:id="dropdownPlaylists" promptText="Aggiungi a una playlist" />
+                     <Button fx:id="btnSaveAddPlaylist" mnemonicParsing="false" onAction="#handleSaveAddPlaylist" text="Salva" />
+                  </children>
+               </HBox>
+            </children>
+         </HBox>
         </children>
     </VBox>
 
@@ -57,7 +75,7 @@
         <columns>
             <TableColumn fx:id="colTitle" prefWidth="180.0" text="Titolo" />
             <TableColumn fx:id="colAuthor" prefWidth="180.0" text="Autore" />
-            <TableColumn fx:id="colDuration" prefWidth="90.0" text="Durata" />
+            <TableColumn fx:id="colDuration" prefWidth="90.0" text="Durata(sec)" />
             <TableColumn fx:id="colGenre" prefWidth="130.0" text="Genere" />
             <TableColumn fx:id="colYear" prefWidth="80.0" text="Anno" />
         </columns>
