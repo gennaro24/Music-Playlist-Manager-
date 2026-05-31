@@ -17,6 +17,8 @@ public class PlaylistController {
 
     private MusicPlaylistManagerFacade facade;
     private Consumer<Playlist> onPlaylistSelectedHandler;
+    public Consumer<String> onShowTracksTextChangeHandler;
+
 
 
 
@@ -52,6 +54,8 @@ public class PlaylistController {
                 if (newSelection != null && onPlaylistSelectedHandler != null) {
                     // Propaga l'evento al MainViewController
                     onPlaylistSelectedHandler.accept(newSelection);
+                    //modifico btnShowTracks in mainviewcontroller
+                    
                 }
             });
             // Se si riclicca la stessa playlist gia' selezionata, riattiva comunque la vista playlist.
@@ -63,6 +67,10 @@ public class PlaylistController {
             });
         }
 
+    }
+
+    public void setOnShowTracksTextChange(Consumer<String> handler) {
+        this.onShowTracksTextChangeHandler = handler;
     }
 
     public void setOnPlaylistSelected(Consumer<Playlist> handler) {
