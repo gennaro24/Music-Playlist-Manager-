@@ -32,79 +32,99 @@ public class PlaylistController {
 
     @FXML
     private void initialize() {
+        // 1. CONFIGURAZIONE INIZIALE DEI COMPONENTI GRAFICI
+        configureInitialFieldsVisibility();
+    
+        // 2. CONFIGURAZIONE REATTIVA E EVENT-DRIVEN DELLA LISTVIEW
+        if (listPlaylists != null) {
+            loadPlaylists();
+            configurePlaylistCellFactory();
+            configurePlaylistSelectionListener();
+        }
+    }
+    
+    /**
+     * Gestisce la visibilità e il dimensionamento iniziale dei campi di testo
+     * dedicati alla creazione delle playlist (Workflow a comparsa).
+     */
+    private void configureInitialFieldsVisibility() {
         if (txtPlaylistName != null) {
             txtPlaylistName.setVisible(false);
             txtPlaylistName.setManaged(false);
         }
-
-        if (listPlaylists != null) {
-            loadPlaylists();
-
-            // CONFIGURAZIONE DELLA CELL FACTORY CON TOGGLE DI DESELEZIONE
-            listPlaylists.setCellFactory(lv -> {
-                ListCell<Playlist> cell = new ListCell<>() {
-                    @Override
-                    protected void updateItem(Playlist item, boolean empty) {
-                        super.updateItem(item, empty);
-                        setText(empty || item == null ? null : item.getName());
+    }
+    
+    /**
+     * Configura la CellFactory per la ListView delle Playlist, implementando sia
+     * il rendering testuale custom che il meccanismo di "Toggle Deselection".
+     */
+    private void configurePlaylistCellFactory() {
+        listPlaylists.setCellFactory(lv -> {
+            ListCell<Playlist> cell = new ListCell<>() {
+                @Override
+                protected void updateItem(Playlist item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText((empty || item == null) ? null : item.getName());
+                }
+            };
+    
+            // Filtro degli eventi per intercettare il secondo click (Deselezione)
+            cell.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_PRESSED, event -> {
+                if (!cell.isEmpty() && cell.isSelected()) {
+                    // Svuota lo stato di selezione della ListView
+                    listPlaylists.getSelectionModel().clearSelection();
+                    System.out.println("[UI TOGGLE PLAYLIST] Playlist deselezionata correttamente.");
+    
+                    if (lblPlaylistFeedback != null) {
+                        lblPlaylistFeedback.setText("");
                     }
-                };
-
-                // Intercettiamo il click sulla cella PRIMA che scatti la selezione nativa
-                cell.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_PRESSED, event -> {
-                    if (!cell.isEmpty() && cell.isSelected()) {
-                        // DESELEZIONE FORZATA: L'utente ha cliccato sulla playlist già attiva
-                        listPlaylists.getSelectionModel().clearSelection();
-
-                        System.out.println("[UI TOGGLE PLAYLIST] Playlist deselezionata correttamente.");
-
-                        if (lblPlaylistFeedback != null) {
-                            lblPlaylistFeedback.setText("");
-                        }
-
-                        // Propaghiamo un segnale di 'null' al MainViewController per notificare la
-                        // deselezione
-                        if (onPlaylistSelectedHandler != null) {
-                            onPlaylistSelectedHandler.accept(null);
-                        }
-
-                        // Consumiamo l'evento per bloccare il comportamento di selezione standard
-                        event.consume();
+    
+                    // Propaga 'null' al MainViewController per comandare il ripristino del catalogo
+                    if (onPlaylistSelectedHandler != null) {
+                        onPlaylistSelectedHandler.accept(null);
                     }
-                });
-
-                return cell;
-            });
-
-            // LISTENER STANDARD DI SELEZIONE (Rimane invariato, gestisce solo le nuove
-            // selezioni non nulle)
-            listPlaylists.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-                if (newSelection != null && onPlaylistSelectedHandler != null) {
-                    if (facade != null) {
-                        System.out.println("Recupero tracce della playlist: " + newSelection.getName());
-                        java.util.List<Track> tracks = facade.getTracksForPlaylist2(newSelection);
-
-                        if (tracks == null || tracks.isEmpty()) {
-                            if (lblPlaylistFeedback != null) {
-                                lblPlaylistFeedback.setStyle("-fx-text-fill: #b0413e;");
-                                lblPlaylistFeedback.setText("La playlist selezionata non contiene tracce.");
-                            }
-                        } else {
-                            if (lblPlaylistFeedback != null) {
-                                lblPlaylistFeedback.setText("");
-                                
-
-                            }
-                        }
-                        onPlaylistSelectedHandler.accept(newSelection);
-                    } else {
-                        onPlaylistSelectedHandler.accept(newSelection);
-                    }
+    
+                    // Consuma l'evento per impedire a JavaFX di riassegnare la selezione
+                    event.consume();
                 }
             });
-
-            // Evitiamo doppia propagazione eventi: selectedItemProperty e' l'unica fonte.
-        }
+    
+            return cell;
+        });
+    }
+    
+    /**
+     * Configura il listener sulla proprietà di selezione della ListView per gestire
+     * il recupero delle tracce e la notifica al MainViewController.
+     */
+    private void configurePlaylistSelectionListener() {
+        listPlaylists.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            // Se la selezione diventa null (es. a causa del Toggle), la logica viene ignorata
+            // poiché già gestita dall'event filter della cella
+            if (newSel == null || onPlaylistSelectedHandler == null) {
+                return;
+            }
+    
+            if (facade != null) {
+                System.out.println("Recupero tracce della playlist: " + newSel.getName());
+                java.util.List<Track> tracks = facade.getTracksForPlaylist2(newSel);
+    
+                // Gestione dei messaggi di feedback all'utente basata sul contenuto
+                if (tracks == null || tracks.isEmpty()) {
+                    if (lblPlaylistFeedback != null) {
+                        lblPlaylistFeedback.setStyle("-fx-text-fill: #b0413e;");
+                        lblPlaylistFeedback.setText("La playlist selezionata non contiene tracce.");
+                    }
+                } else {
+                    if (lblPlaylistFeedback != null) {
+                        lblPlaylistFeedback.setText("");
+                    }
+                }
+            }
+    
+            // Propaga l'oggetto Playlist selezionato al MainViewController
+            onPlaylistSelectedHandler.accept(newSel);
+        });
     }
 
     public void setOnShowTracksTextChange(Consumer<String> handler) {
