@@ -2,6 +2,7 @@ package it.unisa.sad.playlistmanager.application.facade;
 
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Track;
+import it.unisa.sad.playlistmanager.domain.model.Playlist;
 
 /**
  * Facciata principale dell'applicazione (Facade Pattern).
@@ -39,4 +40,34 @@ public class MusicPlaylistManagerFacade {
         // Il pattern Facade si limita a delegare l'operazione al servizio competente
         return this.trackService.addTrack(title, author, duration, genre, year);
     }
+
+
+    /**
+     * Metodo abbozzato per ottenere le tracce associate a una playlist.
+     * Il parametro Playlist non è ancora definito: si può usare Object come placeholder.
+     *
+     * TODO: Sostituire Object con Playlist quando il model sarà disponibile.
+     */
+    public java.util.List<Track> getTracksForPlaylist2(Playlist playlist) {
+        // TODO: Implementare la logica appena il model Playlist sarà definito.
+        // Restituisce una lista vuota come segnaposto.
+        java.util.ArrayList<Track> tracks = new java.util.ArrayList<>();
+        tracks.add(new Track("test-id", "test-title", "test-author", 100, "test-genre", 2026));
+        return tracks;
+    }
+
+
+    public java.util.List<Playlist> getAllPlaylists2() {
+        java.util.ArrayList<Playlist> playlists = new java.util.ArrayList<>();
+        playlists.add(new Playlist("test-name"));
+        return playlists;
+    }
+
+
+    public java.util.List<Track> getAllTracks2() {
+        java.util.ArrayList<Track> tracks = new java.util.ArrayList<>();
+        tracks.add(new Track("test-id", "test-title", "test-author", 100, "test-genre", 2026));
+        return tracks;
+    }
 }
+

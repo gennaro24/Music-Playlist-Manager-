@@ -54,22 +54,39 @@ public class MainViewController {
         }
 
         if (playlistViewController != null) {
-            playlistViewController.setOnPlaylistSelected(selectedPlaylist -> {
-                if (selectedPlaylist != null) {
-                    this.selectedPlaylist = selectedPlaylist;
-                    if (trackContainer != null) {
-                        trackContainer.setVisible(true);
-                        trackContainer.setManaged(true);
+            playlistViewController.setOnPlaylistSelected(playlist -> {
+                if (trackContainer != null) {
+                    trackContainer.setVisible(true);
+                    trackContainer.setManaged(true);
+                }
+        
+                if (playlist != null) {
+                    // Playlist selezionata
+                    this.selectedPlaylist = playlist;
+        
+                    if (trackContainerController != null) {
+                        trackContainerController.displayPlaylistTracks(playlist);
                     }
                     if (btnShowTracks != null) {
                         btnShowTracks.setText("Visualizza Catalogo");
                     }
+                    if (lblFeedback != null) {
+                        lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
+                        lblFeedback.setText("Visualizzazione tracce playlist: " + playlist.getName());
+                    }
+                } else {
+                    // Playlist deselezionata (toggle)
+                    this.selectedPlaylist = null;
+        
                     if (trackContainerController != null) {
-                        trackContainerController.displayPlaylistTracks(selectedPlaylist);
+                        trackContainerController.showCatalogView();
+                    }
+                    if (btnShowTracks != null) {
+                        btnShowTracks.setText("Chiudi Catalogo");
                     }
                     if (lblFeedback != null) {
                         lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
-                        lblFeedback.setText("Visualizzazione tracce playlist: " + selectedPlaylist.getName());
+                        lblFeedback.setText("Playlist deselezionata. Ritorno al catalogo completo.");
                     }
                 }
             });
