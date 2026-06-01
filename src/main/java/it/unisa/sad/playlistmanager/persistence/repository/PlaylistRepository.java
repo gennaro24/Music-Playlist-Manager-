@@ -6,26 +6,48 @@ import java.util.Optional;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 
 /**
- * Interfaccia contrattuale per le operazioni di persistenza della Playlist (DIP).
+ * Interfaccia contrattuale per le operazioni di persistenza dell'entità Playlist.
+ *
+ * Definisce le operazioni che il livello applicativo può usare senza dipendere
+ * da una specifica tecnologia di persistenza.
  */
 public interface PlaylistRepository {
-    
+
     /**
      * Salva una nuova playlist nel sistema di persistenza.
-     * @param playlist L'oggetto Playlist da salvare.
+     *
+     * @param playlist l'oggetto Playlist da salvare
      */
     void save(Playlist playlist);
 
     /**
-     * Cerca una playlist nel sistema di persistenza dal suo id.
+     * Cerca una playlist nel sistema di persistenza tramite il suo id.
+     *
+     * @param id identificativo della playlist da cercare
      * @return un Optional contenente la playlist se presente, altrimenti Optional.empty()
      */
-    Optional<Playlist> findById (String id);
+    Optional<Playlist> findById(String id);
 
     /**
-     * Ritorna tutte le playlist nel sistema di persistenza
-     * @return una List di Playlist.
+     * Cerca una playlist nel sistema di persistenza tramite il suo nome.
+     *
+     * @param name nome della playlist da cercare
+     * @return un Optional contenente la playlist se presente, altrimenti Optional.empty()
      */
+    Optional<Playlist> findByName(String name);
 
+    /**
+     * Restituisce tutte le playlist presenti nel sistema di persistenza.
+     *
+     * @return lista delle playlist salvate. La lista può essere vuota
+     */
     List<Playlist> findAll();
+
+    /**
+     * Verifica se esiste già una playlist con il nome specificato.
+     *
+     * @param name nome della playlist da verificare
+     * @return true se esiste già una playlist con quel nome, false altrimenti
+     */
+    boolean existsByName(String name);
 }

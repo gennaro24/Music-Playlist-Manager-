@@ -37,4 +37,13 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
         // Da implementare 
         return new ArrayList<>();
     }
+
+    @Override
+    public Optional<Playlist> findByName(String name){
+        return Optional.empty();
+    }
+    @Override
+    public boolean existsByName(String name){
+        return false;
+    }
 }
