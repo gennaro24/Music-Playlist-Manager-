@@ -38,76 +38,152 @@ public class MainViewController {
     private Button btnShowTracks;
     
     
-
-    
-
     @FXML
     private void initialize() {
-        // Composition root locale: repository concreti -> service -> facade -> controller UI
-        //TrackRepository trackRepository = new TrackRepository();
-
-        //PlaylistRepository playlistRepository = new PlaylistRepository();
-
-        //TrackService trackService = new TrackService(trackRepository);
-        //PlaylistService playlistService = new PlaylistService(playlistRepository);
-        //facade = new MusicPlaylistManagerFacade(trackService, playlistService);
-
-        if (trackContainerController != null) {
-            trackContainerController.setFacade(facade);
-        }
-        if (playlistViewController != null) {
-            playlistViewController.setFacade(facade);
-        }
-        if (playbackViewController != null) {
-            playbackViewController.setFacade(facade);
-        }
-
-        if (playlistViewController != null) {
-            playlistViewController.setOnPlaylistSelected(playlist -> {
-                if (playlist != null) {
-                    // Playlist selezionata
-                    this.selectedPlaylist = playlist;
-                    if (trackContainer != null) {
-                        trackContainer.setVisible(true);
-                        trackContainer.setManaged(true);
-                    }
-        
-                    if (trackContainerController != null) {
-                        trackContainerController.displayPlaylistTracks(playlist);
-                    }
-                    if (btnShowTracks != null) {
-                        btnShowTracks.setText("Visualizza Catalogo");
-                    }
-                    if (lblFeedback != null) {
-                        lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
-                        lblFeedback.setText("Visualizzazione tracce playlist: " + playlist.getName());
-                    }
-                    updateTitleLabel();
-                } else {
-                    // Playlist deselezionata (toggle)
-                    this.selectedPlaylist = null;
+        // ==========================================
+        // 1. INIZIALIZZAZIONE INFRASTRUTTURA E BUSINESS LOGIC
+        // ==========================================
+        MusicPlaylistManagerFacade coreFacade = bootstrapApplicationContext();
+        this.facade = coreFacade;
     
-                    if (trackContainerController != null) {
-                        trackContainerController.clearPlaylistView();
-                    }
-                    if (trackContainer != null) {
-                        trackContainer.setVisible(false);
-                        trackContainer.setManaged(false);
-                    }
-                    if (btnShowTracks != null) {
-                        btnShowTracks.setText("Visualizza Catalogo");
-                    }
-                    if (lblFeedback != null) {
-                        lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
-                        lblFeedback.setText("Playlist deselezionata.");
-                    }
-                    updateTitleLabel();
-                }
-            });
-        }
+        // ==========================================
+        // 2. INIEZIONE DELLE DIPENDENZE NEI SOTTO-CONTROLLER
+        // ==========================================
+        injectFacadeIntoSubControllers(coreFacade);
+    
+        // ==========================================
+        // 3. CONFIGURAZIONE DEI COMPORTAMENTI INTER-CONTROLLER (EVENT LISTENERS)
+        // ==========================================
+        configurePlaylistSelectionBehavior();
+    
+        // ==========================================
+        // 4. AGGIORNAMENTO DELLO STATO INIZIALE DELLA UI
+        // ==========================================
         updateTitleLabel();
     }
-
+    
+    /**
+     * Inizializza l'intera infrastruttura dati (Connessione e tabelle SQLite), 
+     * istanzia i repository e i servizi del Domain Layer, e incapsula il tutto 
+     * all'interno dell'Application Facade.
+     */
+    private MusicPlaylistManagerFacade bootstrapApplicationContext() {
+        DatabaseConnectionManager connectionManager = new DatabaseConnectionManager();
+        DatabaseInitializer initializer = new DatabaseInitializer(connectionManager);
+        
+        try {
+            initializer.initializeDatabase();
+        } catch (Exception e) {
+            handleInitializationError(e);
+        }
+    
+        // Istanziazione del Data Access Layer (DAL)
+        TrackRepository trackRepository = new SqliteTrackRepository(connectionManager);
+        PlaylistRepository playlistRepository = new SqlitePlaylistRepository(connectionManager);
+        
+        // Istanziazione del Domain Service Layer
+        TrackService trackService = new TrackService(trackRepository);
+        PlaylistService playlistService = new PlaylistService(playlistRepository);
+        
+        // Generazione del Mediator unificato (Facade Pattern)
+        return new MusicPlaylistManagerFacade(trackService, playlistService);
+    }
+    
+    /**
+     * Inietta la Facciata applicativa all'interno dei sotto-controller 
+     * associati alle viste incluse nell'FXML principale.
+     */
+    private void injectFacadeIntoSubControllers(MusicPlaylistManagerFacade coreFacade) {
+        if (trackContainerController != null) {
+            trackContainerController.setFacade(coreFacade);
+        }
+        if (playlistViewController != null) {
+            playlistViewController.setFacade(coreFacade);
+        }
+        if (playbackViewController != null) {
+            playbackViewController.setFacade(coreFacade);
+        }
+    }
+    
+    /**
+     * Configura la callback reattiva sulla ListView del PlaylistController, definendo
+     * il comportamento del layout sia in caso di selezione che di toggle-deselezione.
+     */
+    private void configurePlaylistSelectionBehavior() {
+        if (playlistViewController == null) return;
+    
+        playlistViewController.setOnPlaylistSelected(playlist -> {
+            if (playlist != null) {
+                handlePlaylistSelected(playlist);
+            } else {
+                handlePlaylistDeselected();
+            }
+            updateTitleLabel();
+        });
+    }
+    
+    /**
+     * Gestisce il flusso visivo e logico all'atto della selezione di una playlist.
+     */
+    private void handlePlaylistSelected(Playlist playlist) {
+        this.selectedPlaylist = playlist;
+    
+        if (trackContainer != null) {
+            trackContainer.setVisible(true);
+            trackContainer.setManaged(true);
+        }
+    
+        if (trackContainerController != null) {
+            trackContainerController.displayPlaylistTracks(playlist);
+        }
+    
+        if (btnShowTracks != null) {
+            btnShowTracks.setText("Visualizza Catalogo");
+        }
+    
+        setUIVeedback("#1f7a1f", "Visualizzazione tracce playlist: " + playlist.getName());
+    }
+    
+    /**
+     * Gestisce il ripristino dello stato del layout all'atto della deselezione (toggle).
+     */
+    private void handlePlaylistDeselected() {
+        this.selectedPlaylist = null;
+    
+        if (trackContainerController != null) {
+            trackContainerController.clearPlaylistView();
+        }
+    
+        if (trackContainer != null) {
+            trackContainer.setVisible(false);
+            trackContainer.setManaged(false);
+        }
+    
+        if (btnShowTracks != null) {
+            btnShowTracks.setText("Visualizza Catalogo");
+        }
+    
+        setUIVeedback("#1f7a1f", "Playlist deselezionata.");
+    }
+    
+    /**
+     * Utility method centralizzato per la propagazione dei messaggi diagnostici sulla UI.
+     */
+    private void setUIVeedback(String colorHex, String text) {
+        if (lblFeedback != null) {
+            lblFeedback.setStyle("-fx-text-fill: " + colorHex + ";");
+            lblFeedback.setText(text);
+        }
+    }
+    
+    /**
+     * Gestisce e logga i fallimenti critici durante il bootstrap del database.
+     */
+    private void handleInitializationError(Exception e) {
+        setUIVeedback("red", "Errore durante l'inizializzazione del database: " + e.getMessage());
+        System.err.println("[CRITICAL] Fallimento inizializzazione DB: " + e.getMessage());
+    }
+    
     @FXML
     private void handleShowTracks(ActionEvent event) {
         if (trackContainer == null || btnShowTracks == null || lblFeedback == null) {
