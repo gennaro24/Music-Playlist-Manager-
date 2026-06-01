@@ -8,6 +8,9 @@ import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
  * Funge da intermediario tra il Presentation Layer e il Domain/Persistence Layer.
  * @version 1.0
  */
+/** 
+TODO: Necessario un cambiamento di playlistRepository. Deve essere concretizzato da SqlitePlaylistRepository
+*/
 public class TrackService {
 
     /** Riferimento all'interfaccia di persistenza per il disaccoppiamento (DIP). */

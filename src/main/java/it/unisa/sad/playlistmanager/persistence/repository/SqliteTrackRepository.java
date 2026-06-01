@@ -21,6 +21,23 @@ public class SqliteTrackRepository implements TrackRepository {
 
     private final DatabaseConnectionManager connectionManager;
 
+    /**
+     * Utility method per costruire l'oggetto Track a partire dal ResultSet.
+     * @param ResultSet
+     */
+
+    private Track mapResultSetToTrack(ResultSet resultSet) throws SQLException{
+
+        return new Track(
+            resultSet.getString("id"),
+            resultSet.getString("title"),
+            resultSet.getString("author"),
+            resultSet.getInt("duration"),
+            resultSet.getString("genre"),
+            resultSet.getInt("year")
+        );
+    }
+
     public SqliteTrackRepository(DatabaseConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
     }
@@ -45,14 +62,17 @@ public class SqliteTrackRepository implements TrackRepository {
                 statement.setInt(6, track.getYear());
 
                 statement.executeUpdate();
-
+                // I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
              }catch(SQLException exception){
                 // da rendere più robusto, viene inserito ora come placeholder.
                 exception.getSQLState();
              }
     }
     /**
-     * 
+     * Trova una Track tramite il suo id.
+     * Se la query viene eseguita correttamente, potrà dare due esiti:
+     *  - la Track è stata trovata, dunque vengono estratti i campi e @return Optional.of(Track)
+     *  - La Track con quello specifico id non esiste, @return Optional.empty()     
      */
     @Override
     public Optional<Track> findById(String id) {
@@ -67,34 +87,49 @@ public class SqliteTrackRepository implements TrackRepository {
 
                 try (ResultSet resultSet = statement.executeQuery()){
                     if (resultSet.next()){
-                        String trackId = resultSet.getString("id");
-                        String title = resultSet.getString("title");
-                        String author = resultSet.getString("author");
-                        int duration = resultSet.getInt("duration");
-                        String genre = resultSet.getString("genre");
-                        int year = resultSet.getInt("year");
 
-                        Track track = new Track(trackId, title, author, duration, genre, year);
-
+                        Track track = mapResultSetToTrack(resultSet);
                         return Optional.of(track);
 
                     }
                     return Optional.empty();
                 }
 
-
+                // I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
              }catch(SQLException exception){
-               throw new RuntimeException("errore durante la ricerca della traccia.");
-             }  
+                    exception.getSQLState();
+                    return Optional.empty();
+            }
         
     }
-
+    /**
+     * Trova tutte le Track presenti nella tabella tracks.
+     * @return un'ArrayList<Track> contenente oggetti di tipo Track. 
+     * Se la tabella non contiene nessuna traccia, ritorna una lista vuota.
+     */
     @Override
     public List<Track> findAll() {
                 String sql = """
                 SELECT id, title, author, duration, genre, year
                 FROM tracks
                 """;
-        return new ArrayList<>();
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)){
+                try (ResultSet resultSet = preparedStatement.executeQuery()){
+                    List<Track> allTracks = new ArrayList<>();
+                    while (resultSet.next()){
+
+                        Track currentTrack = mapResultSetToTrack(resultSet);
+                        allTracks.add(currentTrack);
+
+                    }
+                    return allTracks;
+                }
+                // I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+             }catch(SQLException exception){
+                exception.getSQLState();
+                return null;
+             }
+
     }
 }

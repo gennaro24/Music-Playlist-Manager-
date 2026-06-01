@@ -50,4 +50,18 @@ public interface PlaylistRepository {
      * @return true se esiste già una playlist con quel nome, false altrimenti
      */
     boolean existsByName(String name);
+/**
+     * TODO:
+     * Nelle prossime iterazioni il repository potrà essere esteso
+     * con operazioni relative alla gestione delle tracce all'interno
+     * di una playlist.
+     *
+     * Possibili metodi futuri:
+     * - aggiungere una traccia esistente a una playlist;
+     * - rimuovere una traccia da una playlist;
+     * - recuperare tutte le tracce associate a una playlist;
+     * - mantenere e aggiornare la posizione delle tracce nella playlist.
+     *
+     * Queste operazioni saranno collegate alla tabella ponte playlist_tracks.
+     */
 }
