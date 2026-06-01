@@ -1,6 +1,8 @@
 package it.unisa.sad.playlistmanager.application.facade;
 
+import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
+import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 
@@ -14,14 +16,17 @@ public class MusicPlaylistManagerFacade {
 
     /** Riferimento al servizio applicativo per la gestione delle tracce. */
     private final TrackService trackService;
+    private final PlaylistService playlistService;
 
     /**
      * Costruttore della Facade. Inietta le dipendenze dei servizi necessari.
      *
      * @param trackService Il servizio incaricato della logica di business delle tracce.
+     * @param playlistService Il servizio incaricato della logica di business delle playlist.
      */
-    public MusicPlaylistManagerFacade(TrackService trackService) {
+    public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService) {
         this.trackService = trackService;
+        this.playlistService = playlistService;
     }
 
     /**
@@ -41,33 +46,12 @@ public class MusicPlaylistManagerFacade {
         return this.trackService.addTrack(title, author, duration, genre, year);
     }
 
-
     /**
-     * Metodo abbozzato per ottenere le tracce associate a una playlist.
-     * Il parametro Playlist non è ancora definito: si può usare Object come placeholder.
-     *
-     * TODO: Sostituire Object con Playlist quando il model sarà disponibile.
+     * Centralizza l'accesso al caso d'uso di creazione di una playlist.
+     * @param name Il nome della playlist.
+     * @return La playlist creata.
      */
-    public java.util.List<Track> getTracksForPlaylist2(Playlist playlist) {
-        // Restituisce una lista vuota come segnaposto.
-        java.util.ArrayList<Track> tracks = new java.util.ArrayList<>();
-        tracks.add(new Track("test-id", "test-title", "test-author", 100, "test-genre", 2026));
-        return tracks;
-    }
-
-
-    public java.util.List<Playlist> getAllPlaylists2() {
-        java.util.ArrayList<Playlist> playlists = new java.util.ArrayList<>();
-        playlists.add(new Playlist("test-name"));
-        playlists.add(new Playlist("test-name2"));
-        return playlists;
-    }
-
-
-    public java.util.List<Track> getAllTracks2() {
-        java.util.ArrayList<Track> tracks = new java.util.ArrayList<>();
-        tracks.add(new Track("test-id", "test-title", "test-author", 100, "test-genre", 2026));
-        return tracks;
+    public Playlist createPlaylist(String name) {
+        return this.playlistService.createPlaylist(name);
     }
 }
-
