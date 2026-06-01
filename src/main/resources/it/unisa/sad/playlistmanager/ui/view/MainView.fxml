@@ -30,7 +30,8 @@
 
     <center>
         <VBox spacing="8.0" style="-fx-padding: 12;">
-            <Label style="-fx-font-weight: bold;" text="Catalogo Tracce"/>
+            <Label fx:id="labelPageTitle" style="-fx-font-weight: bold;" text="Home"/>
+       
             <ToolBar>
                 <Button fx:id="btnShowTracks" onAction="#handleShowTracks" text="Visualizza Catalogo"/>
                 <Region prefWidth="12"/>

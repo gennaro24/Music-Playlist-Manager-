@@ -51,16 +51,16 @@
                <RowConstraints />
             </rowConstraints>
             </GridPane>
-         <HBox prefHeight="0.0" prefWidth="662.0">
+         <HBox alignment="CENTER_LEFT" spacing="8.0">
             <children>
-               <HBox prefHeight="100.0" prefWidth="200.0">
+               <HBox>
                   <children>
             
                         <Button onAction="#handleTrackAddition" text="Aggiungi traccia" />
                   </children>
                </HBox>
-               <Region prefHeight="26.0" prefWidth="257.0" />
-               <HBox fx:id="hboxAddtoPlaylist" prefHeight="26.0" prefWidth="263.0" spacing="15.0" visible="false">
+               <Region HBox.hgrow="ALWAYS" />
+               <HBox fx:id="hboxAddtoPlaylist" alignment="CENTER_RIGHT" spacing="15.0" visible="false">
                   <children>
                      <ComboBox fx:id="dropdownPlaylists" promptText="Aggiungi a una playlist" />
                      <Button fx:id="btnSaveAddPlaylist" mnemonicParsing="false" onAction="#handleSaveAddPlaylist" text="Salva" />
@@ -83,6 +83,12 @@
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
         </columnResizePolicy>
     </TableView>
+
+    <HBox alignment="CENTER_RIGHT" spacing="8.0">
+        <children>
+            <Button fx:id="btnRemoveFromPlaylist" managed="false" mnemonicParsing="false" onAction="#handleRemoveFromPlaylist" text="Rimuovi dalla playlist" visible="false" />
+        </children>
+    </HBox>
 
     <Label fx:id="lblFeedback" style="-fx-text-fill: red;" text="" />
 

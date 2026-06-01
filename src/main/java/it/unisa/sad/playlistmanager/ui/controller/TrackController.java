@@ -11,6 +11,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Button;
 import javafx.scene.layout.VBox;
 import java.util.function.Consumer;
 import javafx.scene.control.ComboBox;
@@ -55,6 +56,11 @@ public class TrackController {
     private ComboBox<Playlist> dropdownPlaylists;
     @FXML
     private HBox hboxAddtoPlaylist;
+    @FXML
+    private Button btnRemoveFromPlaylist;
+    private boolean playlistViewMode = false;
+    private Playlist currentPlaylist;
+    private java.util.List<Track> currentPlaylistTracks = new java.util.ArrayList<>();
 
     @FXML
     private void initialize() {
@@ -163,11 +169,25 @@ public class TrackController {
                 if (facade != null && dropdownPlaylists != null) {
                     dropdownPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists2()));
                 }
-
-                // Spostamento reattivo del layout: mostra la barra inferiore
-                if (hboxAddtoPlaylist != null) {
-                    hboxAddtoPlaylist.setVisible(true);
-                    hboxAddtoPlaylist.setManaged(true);
+                if (playlistViewMode) {
+                    if (btnRemoveFromPlaylist != null) {
+                        btnRemoveFromPlaylist.setVisible(true);
+                        btnRemoveFromPlaylist.setManaged(true);
+                    }
+                    if (hboxAddtoPlaylist != null) {
+                        hboxAddtoPlaylist.setVisible(false);
+                        hboxAddtoPlaylist.setManaged(false);
+                    }
+                } else {
+                    if (btnRemoveFromPlaylist != null) {
+                        btnRemoveFromPlaylist.setVisible(false);
+                        btnRemoveFromPlaylist.setManaged(false);
+                    }
+                    // Spostamento reattivo del layout: mostra la barra inferiore
+                    if (hboxAddtoPlaylist != null) {
+                        hboxAddtoPlaylist.setVisible(true);
+                        hboxAddtoPlaylist.setManaged(true);
+                    }
                 }
             } else {
                 // SCENARIO: Selezione svuotata (attivata da clearSelection() o filtro)
@@ -176,7 +196,12 @@ public class TrackController {
                     hboxAddtoPlaylist.setVisible(false);
                     hboxAddtoPlaylist.setManaged(false);
                 }
+                if (btnRemoveFromPlaylist != null) {
+                    btnRemoveFromPlaylist.setVisible(false);
+                    btnRemoveFromPlaylist.setManaged(false);
+                }
             }
+            tableTracks.refresh();
         });
     }
 
@@ -246,23 +271,90 @@ public class TrackController {
         }
     }
 
+    @FXML
+    private void handleRemoveFromPlaylist(ActionEvent event) {
+        if (!playlistViewMode || currentPlaylist == null || selectedTrack == null) {
+            if (lblFeedback != null) {
+                lblFeedback.setStyle("-fx-text-fill: #b0413e;");
+                lblFeedback.setText("Seleziona una traccia della playlist da rimuovere.");
+            }
+            return;
+        }
+
+        currentPlaylistTracks.remove(selectedTrack);
+        tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
+        tableTracks.getSelectionModel().clearSelection();
+        if (btnRemoveFromPlaylist != null) {
+            btnRemoveFromPlaylist.setVisible(false);
+            btnRemoveFromPlaylist.setManaged(false);
+        }
+        tableTracks.refresh();
+
+        if (lblFeedback != null) {
+            lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
+            if (currentPlaylistTracks.isEmpty()) {
+                lblFeedback.setText("Playlist '" + currentPlaylist.getName() + "' vuota.");
+            } else {
+                lblFeedback.setText("Traccia rimossa da '" + currentPlaylist.getName() + "'.");
+            }
+        }
+    }
+
     private void loadCatalog() {
         if (facade == null || tableTracks == null) {
             return;
-        }else{
+        } else {
             tableTracks.setItems(FXCollections.observableArrayList(facade.getAllTracks2()));
         }
     }
 
     public void showCatalogView() {
+        playlistViewMode = false;
+        currentPlaylist = null;
+        currentPlaylistTracks.clear();
         if (formAddTrack != null) {
             formAddTrack.setVisible(true);
             formAddTrack.setManaged(true);
         }
+        if (btnRemoveFromPlaylist != null) {
+            btnRemoveFromPlaylist.setVisible(false);
+            btnRemoveFromPlaylist.setManaged(false);
+        }
         loadCatalog();
+        if (tableTracks != null) {
+            tableTracks.refresh();
+        }
         if (lblFeedback != null) {
             lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
             lblFeedback.setText("Visualizzazione catalogo completo.");
+        }
+    }
+
+    /**
+     * Pulisce la vista playlist quando la selezione viene rimossa o la playlist viene eliminata.
+     * Evita la persistenza di dati "fantasma" nella tabella.
+     */
+    public void clearPlaylistView() {
+        playlistViewMode = false;
+        currentPlaylist = null;
+        currentPlaylistTracks.clear();
+
+        if (tableTracks != null) {
+            tableTracks.getSelectionModel().clearSelection();
+            tableTracks.setItems(FXCollections.observableArrayList());
+            tableTracks.refresh();
+        }
+        if (hboxAddtoPlaylist != null) {
+            hboxAddtoPlaylist.setVisible(false);
+            hboxAddtoPlaylist.setManaged(false);
+        }
+        if (btnRemoveFromPlaylist != null) {
+            btnRemoveFromPlaylist.setVisible(false);
+            btnRemoveFromPlaylist.setManaged(false);
+        }
+        if (lblFeedback != null) {
+            lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
+            lblFeedback.setText("Nessuna playlist selezionata.");
         }
     }
 
@@ -270,6 +362,12 @@ public class TrackController {
         if (tableTracks == null || playlist == null) {
             return;
         }
+        playlistViewMode = true;
+        currentPlaylist = playlist;
+        java.util.List<Track> tracksForPlaylist = facade != null
+                ? facade.getTracksForPlaylist2(playlist)
+                : playlist.getTracks();
+        currentPlaylistTracks = new java.util.ArrayList<>(tracksForPlaylist);
         if (formAddTrack != null) {
             formAddTrack.setVisible(false);
             formAddTrack.setManaged(false);
@@ -280,8 +378,14 @@ public class TrackController {
             hboxAddtoPlaylist.setVisible(false);
             hboxAddtoPlaylist.setManaged(false);
         }
-        tableTracks.setItems(FXCollections.observableArrayList(facade.getTracksForPlaylist2(playlist)));
-        System.out.println("Contenuto playlist: " + facade.getTracksForPlaylist2(playlist));
+        if (btnRemoveFromPlaylist != null) {
+            btnRemoveFromPlaylist.setVisible(false);
+            btnRemoveFromPlaylist.setManaged(false);
+        }
+        tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
+        tableTracks.getSelectionModel().clearSelection();
+        tableTracks.refresh();
+        System.out.println("Contenuto playlist: " + currentPlaylistTracks);
         if (lblFeedback != null) {
             lblFeedback.setStyle("-fx-text-fill: #0066cc;");
             lblFeedback.setText("Contenuto playlist: " + playlist.getName());

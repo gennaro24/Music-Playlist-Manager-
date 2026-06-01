@@ -2,7 +2,6 @@ package it.unisa.sad.playlistmanager.ui.controller;
 
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
 import it.unisa.sad.playlistmanager.domain.model.Track;
-import java.util.List;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -104,29 +103,7 @@ public class PlaylistController {
                 }
             });
 
-            // Rimaniamo in ascolto anche del click generico (Mantenuto per consistenza del
-            // tuo stub)
-            listPlaylists.setOnMouseClicked(mouseEvent -> {
-                Playlist selected = listPlaylists.getSelectionModel().getSelectedItem();
-                // Se selected è null significa che l'evento sopra ha pulito la selezione, non
-                // facciamo nulla
-                if (selected != null && onPlaylistSelectedHandler != null) {
-                    if (facade != null) {
-                        List<Track> tracks = facade.getTracksForPlaylist2(selected);
-                        if (tracks == null || tracks.isEmpty()) {
-                            if (lblPlaylistFeedback != null) {
-                                lblPlaylistFeedback.setStyle("-fx-text-fill: #b0413e;");
-                                lblPlaylistFeedback.setText("La playlist selezionata non contiene tracce.");
-                            }
-                        } else {
-                            if (lblPlaylistFeedback != null) {
-                                lblPlaylistFeedback.setText("");
-                            }
-                        }
-                        onPlaylistSelectedHandler.accept(selected);
-                    }
-                }
-            });
+            // Evitiamo doppia propagazione eventi: selectedItemProperty e' l'unica fonte.
         }
     }
 
@@ -228,7 +205,21 @@ public class PlaylistController {
         }
         Playlist selected = listPlaylists.getSelectionModel().getSelectedItem();
         if (selected != null) {
+            listPlaylists.getSelectionModel().clearSelection();
             listPlaylists.getItems().remove(selected);
+
+            // Deseleziona la playlist selezionata e notifica l'handler per nascondere la tabella canzoni
+            listPlaylists.getSelectionModel().clearSelection();
+
+            // Segnala la deselezione al MainViewController (o chi ascolta) per far nascondere la tabella dei brani
+            if (onPlaylistSelectedHandler != null) {
+                onPlaylistSelectedHandler.accept(null);
+            }
+
+            if (listPlaylists.getItems().isEmpty()) {
+                // Messaggio placeholder quando non ci sono più playlist
+                listPlaylists.setPlaceholder(new Label("Nessuna playlist disponibile."));
+            }
             lblPlaylistFeedback.setStyle("-fx-text-fill: green;");
             lblPlaylistFeedback.setText("Playlist rimossa.");
         } else {

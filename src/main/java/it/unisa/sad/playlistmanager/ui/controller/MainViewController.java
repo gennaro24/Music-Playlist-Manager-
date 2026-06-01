@@ -19,6 +19,8 @@ public class MainViewController {
     @FXML
     private Label lblFeedback;
     @FXML
+    private Label labelPageTitle;
+    @FXML
     private VBox trackContainer;
     @FXML
     private TrackController trackContainerController;
@@ -55,14 +57,13 @@ public class MainViewController {
 
         if (playlistViewController != null) {
             playlistViewController.setOnPlaylistSelected(playlist -> {
-                if (trackContainer != null) {
-                    trackContainer.setVisible(true);
-                    trackContainer.setManaged(true);
-                }
-        
                 if (playlist != null) {
                     // Playlist selezionata
                     this.selectedPlaylist = playlist;
+                    if (trackContainer != null) {
+                        trackContainer.setVisible(true);
+                        trackContainer.setManaged(true);
+                    }
         
                     if (trackContainerController != null) {
                         trackContainerController.displayPlaylistTracks(playlist);
@@ -74,28 +75,51 @@ public class MainViewController {
                         lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
                         lblFeedback.setText("Visualizzazione tracce playlist: " + playlist.getName());
                     }
+                    updateTitleLabel();
                 } else {
                     // Playlist deselezionata (toggle)
                     this.selectedPlaylist = null;
-        
+    
                     if (trackContainerController != null) {
-                        trackContainerController.showCatalogView();
+                        trackContainerController.clearPlaylistView();
+                    }
+                    if (trackContainer != null) {
+                        trackContainer.setVisible(false);
+                        trackContainer.setManaged(false);
                     }
                     if (btnShowTracks != null) {
-                        btnShowTracks.setText("Chiudi Catalogo");
+                        btnShowTracks.setText("Visualizza Catalogo");
                     }
                     if (lblFeedback != null) {
                         lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
-                        lblFeedback.setText("Playlist deselezionata. Ritorno al catalogo completo.");
+                        lblFeedback.setText("Playlist deselezionata.");
                     }
+                    updateTitleLabel();
                 }
             });
         }
+        updateTitleLabel();
     }
 
     @FXML
     private void handleShowTracks(ActionEvent event) {
         if (trackContainer == null || btnShowTracks == null || lblFeedback == null) {
+            return;
+        }
+        // Se siamo in vista playlist, il click su "Visualizza Catalogo" deve
+        // passare al catalogo (non chiudere il pannello).
+        if (selectedPlaylist != null) {
+            selectedPlaylist = null;
+            trackContainer.setVisible(true);
+            trackContainer.setManaged(true);
+            if (trackContainerController != null) {
+                trackContainerController.clearForm();
+                trackContainerController.showCatalogView();
+            }
+            btnShowTracks.setText("Chiudi Catalogo");
+            lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
+            lblFeedback.setText("Catalogo completo visualizzato.");
+            updateTitleLabel();
             return;
         }
         // Toggle apertura/chiusura sezione catalogo.
@@ -116,15 +140,30 @@ public class MainViewController {
             } else {
                 lblFeedback.setText("Catalogo completo visualizzato.");
             }
+            updateTitleLabel();
         } else {
             btnShowTracks.setText("Visualizza Catalogo");
             lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
             lblFeedback.setText("Catalogo chiuso.");
+            updateTitleLabel();
         }
     }
 
     public void setFacade(MusicPlaylistManagerFacade facade) {
         this.facade = facade;
+    }
+
+    private void updateTitleLabel() {
+        if (labelPageTitle == null) {
+            return;
+        }
+        if (selectedPlaylist != null) {
+            labelPageTitle.setText("Tracce " + selectedPlaylist.getName());
+        } else if (trackContainer != null && trackContainer.isVisible()) {
+            labelPageTitle.setText("Tracce Catalogo");
+        } else {
+            labelPageTitle.setText("Home");
+        }
     }
 
 
