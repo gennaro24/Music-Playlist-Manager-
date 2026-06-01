@@ -17,12 +17,11 @@ public class MusicPlaylistManagerFacade {
     private final TrackService trackService;
     private final PlaylistService playlistService;
 
-
     /**
      * Costruttore della Facade. Inietta le dipendenze dei servizi necessari.
      *
      * @param trackService Il servizio incaricato della logica di business delle tracce.
-     * @param playlistService Il servizio di coordinamento delle playlist.
+     * @param playlistService Il servizio incaricato della logica di business delle playlist.
      */
     public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService) {
         this.trackService = trackService;
@@ -45,6 +44,7 @@ public class MusicPlaylistManagerFacade {
         // Il pattern Facade si limita a delegare l'operazione al servizio competente
         return this.trackService.addTrack(title, author, duration, genre, year);
     }
+
     /**
      * Centralizza l'accesso al caso d'uso di creazione di una playlist.
      * @param name Il nome della playlist.
