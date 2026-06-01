@@ -167,7 +167,7 @@ public class TrackController {
                 // Interrogazione dinamica della Facade per aggiornare il dropdown delle
                 // playlist
                 if (facade != null && dropdownPlaylists != null) {
-                    dropdownPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists2()));
+                    //dropdownPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
                 }
                 if (playlistViewMode) {
                     if (btnRemoveFromPlaylist != null) {
@@ -228,11 +228,18 @@ public class TrackController {
             int duration = Integer.parseInt(txtDuration.getText().trim());
             int year = Integer.parseInt(txtYear.getText().trim());
 
-            // facade.addTrack2(title, author, duration, genre, year);
-            clearForm();
-            lblFeedback.setStyle("-fx-text-fill: green;");
-            lblFeedback.setText("Traccia aggiunta con successo.");
-            loadCatalog();
+            Track newTrack = facade.addTrack(title, author, duration, genre, year);
+            if (newTrack != null) {
+                tableTracks.getItems().add(newTrack);
+                tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
+                tableTracks.getSelectionModel().clearSelection();
+                tableTracks.refresh();
+                clearForm();
+                lblFeedback.setStyle("-fx-text-fill: green;");
+                lblFeedback.setText("Traccia aggiunta con successo.");
+                loadCatalog();
+            }
+            
 
         } catch (NumberFormatException e) {
             lblFeedback.setStyle("-fx-text-fill: red;");
@@ -304,7 +311,7 @@ public class TrackController {
         if (facade == null || tableTracks == null) {
             return;
         } else {
-            tableTracks.setItems(FXCollections.observableArrayList(facade.getAllTracks2()));
+            //tableTracks.setItems(FXCollections.observableArrayList(facade.()));
         }
     }
 
@@ -365,7 +372,7 @@ public class TrackController {
         playlistViewMode = true;
         currentPlaylist = playlist;
         java.util.List<Track> tracksForPlaylist = facade != null
-                ? facade.getTracksForPlaylist2(playlist)
+                ? playlist.getTracks()
                 : playlist.getTracks();
         currentPlaylistTracks = new java.util.ArrayList<>(tracksForPlaylist);
         if (formAddTrack != null) {

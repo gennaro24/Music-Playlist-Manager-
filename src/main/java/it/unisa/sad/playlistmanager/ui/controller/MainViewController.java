@@ -1,20 +1,26 @@
 package it.unisa.sad.playlistmanager.ui.controller;
 
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
+import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
-import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
+import it.unisa.sad.playlistmanager.domain.model.Track;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.scene.control.Button;
+import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
+import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainViewController {
 
     private MusicPlaylistManagerFacade facade;
     private Playlist selectedPlaylist;
+    
 
     @FXML
     private Label lblFeedback;
@@ -31,19 +37,20 @@ public class MainViewController {
     @FXML
     private Button btnShowTracks;
     
+    
 
     
 
     @FXML
     private void initialize() {
-        TrackRepository inMemoryTrackRepository = new TrackRepository() {
-            @Override
-            public void save(it.unisa.sad.playlistmanager.domain.model.Track track) {
-                // temporaneo: addTrack/addTrack2 non usa ancora persistenza reale
-            }
-        };
-        TrackService trackService = new TrackService(inMemoryTrackRepository);
-        facade = new MusicPlaylistManagerFacade(trackService);
+        // Composition root locale: repository concreti -> service -> facade -> controller UI
+        //TrackRepository trackRepository = new TrackRepository();
+
+        //PlaylistRepository playlistRepository = new PlaylistRepository();
+
+        //TrackService trackService = new TrackService(trackRepository);
+        //PlaylistService playlistService = new PlaylistService(playlistRepository);
+        //facade = new MusicPlaylistManagerFacade(trackService, playlistService);
 
         if (trackContainerController != null) {
             trackContainerController.setFacade(facade);

@@ -1,7 +1,6 @@
 package it.unisa.sad.playlistmanager.ui.controller;
 
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
-import it.unisa.sad.playlistmanager.domain.model.Track;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -10,7 +9,6 @@ import javafx.scene.control.TextField;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import javafx.event.ActionEvent;
 import java.util.function.Consumer;
-import javafx.collections.FXCollections;
 import javafx.scene.control.ListCell;
 
 public class PlaylistController {
@@ -106,11 +104,8 @@ public class PlaylistController {
             }
     
             if (facade != null) {
-                System.out.println("Recupero tracce della playlist: " + newSel.getName());
-                java.util.List<Track> tracks = facade.getTracksForPlaylist2(newSel);
-    
                 // Gestione dei messaggi di feedback all'utente basata sul contenuto
-                if (tracks == null || tracks.isEmpty()) {
+                if (newSel.getTracks() == null || newSel.getTracks().isEmpty()) {
                     if (lblPlaylistFeedback != null) {
                         lblPlaylistFeedback.setStyle("-fx-text-fill: #b0413e;");
                         lblPlaylistFeedback.setText("La playlist selezionata non contiene tracce.");
@@ -174,23 +169,9 @@ public class PlaylistController {
             txtPlaylistName.clear();
         }
         if (facade != null) {
-            /*
-             * boolean duplicate = facade.existsPlaylistWithName2(name);
-             * if (duplicate) {
-             * lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
-             * lblPlaylistFeedback.setText("Esiste già una playlist con questo nome.");
-             * return;
-             * }
-             */
+             
             try {
-                // Playlist newPlaylist = facade.addPlaylist2(name);
-                // DECOMMENTA la riga precedente e implementa il metodo nella facade per la gestione reale delle playlist!
-                // Questo è un esempio di possibile flusso di controllo:
-                // Se l'aggiunta della nuova playlist va a buon fine...
-                // Sostituisci le seguenti righe con la logica corretta non appena disponibile.
-                // Playlist newPlaylist = new Playlist(name); // Simulazione temporanea
-                // Simulazione base:
-                Playlist newPlaylist = new Playlist(name); // Rimuovi con la chiamata reale a facade.addPlaylist2(name)
+                Playlist newPlaylist = facade.createPlaylist(name);
                 if (newPlaylist != null) {
                     listPlaylists.getItems().add(newPlaylist);
                     listPlaylists.getSelectionModel().select(newPlaylist);
@@ -203,18 +184,6 @@ public class PlaylistController {
                 lblPlaylistFeedback.setText("Errore durante la creazione della playlist.");
                 e.printStackTrace();
             }
-        }
-
-        if (facade != null) {
-            // facade.addPlaylist(name);
-            // Sincronizzazione atomica dei nodi della ListView
-            // listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists2()));
-
-            lblPlaylistFeedback.setStyle("-fx-text-fill: green;");
-            lblPlaylistFeedback.setText("Playlist '" + name + "' creata con successo.");
-        } else {
-            lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
-            lblPlaylistFeedback.setText("Errore di sistema: Facciata non disponibile.");
         }
     }
 
@@ -257,7 +226,7 @@ public class PlaylistController {
         // quanto invoco il setItems, la tabella si aggiorna con i dati della facade
         // i dati vengono inseriti nella colonna corretta tramite PropertyValueFactory
         // definito in initialize
-        listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists2()));
+        //listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
 
     }
 }
