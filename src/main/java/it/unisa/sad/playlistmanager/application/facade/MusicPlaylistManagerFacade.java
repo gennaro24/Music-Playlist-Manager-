@@ -49,7 +49,6 @@ public class MusicPlaylistManagerFacade {
      * TODO: Sostituire Object con Playlist quando il model sarà disponibile.
      */
     public java.util.List<Track> getTracksForPlaylist2(Playlist playlist) {
-        // TODO: Implementare la logica appena il model Playlist sarà definito.
         // Restituisce una lista vuota come segnaposto.
         java.util.ArrayList<Track> tracks = new java.util.ArrayList<>();
         tracks.add(new Track("test-id", "test-title", "test-author", 100, "test-genre", 2026));
@@ -60,6 +59,7 @@ public class MusicPlaylistManagerFacade {
     public java.util.List<Playlist> getAllPlaylists2() {
         java.util.ArrayList<Playlist> playlists = new java.util.ArrayList<>();
         playlists.add(new Playlist("test-name"));
+        playlists.add(new Playlist("test-name2"));
         return playlists;
     }
 
