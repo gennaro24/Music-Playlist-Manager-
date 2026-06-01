@@ -9,19 +9,13 @@ class MusicPlaylistManagerFacadeTest {
 
     /**
      * 1. CREAZIONE DEL FAKE OBJECT
-     * Creiamo una "controfigura" del TrackService. Invece di eseguire la logica vera
-     * (come salvare nel database o validare), questa classe si limita a prendere appunti 
-     * su cosa le viene passato, così possiamo controllarlo dopo.
      */
     class FakeTrackService extends TrackService {
         
-        // Costruttore: passiamo "null" al vero TrackService per bypassare
-        // la richiesta del TrackRepository che non ci serve in questo test.
         public FakeTrackService() {
             super(null); 
         }
 
-        // Variabili "spia" per registrare i dati ricevuti
         boolean isCalled = false;
         String passedTitle;
         String passedAuthor;
@@ -31,7 +25,6 @@ class MusicPlaylistManagerFacadeTest {
 
         @Override
         public Track addTrack(String title, String author, int duration, String genre, int year) {
-            // Registriamo che il metodo è stato chiamato e salviamo i parametri
             this.isCalled = true;
             this.passedTitle = title;
             this.passedAuthor = author;
@@ -39,7 +32,6 @@ class MusicPlaylistManagerFacadeTest {
             this.passedGenre = genre;
             this.passedYear = year;
             
-            // Ritorniamo una traccia finta (dummy) per soddisfare la firma del metodo
             return new Track("test-id", title, author, duration, genre, year);
         }
     }
@@ -49,9 +41,12 @@ class MusicPlaylistManagerFacadeTest {
      */
     @Test
     void testAddTrackDelegaCorrettamente() {
-        // Prepariamo la controfigura e la passiamo alla Facade
+        // Prepariamo la controfigura del TrackService
         FakeTrackService fakeService = new FakeTrackService();
-        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService);
+        
+        // CORREZIONE: Passiamo null come secondo parametro (PlaylistService) 
+        // perché in questo test specifico non viene utilizzato
+        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService, null);
 
         // Chiamiamo la Facade con dei dati di prova
         facade.addTrack("Shape of You", "Ed Sheeran", 233, "Pop", 2017);
