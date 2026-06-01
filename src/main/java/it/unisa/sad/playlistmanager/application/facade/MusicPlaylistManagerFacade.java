@@ -1,5 +1,7 @@
 package it.unisa.sad.playlistmanager.application.facade;
 
+import java.util.List;
+
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 
@@ -39,5 +41,16 @@ public class MusicPlaylistManagerFacade {
     public Track addTrack(String title, String author, int duration, String genre, int year) {
         // Il pattern Facade si limita a delegare l'operazione al servizio competente
         return this.trackService.addTrack(title, author, duration, genre, year);
+    }
+
+    /**
+     * Espone al Presentation Layer l'elenco completo di tutte le tracce presenti nel catalogo.
+     * Risolve il Task T-11 della prima sprint.
+     *
+     * @return Una lista contenente tutte le tracce musicali disponibili.
+     */
+    public List<Track> getAllTracks() {
+        // Delega del pass-through verso il servizio di competenza
+        return this.trackService.getAllTracks();
     }
 }
