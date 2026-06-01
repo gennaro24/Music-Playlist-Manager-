@@ -5,6 +5,9 @@ import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
+import java.util.Optional;
+
 class TrackServiceTest {
 
     /**
@@ -21,6 +24,19 @@ class TrackServiceTest {
         public void save(Track track) {
             this.isSaveCalled = true;
             this.trackSavedInDb = track;
+        }
+        /**
+         * 
+         * DA IMPLEMENTARE
+         */
+        @Override
+        public Optional<Track> findById(String id){
+            return Optional.empty();
+        }
+
+        @Override
+        public List<Track> findAll(){
+            return null;
         }
 
         // NOTA: Se la tua interfaccia TrackRepository ha altri metodi (es. findAll, delete),
