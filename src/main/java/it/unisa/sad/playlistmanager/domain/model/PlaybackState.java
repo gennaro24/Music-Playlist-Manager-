@@ -1,5 +1,9 @@
 package it.unisa.sad.playlistmanager.domain.model;
-
-public class PlaybackState {
-    
+/**
+ * Stati possibili del playback.
+ */
+public enum PlaybackState {
+    STOPPED,
+    PAUSED,
+    PLAYING
 }

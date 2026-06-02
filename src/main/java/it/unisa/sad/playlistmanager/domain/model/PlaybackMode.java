@@ -1,5 +1,10 @@
 package it.unisa.sad.playlistmanager.domain.model;
-
-public class PlaybackMode {
-    
+/**
+ * Modalità possibili del playback
+ */
+public enum PlaybackMode {
+    SEQUENTIAL,
+    SHUFFLE,
+    REPEAT_ONE,
+    REPEAT_ALL    
 }
