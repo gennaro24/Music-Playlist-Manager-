@@ -6,6 +6,7 @@ import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
+import it.unisa.sad.playlistmanager.domain.model.Playlist;
 
 /**
  * Facciata principale dell'applicazione (Facade Pattern).
