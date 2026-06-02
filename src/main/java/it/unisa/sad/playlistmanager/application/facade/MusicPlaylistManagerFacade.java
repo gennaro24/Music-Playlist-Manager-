@@ -101,4 +101,16 @@ public class MusicPlaylistManagerFacade {
     public void addTrackToPlaylist(String playlistId, String trackId) {
         this.playlistService.addTrackToPlaylist(playlistId, trackId);
     }
+
+    /**
+     * Espone al Presentation Layer la funzionalità di rimozione di una traccia da una playlist.
+     * Agisce da puro pass-through verso il servizio applicativo competente.
+     *
+     * @param playlistId L'identificativo unico della playlist di riferimento.
+     * @param trackId    L'identificativo unico della traccia da cancellare dalla playlist.
+     * @throws IllegalArgumentException Se i parametri o le regole di business vengono violate.
+     */
+    public void removeTrackFromPlaylist(String playlistId, String trackId) {
+        this.playlistService.removeTrackFromPlaylist(playlistId, trackId);
+    }
 }

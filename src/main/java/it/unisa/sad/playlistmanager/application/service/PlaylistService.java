@@ -79,8 +79,28 @@ public class PlaylistService {
         // Esegue la business rule di dominio (inclusa la verifica dei duplicati T-30)
         playlist.addTrack(track);
 
-        // Invoca la persistenza. Anche se il metodo concreto non è ancora scritto dal collega, 
-        // l'architettura compila correttamente e rispetta il DIP.
+        // Invoca la persistenza.
+        playlistRepository.save(playlist);
+    }
+
+    /**
+     * Coordina il caso d'uso di rimozione di una traccia da una specifica playlist.
+     * Recupera l'entità dal repository, ne modifica lo stato interno tramite il modello di dominio
+     * e infine persiste l'aggiornamento.
+     *
+     * @param playlistId L'identificativo unico della playlist.
+     * @param trackId    L'identificativo unico della traccia da estromettere.
+     * @throws IllegalArgumentException Se la playlist non esiste o se la traccia non era presente.
+     */
+    public void removeTrackFromPlaylist(String playlistId, String trackId) {
+        // Recupero sicuro tramite l'Optional esposto dal repository reale
+        Playlist playlist = playlistRepository.findById(playlistId)
+                .orElseThrow(() -> new IllegalArgumentException("Playlist non trovata con l'ID specificato."));
+
+        // Delega la regola di business e la rimozione fisica dalla lista in memoria al dominio
+        playlist.removeTrack(trackId);
+
+        // Invoca il salvataggio per aggiornare lo stato
         playlistRepository.save(playlist);
     }
 }
