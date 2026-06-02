@@ -1,6 +1,9 @@
 package it.unisa.sad.playlistmanager.domain.model;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class PlaylistTest {
@@ -48,7 +51,7 @@ class PlaylistTest {
         });
     }
 
-    // --- TEST AGGIUNTA TRACCE ---
+    // --- TEST AGGIUNTA E ORDINE TRACCE ---
 
     @Test
     void testAggiuntaTracciaValida() {
@@ -68,6 +71,30 @@ class PlaylistTest {
         assertThrows(IllegalArgumentException.class, () -> {
             playlist.addTrack(null);
         });
+    }
+
+    @Test
+    void testOrdineTracceMantenuto() {
+        Playlist playlist = new Playlist("p-1", "My Mix");
+        
+        // Creiamo tre tracce distinte
+        Track track1 = new Track("t-1", "Song A", "Author 1", 100, "Pop", 2020);
+        Track track2 = new Track("t-2", "Song B", "Author 2", 200, "Rock", 2021);
+        Track track3 = new Track("t-3", "Song C", "Author 3", 150, "Jazz", 2022);
+
+        // Le aggiungiamo in un ordine specifico (1 -> 2 -> 3)
+        playlist.addTrack(track1);
+        playlist.addTrack(track2);
+        playlist.addTrack(track3);
+
+        // Estraiamo la lista
+        List<Track> tracks = playlist.getTracks();
+
+        // Verifichiamo che la dimensione e l'ordine siano stati preservati esattamente
+        assertEquals(3, tracks.size(), "La playlist dovrebbe contenere 3 tracce");
+        assertEquals(track1, tracks.get(0), "La prima traccia dovrebbe essere Song A");
+        assertEquals(track2, tracks.get(1), "La seconda traccia dovrebbe essere Song B");
+        assertEquals(track3, tracks.get(2), "La terza traccia dovrebbe essere Song C");
     }
 
     // --- TEST INCAPSULAMENTO ---
