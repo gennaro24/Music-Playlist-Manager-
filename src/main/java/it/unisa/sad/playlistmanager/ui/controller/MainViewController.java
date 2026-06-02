@@ -77,7 +77,7 @@ public class MainViewController {
         
         // Istanziazione del Domain Service Layer
         TrackService trackService = new TrackService(trackRepository);
-        PlaylistService playlistService = new PlaylistService(playlistRepository);
+        PlaylistService playlistService = new PlaylistService(playlistRepository, trackRepository);
         
         // Generazione del Mediator unificato (Facade Pattern)
         return new MusicPlaylistManagerFacade(trackService, playlistService);

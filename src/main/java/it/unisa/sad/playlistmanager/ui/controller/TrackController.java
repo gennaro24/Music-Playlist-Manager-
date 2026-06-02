@@ -68,6 +68,7 @@ public class TrackController {
     public void setFacade(MusicPlaylistManagerFacade facade) {
         this.facade = facade;
         loadCatalog();
+        
     }
 
     @FXML
@@ -347,12 +348,17 @@ public class TrackController {
         if (selectedTrack != null && dropdownPlaylists != null
                 && dropdownPlaylists.getSelectionModel().getSelectedItem() != null) {
             Playlist targetPlaylist = dropdownPlaylists.getSelectionModel().getSelectedItem();
-
-            // facade.addTrackToPlaylist(selectedTrack, targetPlaylist);)
+            String selectedTrackId = selectedTrack.getId();
+            String targetPlaylistId = targetPlaylist.getId();
+            System.out.println("selectedTrackId: " + selectedTrackId);
+            System.out.println("targetPlaylistId: " + targetPlaylistId);
+            facade.addTrackToPlaylist(targetPlaylistId, selectedTrackId);
 
             labelFeedback("Traccia '" + selectedTrack.getTitle() + "' aggiunta alla playlist '"
                     + targetPlaylist.getName() + "' con successo.", "green");
-
+            refreshCurrentPlaylistTable(targetPlaylistId);
+            //aggiorna la lista delle playlist
+            dropdownPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
             // Opzionale: Nascondiamo l'HBox dopo il salvataggio per pulizia di interfaccia
             if (hboxAddtoPlaylist != null) {
                 hboxAddtoPlaylist.setVisible(false);
@@ -371,13 +377,13 @@ public class TrackController {
     private void removeSelectedTrackFromCurrentPlaylist() {
         if (!playlistViewMode || currentPlaylist == null || selectedTrack == null) {
             if (lblFeedback != null) {
-                lblFeedback.setStyle("-fx-text-fill: #b0413e;");
-                lblFeedback.setText("Seleziona una traccia della playlist da rimuovere.");
+                labelFeedback("Seleziona una traccia della playlist da rimuovere.", "red");
             }
             return;
         }
 
-        currentPlaylistTracks.remove(selectedTrack);
+        facade.removeTrackFromPlaylist(currentPlaylist.getId(), selectedTrack.getId());
+        System.out.println("currentPlaylistTracks: " + currentPlaylistTracks);
         tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
         tableTracks.getSelectionModel().clearSelection();
         if (btnRemoveFromPlaylist != null) {
@@ -407,6 +413,20 @@ public class TrackController {
             }
         }
     }
+
+    private void refreshCurrentPlaylistTable(String playlistId) {
+        Playlist refreshed = facade.getPlaylistById(playlistId);
+        if (refreshed == null || tableTracks == null) return;
+    
+        currentPlaylist = refreshed;
+        currentPlaylistTracks = new java.util.ArrayList<>(refreshed.getTracks());
+        System.out.println("currentPlaylistTracks: " + currentPlaylistTracks);
+    
+        tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
+        tableTracks.getSelectionModel().clearSelection();
+        tableTracks.refresh();
+    }
+    
 
     public void showCatalogView() {
         playlistViewMode = false;

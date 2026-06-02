@@ -91,8 +91,7 @@ public class MusicPlaylistManagerFacade {
         return this.playlistService.getPlaylistById(id);
     }
 
-<<<<<<< HEAD
-=======
+
     /**
      * Centralizza ed espone alla UI il caso d'uso di aggiunta traccia a una playlist.
      *
@@ -115,5 +114,4 @@ public class MusicPlaylistManagerFacade {
     public void removeTrackFromPlaylist(String playlistId, String trackId) {
         this.playlistService.removeTrackFromPlaylist(playlistId, trackId);
     }
->>>>>>> f092dd5f88090265b4f5e88d48c0c38eec1641a8
 }

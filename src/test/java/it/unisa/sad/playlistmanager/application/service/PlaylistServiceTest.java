@@ -2,6 +2,7 @@ package it.unisa.sad.playlistmanager.application.service;
 
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
+import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
 import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +52,7 @@ class PlaylistServiceTest {
         FakePlaylistRepository fakeRepo = new FakePlaylistRepository();
         // Per questo test, simuliamo che il nome NON esista ancora nel DB
         fakeRepo.simulateNameExists = false; 
-        PlaylistService service = new PlaylistService(fakeRepo);
+        PlaylistService service = new PlaylistService(fakeRepo, null);
 
         Playlist result = service.createPlaylist("Rock Classics");
 
