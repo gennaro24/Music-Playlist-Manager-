@@ -2,11 +2,12 @@ package it.unisa.sad.playlistmanager.application.service;
 
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
+import java.util.List;
 
 /**
  * Servizio applicativo responsabile del coordinamento dei casi d'uso legati alle tracce.
  * Funge da intermediario tra il Presentation Layer e il Domain/Persistence Layer.
- * @version 1.0
+ * * @version 1.1
  */
 public class TrackService {
 
@@ -18,7 +19,7 @@ public class TrackService {
      *
      * @param trackRepository L'astrazione del database da utilizzare per le operazioni CRUD.
      */
-    public TrackService(TrackRepository trackRepository) { // Nota: Assicurati che si chiami TrackService nel tuo codice
+    public TrackService(TrackRepository trackRepository) {
         this.trackRepository = trackRepository;
     }
 
@@ -43,5 +44,16 @@ public class TrackService {
 
         // 3. Ritorno dell'oggetto creato per l'aggiornamento della UI
         return newTrack;
+    }
+
+    /**
+     * Coordina il caso d'uso di recupero e visualizzazione dell'intero catalogo musicale.
+     * Risolve il Task T-10 della prima sprint.
+     *
+     * @return Una lista di tutti gli oggetti {@link Track} registrati nel sistema.
+     */
+    public List<Track> getAllTracks() {
+        // Delega l'estrazione totale al repository astratto
+        return this.trackRepository.findAll();
     }
 }

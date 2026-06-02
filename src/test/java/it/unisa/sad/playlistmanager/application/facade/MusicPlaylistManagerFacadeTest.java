@@ -3,12 +3,25 @@ package it.unisa.sad.playlistmanager.application.facade;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Classe di test d'unità per la facciata applicativa {@link MusicPlaylistManagerFacade}.
+ * Verifica il corretto funzionamento del Facade Pattern assicurando che le chiamate
+ * provenienti dal Presentation Layer siano delegate senza alterazioni ai rispettivi servizi.
+ * Utilizza una classe Fake interna per isolare i test dalle reali logiche di business.
+ * * @version 1.1
+ */
 class MusicPlaylistManagerFacadeTest {
 
     /**
-     * 1. CREAZIONE DEL FAKE OBJECT
+     * Controfigura d'oggetto (Fake Object) di {@link TrackService}.
+     * Sovrascrive i metodi del servizio reale per tracciare l'avvenuta delega
+     * ed evitare di interagire con i repository di persistenza o il database reale.
      */
     class FakeTrackService extends TrackService {
         
@@ -16,47 +29,67 @@ class MusicPlaylistManagerFacadeTest {
             super(null); 
         }
 
-        boolean isCalled = false;
-        String passedTitle;
-        String passedAuthor;
-        int passedDuration;
-        String passedGenre;
-        int passedYear;
+        // Variabili stato "spia" per verificare l'invocazione dei metodi
+        boolean isAddTrackCalled = false;
+        boolean isGetAllTracksCalled = false;
+        
+        // Catalogo finto pre-popolato restituito dal metodo stub
+        List<Track> dummyCatalog = Arrays.asList(
+            new Track("1", "Song One", "Artist", 100, "Pop", 2020),
+            new Track("2", "Song Two", "Artist", 200, "Rock", 2021)
+        );
 
         @Override
         public Track addTrack(String title, String author, int duration, String genre, int year) {
-            this.isCalled = true;
-            this.passedTitle = title;
-            this.passedAuthor = author;
-            this.passedDuration = duration;
-            this.passedGenre = genre;
-            this.passedYear = year;
-            
+            this.isAddTrackCalled = true;
             return new Track("test-id", title, author, duration, genre, year);
+        }
+
+        @Override
+        public List<Track> getAllTracks() {
+            this.isGetAllTracksCalled = true;
+            return dummyCatalog;
         }
     }
 
     /**
-     * 2. IL TEST VERO E PROPRIO
+     * Verifica che la Facade deleghi correttamente l'aggiunta di una traccia
+     * al relativo metodo esposto da TrackService.
      */
     @Test
     void testAddTrackDelegaCorrettamente() {
         // Prepariamo la controfigura del TrackService
         FakeTrackService fakeService = new FakeTrackService();
         
-        // CORREZIONE: Passiamo null come secondo parametro (PlaylistService) 
-        // perché in questo test specifico non viene utilizzato
+        // Passiamo null come secondo parametro (PlaylistService) poiché non è oggetto di questo test
         MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService, null);
 
-        // Chiamiamo la Facade con dei dati di prova
+        // Invochiamo il metodo sulla Facade
         facade.addTrack("Shape of You", "Ed Sheeran", 233, "Pop", 2017);
 
-        // Verifichiamo che la Facade abbia effettivamente girato i dati alla nostra controfigura
-        assertTrue(fakeService.isCalled, "Errore: La Facade non ha chiamato il TrackService!");
-        assertEquals("Shape of You", fakeService.passedTitle);
-        assertEquals("Ed Sheeran", fakeService.passedAuthor);
-        assertEquals(233, fakeService.passedDuration);
-        assertEquals("Pop", fakeService.passedGenre);
-        assertEquals(2017, fakeService.passedYear);
+        // Asserzione: verifichiamo se il metodo del servizio finto è stato effettivamente toccato
+        assertTrue(fakeService.isAddTrackCalled, "Errore: La Facade non ha chiamato addTrack() del TrackService!");
+    }
+
+    /**
+     * Verifica che la Facade deleghi correttamente il recupero dell'intero catalogo
+     * musicale al metodo getAllTracks() del TrackService.
+     */
+    @Test
+    void testGetAllTracksDelegaCorrettamente() {
+        // Prepariamo la controfigura del TrackService
+        FakeTrackService fakeService = new FakeTrackService();
+        
+        // Inserito "null" come secondo parametro per soddisfare il costruttore a due vie della Facade
+        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService, null);
+
+        // Chiamiamo il metodo della Facade sotto analisi
+        List<Track> result = facade.getAllTracks();
+
+        // Verifichiamo che abbia delegato correttamente la chiamata al servizio
+        assertTrue(fakeService.isGetAllTracksCalled, "Errore: La Facade non ha chiamato getAllTracks() del TrackService!");
+        
+        // Verifichiamo che la lista ritornata non sia corrotta ed equivalga a quella del servizio
+        assertEquals(fakeService.dummyCatalog, result, "Errore: La lista restituita non è quella del TrackService!");
     }
 }
