@@ -10,6 +10,7 @@ import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import javafx.event.ActionEvent;
 import java.util.function.Consumer;
 import javafx.scene.control.ListCell;
+import javafx.collections.FXCollections;
 
 public class PlaylistController {
 
@@ -106,9 +107,10 @@ public class PlaylistController {
             if (facade != null) {
                 // Gestione dei messaggi di feedback all'utente basata sul contenuto
                 if (newSel.getTracks() == null || newSel.getTracks().isEmpty()) {
-                    if (lblPlaylistFeedback != null) {
+                    if (lblPlaylistFeedback != null && onShowTracksTextChangeHandler != null) {
                         lblPlaylistFeedback.setStyle("-fx-text-fill: #b0413e;");
-                        lblPlaylistFeedback.setText("La playlist selezionata non contiene tracce.");
+                        //modifica la label nel track controller per indicare che la playlist è vuota
+                        onShowTracksTextChangeHandler.accept("La playlist selezionata non contiene tracce.");
                     }
                 } else {
                     if (lblPlaylistFeedback != null) {
@@ -128,6 +130,15 @@ public class PlaylistController {
 
     public void setOnPlaylistSelected(Consumer<Playlist> handler) {
         this.onPlaylistSelectedHandler = handler;
+    }
+
+    public void clearCurrentSelection() {
+        if (listPlaylists != null) {
+            listPlaylists.getSelectionModel().clearSelection();
+        }
+        if (lblPlaylistFeedback != null) {
+            lblPlaylistFeedback.setText("");
+        }
     }
 
     public void setFacade(MusicPlaylistManagerFacade facade) {
@@ -221,7 +232,8 @@ public class PlaylistController {
         // quanto invoco il setItems, la tabella si aggiorna con i dati della facade
         // i dati vengono inseriti nella colonna corretta tramite PropertyValueFactory
         // definito in initialize
-        //listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
+        listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
+        
 
     }
 }
