@@ -1,10 +1,12 @@
 package it.unisa.sad.playlistmanager.ui.controller;
-
+import it.unisa.sad.playlistmanager.persistence.db.DatabaseConnectionManager;
+import it.unisa.sad.playlistmanager.persistence.db.DatabaseInitializer;
+import it.unisa.sad.playlistmanager.persistence.repository.SqliteTrackRepository;
+import it.unisa.sad.playlistmanager.persistence.repository.SqlitePlaylistRepository;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
-import it.unisa.sad.playlistmanager.domain.model.Track;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -12,8 +14,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.control.Button;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
 import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
-import java.util.ArrayList;
-import java.util.List;
 
 
 public class MainViewController {
@@ -29,7 +29,7 @@ public class MainViewController {
     @FXML
     private VBox trackContainer;
     @FXML
-    private TrackController trackController;
+    private TrackController trackContainerController;
     @FXML
     private PlaybackController playbackViewController;
     @FXML
@@ -60,6 +60,7 @@ public class MainViewController {
      * all'interno dell'Application Facade.
      */
     private MusicPlaylistManagerFacade bootstrapApplicationContext() {
+        
         DatabaseConnectionManager connectionManager = new DatabaseConnectionManager();
         DatabaseInitializer initializer = new DatabaseInitializer(connectionManager);
         
@@ -86,8 +87,8 @@ public class MainViewController {
      * associati alle viste incluse nell'FXML principale.
      */
     private void injectFacadeIntoSubControllers(MusicPlaylistManagerFacade coreFacade) {
-        if (trackController != null) {
-            trackController.setFacade(coreFacade);
+        if (trackContainerController != null) {
+            trackContainerController.setFacade(coreFacade);
         }
         if (playlistViewController != null) {
             playlistViewController.setFacade(coreFacade);
@@ -128,8 +129,8 @@ public class MainViewController {
 
 
         //non mostro elementi di trackController quando sono nella modalità playlist selezionata
-        if (trackController != null) {
-            trackController.displayPlaylistTracks(playlist);
+        if (trackContainerController != null) {
+            trackContainerController.displayPlaylistTracks(playlist);
         }
 
         //modifico il bottone, dando la possibilità di visualizzare il catalogo completo
@@ -147,8 +148,8 @@ public class MainViewController {
         this.selectedPlaylist = null;
     
         //rimuovo la visualizzazine degli elementi di trackController
-        if (trackController != null) {
-            trackController.clearPlaylistView();
+        if (trackContainerController != null) {
+            trackContainerController.clearPlaylistView();
         }
 
         //rimuovo la visualizzazine della trackContainer
@@ -200,9 +201,9 @@ public class MainViewController {
             selectedPlaylist = null;
             trackContainer.setVisible(true);
             trackContainer.setManaged(true);
-            if (trackController != null) {
-                trackController.clearForm();
-                trackController.showCatalogView();
+            if (trackContainerController != null) {
+                trackContainerController.clearForm();
+                trackContainerController.showCatalogView();
             }
             //modifico il bottone, dando la possibilità di chiudere il catalogo
             btnShowTracks.setText("Chiudi Catalogo");
@@ -217,9 +218,9 @@ public class MainViewController {
 
         if (show) {
             // Quando riapro dal bottone, forzo sempre la vista catalogo completo.
-            if (trackController != null) {
-                trackController.clearForm();
-                trackController.showCatalogView();
+            if (trackContainerController != null) {
+                trackContainerController.clearForm();
+                trackContainerController.showCatalogView();
             }
             btnShowTracks.setText("Chiudi Catalogo");
             setUIVeedback("#1f7a1f", "Catalogo completo visualizzato.");
