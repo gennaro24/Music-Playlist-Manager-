@@ -3,6 +3,7 @@ package it.unisa.sad.playlistmanager.domain.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Entità del Modello di Dominio che rappresenta una Playlist musicale.
@@ -16,7 +17,7 @@ public class Playlist {
 
     /**
      * Costruttore completo dell'entità Playlist.
-     * @param id   L'identificativo univoco.
+     * @param id   L'identificativo univoco. Se nullo o vuoto, viene generato automaticamente un UUID.
      * @param name Il nome assegnato alla playlist.
      * @throws IllegalArgumentException Se il nome viola le regole di validazione del dominio.
      */
@@ -24,7 +25,7 @@ public class Playlist {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Il nome della playlist non può essere vuoto o nullo.");
         }
-        this.id = id;
+        this.id = (id == null || id.trim().isEmpty()) ? UUID.randomUUID().toString() : id;
         this.name = name;
         this.tracks = new ArrayList<>();
 
