@@ -12,8 +12,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Button;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.MenuItem;
 import javafx.scene.layout.VBox;
 import java.util.function.Consumer;
 import javafx.scene.control.ComboBox;
@@ -64,8 +62,6 @@ public class TrackController {
     private boolean playlistViewMode = false;
     private Playlist currentPlaylist;
     private java.util.List<Track> currentPlaylistTracks = new java.util.ArrayList<>();
-    private ContextMenu trackContextMenu;
-    private MenuItem playTrackContextMenu;
 
 
     public void setFacade(MusicPlaylistManagerFacade facade) {
@@ -84,7 +80,6 @@ public class TrackController {
         if (tableTracks != null) {
             configureTableToggleDeselection();
             configureTableSelectionListener();
-            configureTrackContextMenu();
         }
     }
 
@@ -217,48 +212,8 @@ public class TrackController {
                     btnRemoveFromPlaylist.setManaged(false);
                 }
             }
-            updateTrackContextMenuState();
             tableTracks.refresh();
         });
-    }
-
-    private void configureTrackContextMenu() {
-        playTrackContextMenu = new MenuItem("Riproduci traccia corrente");
-
-        playTrackContextMenu.setOnAction(event -> playSelectedTrack());
-
-        trackContextMenu = new ContextMenu(playTrackContextMenu);
-        tableTracks.setContextMenu(trackContextMenu);
-        updateTrackContextMenuState();
-    }
-
-    private void updateTrackContextMenuState() {
-        if (trackContextMenu == null || tableTracks == null) {
-            return;
-        }
-
-        Track currentSelection = tableTracks.getSelectionModel().getSelectedItem();
-        boolean hasSelection = currentSelection != null;
-
-        if (!hasSelection) {
-            trackContextMenu.hide();
-            tableTracks.setContextMenu(null);
-            return;
-        }
-
-        tableTracks.setContextMenu(trackContextMenu);
-    }
-
-
-    private void playSelectedTrack() {
-        if (selectedTrack == null) {
-            return;
-        }
-        //facade.playTrack(selectedTrack);
-        if (lblFeedback != null) {
-            lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
-            lblFeedback.setText("Traccia '" + selectedTrack.getTitle() + "' iniziata.");
-        }
     }
 
     public void setOnTrackSelected(Consumer<Track> handler) {
@@ -385,7 +340,6 @@ public class TrackController {
         if (tableTracks != null) {
             tableTracks.refresh();
         }
-        updateTrackContextMenuState();
         if (lblFeedback != null) {
             lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
             lblFeedback.setText("Visualizzazione catalogo completo.");
@@ -406,7 +360,6 @@ public class TrackController {
             tableTracks.setItems(FXCollections.observableArrayList());
             tableTracks.refresh();
         }
-        updateTrackContextMenuState();
         if (hboxAddtoPlaylist != null) {
             hboxAddtoPlaylist.setVisible(false);
             hboxAddtoPlaylist.setManaged(false);
@@ -449,7 +402,6 @@ public class TrackController {
         tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
         tableTracks.getSelectionModel().clearSelection();
         tableTracks.refresh();
-        updateTrackContextMenuState();
         System.out.println("Contenuto playlist: " + currentPlaylistTracks);
         if (lblFeedback != null) {
             lblFeedback.setStyle("-fx-text-fill: #0066cc;");
