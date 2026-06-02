@@ -7,6 +7,9 @@ import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
  * Servizio applicativo responsabile del coordinamento dei casi d'uso legati alle playlist.
  * @version 1.0
  */
+/**
+ * TODO: Necessario un cambiamento di playlistRepository. Deve essere concretizzato da SqlitePlaylistRepository
+ */
 public class PlaylistService {
     
     private final PlaylistRepository playlistRepository;

@@ -1,5 +1,7 @@
 package it.unisa.sad.playlistmanager.application.facade;
 
+import java.util.List;
+
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
@@ -53,5 +55,16 @@ public class MusicPlaylistManagerFacade {
      */
     public Playlist createPlaylist(String name) {
         return this.playlistService.createPlaylist(name);
+    }
+
+    /**
+     * Espone al Presentation Layer l'elenco completo di tutte le tracce presenti nel catalogo.
+     * Risolve il Task T-11 della prima sprint.
+     *
+     * @return Una lista contenente tutte le tracce musicali disponibili.
+     */
+    public List<Track> getAllTracks() {
+        // Delega del pass-through verso il servizio di competenza
+        return this.trackService.getAllTracks();
     }
 }

@@ -65,7 +65,7 @@ public class DatabaseInitializer {
                         CREATE TABLE IF NOT EXISTS playlist_tracks (
                             playlist_id TEXT NOT NULL,
                             track_id TEXT NOT NULL,
-                            position INTEGER NOT NULL
+                            position INTEGER NOT NULL,
                             PRIMARY KEY (playlist_id, track_id),
                             FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
                             FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE

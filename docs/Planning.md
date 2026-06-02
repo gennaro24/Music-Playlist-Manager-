@@ -3,7 +3,7 @@
 Project: Music Playlist Manager  
 Course: Software Architecture Design — A.Y. 2025/2026  
 Process: Scrum  
-Planning status: Pre-game phase DONE
+Planning status: Sprint 1
 
 ---
 
@@ -92,5 +92,7 @@ Planning status: Pre-game phase DONE
 - [x] `docs/Sprint1/SprintBacklog.md`
 - [x] `docs/Planning.md`
 - [x] Trello board link in README.md
+
+## Checklist for 4 June — Sprint 1 Delivery
 
 ---
