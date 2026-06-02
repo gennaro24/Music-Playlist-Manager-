@@ -2,7 +2,9 @@ package it.unisa.sad.playlistmanager.application.facade;
 
 import java.util.List;
 
+import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
+import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 
 /**
@@ -15,15 +17,17 @@ public class MusicPlaylistManagerFacade {
 
     /** Riferimento al servizio applicativo per la gestione delle tracce. */
     private final TrackService trackService;
-
+    private final PlaylistService playlistService;
 
     /**
      * Costruttore della Facade. Inietta le dipendenze dei servizi necessari.
      *
      * @param trackService Il servizio incaricato della logica di business delle tracce.
+     * @param playlistService Il servizio incaricato della logica di business delle playlist.
      */
-    public MusicPlaylistManagerFacade(TrackService trackService) {
+    public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService) {
         this.trackService = trackService;
+        this.playlistService = playlistService;
     }
 
     /**
@@ -41,6 +45,15 @@ public class MusicPlaylistManagerFacade {
     public Track addTrack(String title, String author, int duration, String genre, int year) {
         // Il pattern Facade si limita a delegare l'operazione al servizio competente
         return this.trackService.addTrack(title, author, duration, genre, year);
+    }
+
+    /**
+     * Centralizza l'accesso al caso d'uso di creazione di una playlist.
+     * @param name Il nome della playlist.
+     * @return La playlist creata.
+     */
+    public Playlist createPlaylist(String name) {
+        return this.playlistService.createPlaylist(name);
     }
 
     /**

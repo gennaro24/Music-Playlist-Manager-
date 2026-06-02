@@ -9,10 +9,19 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Classe di test d'unità per la facciata applicativa {@link MusicPlaylistManagerFacade}.
+ * Verifica il corretto funzionamento del Facade Pattern assicurando che le chiamate
+ * provenienti dal Presentation Layer siano delegate senza alterazioni ai rispettivi servizi.
+ * Utilizza una classe Fake interna per isolare i test dalle reali logiche di business.
+ * * @version 1.1
+ */
 class MusicPlaylistManagerFacadeTest {
 
     /**
-     * 1. CREAZIONE DEL FAKE OBJECT
+     * Controfigura d'oggetto (Fake Object) di {@link TrackService}.
+     * Sovrascrive i metodi del servizio reale per tracciare l'avvenuta delega
+     * ed evitare di interagire con i repository di persistenza o il database reale.
      */
     class FakeTrackService extends TrackService {
         
@@ -20,11 +29,11 @@ class MusicPlaylistManagerFacadeTest {
             super(null); 
         }
 
-        // Variabili "spia"
+        // Variabili stato "spia" per verificare l'invocazione dei metodi
         boolean isAddTrackCalled = false;
         boolean isGetAllTracksCalled = false;
         
-        // Creiamo un finto catalogo da far restituire al metodo getAllTracks
+        // Catalogo finto pre-popolato restituito dal metodo stub
         List<Track> dummyCatalog = Arrays.asList(
             new Track("1", "Song One", "Artist", 100, "Pop", 2020),
             new Track("2", "Song Two", "Artist", 200, "Rock", 2021)
@@ -38,41 +47,49 @@ class MusicPlaylistManagerFacadeTest {
 
         @Override
         public List<Track> getAllTracks() {
-            // Registriamo che il metodo è stato chiamato e restituiamo la lista finta
             this.isGetAllTracksCalled = true;
             return dummyCatalog;
         }
     }
 
     /**
-     * 2. TEST PER L'AGGIUNTA DELLA TRACCIA
+     * Verifica che la Facade deleghi correttamente l'aggiunta di una traccia
+     * al relativo metodo esposto da TrackService.
      */
     @Test
     void testAddTrackDelegaCorrettamente() {
+        // Prepariamo la controfigura del TrackService
         FakeTrackService fakeService = new FakeTrackService();
-        // NOTA: uso il costruttore a 1 parametro come nel tuo ultimo codice
-        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService);
+        
+        // Passiamo null come secondo parametro (PlaylistService) poiché non è oggetto di questo test
+        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService, null);
 
+        // Invochiamo il metodo sulla Facade
         facade.addTrack("Shape of You", "Ed Sheeran", 233, "Pop", 2017);
 
+        // Asserzione: verifichiamo se il metodo del servizio finto è stato effettivamente toccato
         assertTrue(fakeService.isAddTrackCalled, "Errore: La Facade non ha chiamato addTrack() del TrackService!");
     }
 
     /**
-     * 3. NUOVO TEST PER IL RECUPERO DEL CATALOGO (Task T-11)
+     * Verifica che la Facade deleghi correttamente il recupero dell'intero catalogo
+     * musicale al metodo getAllTracks() del TrackService.
      */
     @Test
     void testGetAllTracksDelegaCorrettamente() {
+        // Prepariamo la controfigura del TrackService
         FakeTrackService fakeService = new FakeTrackService();
-        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService);
+        
+        // Inserito "null" come secondo parametro per soddisfare il costruttore a due vie della Facade
+        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService, null);
 
-        // Chiamiamo il nuovo metodo della Facade
+        // Chiamiamo il metodo della Facade sotto analisi
         List<Track> result = facade.getAllTracks();
 
         // Verifichiamo che abbia delegato correttamente la chiamata al servizio
         assertTrue(fakeService.isGetAllTracksCalled, "Errore: La Facade non ha chiamato getAllTracks() del TrackService!");
         
-        // Verifichiamo che ci abbia restituito esattamente la lista generata dal servizio
+        // Verifichiamo che la lista ritornata non sia corrotta ed equivalga a quella del servizio
         assertEquals(fakeService.dummyCatalog, result, "Errore: La lista restituita non è quella del TrackService!");
     }
 }
