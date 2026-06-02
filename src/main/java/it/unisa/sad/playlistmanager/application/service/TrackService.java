@@ -9,6 +9,9 @@ import java.util.List;
  * Funge da intermediario tra il Presentation Layer e il Domain/Persistence Layer.
  * * @version 1.1
  */
+/** 
+TODO: Necessario un cambiamento di playlistRepository. Deve essere concretizzato da SqlitePlaylistRepository
+*/
 public class TrackService {
 
     /** Riferimento all'interfaccia di persistenza per il disaccoppiamento (DIP). */

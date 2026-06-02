@@ -1,5 +1,8 @@
 package it.unisa.sad.playlistmanager.persistence.repository;
 
+import java.util.List;
+import java.util.Optional;
+
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import java.util.List;
 
@@ -10,19 +13,22 @@ import java.util.List;
  * * @version 1.1
  */
 public interface TrackRepository {
-    
     /**
-     * Salva una nuova traccia musicale nel sistema di persistenza.
-     *
-     * @param track La traccia di dominio da memorizzare.
+     * Salva una nuova track nel sistema di persistenza.
+     * @param track L'oggetto Track da salvare.
      */
     void save(Track track);
-
     /**
-     * Recupera tutte le tracce musicali memorizzate nel database.
-     * Richiesto per l'adempimento dei casi d'uso di visualizzazione catalogo.
-     *
-     * @return Una {@link List} contenente tutte le tracce presenti, o una lista vuota se il catalogo è vuoto.
+     * Trova una track nel sistema di persistenza in base al suo id.
+     * @param id da trovare
+     * @return un Optional contenente la traccia se presente, altrimenti Optional.empty()
+     */
+    Optional<Track> findById(String id);
+    /**
+     * Trova tutte le track nel sistema di persistenza.
+     * 
+     * @return una List di track trovate. La lista può essere vuota.
      */
     List<Track> findAll();
+    
 }

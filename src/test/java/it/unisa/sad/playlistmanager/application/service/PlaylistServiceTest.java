@@ -5,6 +5,9 @@ import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
+import java.util.Optional;
+
 class PlaylistServiceTest {
 
     /**
@@ -20,6 +23,22 @@ class PlaylistServiceTest {
             this.isSaveCalled = true;
             this.savedPlaylist = playlist;
         }
+
+        // da implementare: >>>>
+        public Optional<Playlist> findById(String id){return Optional.empty();}
+
+
+        public Optional<Playlist> findByName(String name){return Optional.empty();}
+
+
+        public List<Playlist> findAll(){return null;}
+
+ 
+        public boolean existsByName(String name){return true;}
+
+        //end <<<< 
+
+        
     }
 
     /**

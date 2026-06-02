@@ -1,14 +1,67 @@
 package it.unisa.sad.playlistmanager.persistence.repository;
 
+import java.util.List;
+import java.util.Optional;
+
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 
 /**
- * Interfaccia contrattuale per le operazioni di persistenza dell'entità Playlist (DIP).
+ * Interfaccia contrattuale per le operazioni di persistenza dell'entità Playlist.
+ *
+ * Definisce le operazioni che il livello applicativo può usare senza dipendere
+ * da una specifica tecnologia di persistenza.
  */
 public interface PlaylistRepository {
+
     /**
      * Salva una nuova playlist nel sistema di persistenza.
-     * * @param playlist L'oggetto {@link Playlist} da salvare.
+     *
+     * @param playlist l'oggetto Playlist da salvare
      */
     void save(Playlist playlist);
+
+    /**
+     * Cerca una playlist nel sistema di persistenza tramite il suo id.
+     *
+     * @param id identificativo della playlist da cercare
+     * @return un Optional contenente la playlist se presente, altrimenti Optional.empty()
+     */
+    Optional<Playlist> findById(String id);
+
+    /**
+     * Cerca una playlist nel sistema di persistenza tramite il suo nome.
+     *
+     * @param name nome della playlist da cercare
+     * @return un Optional contenente la playlist se presente, altrimenti Optional.empty()
+     */
+    Optional<Playlist> findByName(String name);
+
+    /**
+     * Restituisce tutte le playlist presenti nel sistema di persistenza.
+     *
+     * @return lista delle playlist salvate. La lista può essere vuota
+     */
+    List<Playlist> findAll();
+
+    /**
+     * Verifica se esiste già una playlist con il nome specificato.
+     *
+     * @param name nome della playlist da verificare
+     * @return true se esiste già una playlist con quel nome, false altrimenti
+     */
+    boolean existsByName(String name);
+/**
+     * TODO:
+     * Nelle prossime iterazioni il repository potrà essere esteso
+     * con operazioni relative alla gestione delle tracce all'interno
+     * di una playlist.
+     *
+     * Possibili metodi futuri:
+     * - aggiungere una traccia esistente a una playlist;
+     * - rimuovere una traccia da una playlist;
+     * - recuperare tutte le tracce associate a una playlist;
+     * - mantenere e aggiornare la posizione delle tracce nella playlist.
+     *
+     * Queste operazioni saranno collegate alla tabella ponte playlist_tracks.
+     */
 }

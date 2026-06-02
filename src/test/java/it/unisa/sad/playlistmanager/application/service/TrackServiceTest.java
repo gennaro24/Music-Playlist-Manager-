@@ -9,6 +9,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
+import java.util.Optional;
+
 class TrackServiceTest {
 
     /**
@@ -28,6 +31,15 @@ class TrackServiceTest {
             this.trackSavedInDb = track;
             this.simulatedDatabase.add(track); // Salva la traccia nella nostra lista finta
         }
+        /**
+         * 
+         * DA IMPLEMENTARE
+         */
+        @Override
+        public Optional<Track> findById(String id){
+            return Optional.empty();
+        }
+
 
         @Override
         public List<Track> findAll() {
