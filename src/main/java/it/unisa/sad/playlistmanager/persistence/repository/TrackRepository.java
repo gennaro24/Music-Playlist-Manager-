@@ -4,9 +4,13 @@ import java.util.List;
 import java.util.Optional;
 
 import it.unisa.sad.playlistmanager.domain.model.Track;
+import java.util.List;
 
 /**
- * Interfaccia contrattuale per le operazioni di persistenza della Track (DIP).
+ * Interfaccia per la gestione della persistenza delle tracce musicali.
+ * Fornisce l'astrazione necessaria per isolare il Domain/Application Layer
+ * dalle tecnologie specifiche di storage (es. SQLite).
+ * * @version 1.1
  */
 public interface TrackRepository {
     /**
