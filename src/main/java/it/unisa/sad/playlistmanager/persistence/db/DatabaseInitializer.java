@@ -52,7 +52,8 @@ public class DatabaseInitializer {
                             author TEXT NOT NULL,
                             duration INTEGER NOT NULL,
                             genre TEXT,
-                            year INTEGER
+                            year INTEGER,
+                            UNIQUE (title, author, duration, genre, year)
                         ) 
                         """);
                 statement.executeUpdate("""
