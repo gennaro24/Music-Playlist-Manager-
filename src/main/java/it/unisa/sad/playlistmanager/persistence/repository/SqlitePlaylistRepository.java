@@ -52,7 +52,7 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
                 preparedStatement.setString(1, playlist.getId());
                 preparedStatement.setString(2, playlist.getName());
                 preparedStatement.executeUpdate();
-                // I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+                //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
              }catch(SQLException exception){exception.getSQLState();}
     }
     /**
@@ -80,7 +80,7 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
                     return Optional.of(playlist);
                 }
                 return Optional.empty();
-                // I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+                //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
              }catch (SQLException exception){exception.getSQLState(); return Optional.empty();}
     }
         /**
@@ -107,49 +107,91 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
                     playlists.add(playlist);
                 }
                 return playlists;
-                // I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+                //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
             }catch (SQLException exception){exception.getSQLState(); return null;}
     }
-    // TODO:
+    // TODO: findByName (non so se è utile)
     @Override
     public Optional<Playlist> findByName(String name){
         return Optional.empty();
     }
-@Override
-public boolean existsByName(String name) {
-    String sql = """
-            SELECT 1
-            FROM playlists
-            WHERE name = ?
-            LIMIT 1
-            """;
+    @Override
+    public boolean existsByName(String name) {
+        String sql = """
+                SELECT 1
+                FROM playlists
+                WHERE name = ?
+                LIMIT 1
+                """;
 
-    try (Connection connection = connectionManager.getConnection();
-         PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+        try (Connection connection = connectionManager.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 
-        preparedStatement.setString(1, name);
+            preparedStatement.setString(1, name);
 
-        try (ResultSet resultSet = preparedStatement.executeQuery()) {
-            return resultSet.next();
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                return resultSet.next();
+            }
+
+        } catch (SQLException exception) {
+            //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+            exception.getSQLState();
+            return false;
         }
-
-    } catch (SQLException exception) {
-        exception.getSQLState();
-        return false;
     }
-}
     /**
-     * TODO:
-     * Nelle prossime iterazioni il repository potrà essere esteso
-     * con operazioni relative alla gestione delle tracce all'interno
-     * di una playlist.
-     *
-     * Possibili metodi futuri:
-     * - aggiungere una traccia esistente a una playlist;
-     * - rimuovere una traccia da una playlist;
-     * - recuperare tutte le tracce associate a una playlist;
-     * - mantenere e aggiornare la posizione delle tracce nella playlist.
-     *
-     * Queste operazioni saranno collegate alla tabella ponte playlist_tracks.
+     * Aggiunge all'interno di una Playlist una traccia.
+     * Quando viene aggiunta, viene messa nella posizione successiva all'ultima traccia inserita.
+     * Se la playlist è vuota, la traccia viene inserita nella prima posizione.
+     * @param playlistId l'id della playlist in cui aggiungere una traccia.
+     * @param trackId l'id della traccia da aggiungere nella playlist.
      */
+    @Override
+    public void addTrackToPlaylist(String playlistId, String trackId){
+        String sql = """
+                INSERT INTO playlist_tracks (playlist_id, track_id, position)
+                VALUES (?, ?, COLAESCE(SELECT MAX(position) + 1 FROM playlist_tracks WHERE playlist_id = ? ))
+
+                """;
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)){
+                
+                preparedStatement.setString(1, playlistId);
+                preparedStatement.setString(2, trackId);
+                preparedStatement.setString(3, playlistId);
+                preparedStatement.executeUpdate();
+
+        }catch (SQLException exception){
+        //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+        exception.getSQLState();
+        }
+    }
+
+
+    /**
+     * Rimuove una traccia da una playlist.
+     * Viene rimossa specificando:
+     * @param playlistId l'id della playlist da cui si vuole rimuovere la traccia.
+     * @param trackId l'id della traccia che si vuole rimuovere dalla playlist.
+     */
+    @Override
+    public void removeTrackFromPlaylist(String playlistId, String trackId) {
+        String sql = """
+                DELETE FROM playlist_tracks
+                WHERE playlist_id = ? AND track_id = ?
+                """;
+
+        try (Connection connection = connectionManager.getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, playlistId);
+            statement.setString(2, trackId);
+
+            statement.executeUpdate();
+
+        } catch (SQLException exception) {
+            //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+            exception.getSQLState();
+        }
+    }
 }

@@ -33,6 +33,14 @@ class PlaylistServiceTest {
             // Impostato su false per garantire che il test di creazione rimanga sempre verde
             return false; 
         }
+
+        @Override
+        public void addTrackToPlaylist(String playlistId, String trackId) {
+        }
+
+        @Override
+        public void removeTrackFromPlaylist(String playlistId, String trackId) {
+        }
     }
 
     @Test
