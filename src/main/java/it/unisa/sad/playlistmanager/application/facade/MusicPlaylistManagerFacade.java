@@ -67,4 +67,28 @@ public class MusicPlaylistManagerFacade {
         // Delega del pass-through verso il servizio di competenza
         return this.trackService.getAllTracks();
     }
+
+    /**
+     * Espone al Presentation Layer l'elenco completo di tutte le playlist configurate.
+     * Risolve il Task T-25 della prima sprint.
+     *
+     * @return Una lista contenente tutte le playlist caricate dal modulo persistence.
+     */
+    public List<Playlist> getAllPlaylists() {
+        // Delega del pass-through verso il servizio di competenza
+        return this.playlistService.getAllPlaylists();
+    }
+
+    /**
+     * Fornisce l'accesso al dettaglio di una specifica playlist identificata da ID.
+     * Consente alla UI di verificare la presenza di elementi e l'ordine delle tracce.
+     * Risolve il Task T-25 della prima sprint.
+     *
+     * @param id L'identificativo univoco della risorsa.
+     * @return La playlist corrispondente, o null se non trovata.
+     */
+    public Playlist getPlaylistById(String id) {
+        // Delega del pass-through verso il servizio di competenza
+        return this.playlistService.getPlaylistById(id);
+    }
 }
