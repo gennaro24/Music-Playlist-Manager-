@@ -8,8 +8,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PlaylistTest {
 
-    // --- TEST COSTRUTTORE E NOME ---
-
     @Test
     void testCreazionePlaylistValida() {
         Playlist playlist = new Playlist("p-1", "Rock Classics");
@@ -21,34 +19,21 @@ class PlaylistTest {
 
     @Test
     void testErroreNomeMancanteCostruttore() {
-        // Nome null
-        assertThrows(IllegalArgumentException.class, () -> {
-            new Playlist("p-1", null);
-        });
-
-        // Nome vuoto o solo spazi
-        assertThrows(IllegalArgumentException.class, () -> {
-            new Playlist("p-1", "   ");
-        });
+        assertThrows(IllegalArgumentException.class, () -> new Playlist("p-1", null));
+        assertThrows(IllegalArgumentException.class, () -> new Playlist("p-1", "   "));
     }
-
-    // --- TEST SETTER NOME ---
 
     @Test
     void testModificaNomeValida() {
         Playlist playlist = new Playlist("p-1", "Vecchi Successi");
         playlist.setName("Nuovi Successi");
-        
         assertEquals("Nuovi Successi", playlist.getName());
     }
 
     @Test
     void testErroreNomeMancanteSetter() {
         Playlist playlist = new Playlist("p-1", "Playlist Valida");
-        
-        assertThrows(IllegalArgumentException.class, () -> {
-            playlist.setName(null);
-        });
+        assertThrows(IllegalArgumentException.class, () -> playlist.setName(null));
     }
 
     // --- TEST AGGIUNTA E ORDINE TRACCE ---
@@ -67,10 +52,7 @@ class PlaylistTest {
     @Test
     void testErroreAggiuntaTracciaNulla() {
         Playlist playlist = new Playlist("p-1", "Rock Classics");
-        
-        assertThrows(IllegalArgumentException.class, () -> {
-            playlist.addTrack(null);
-        });
+        assertThrows(IllegalArgumentException.class, () -> playlist.addTrack(null));
     }
 
     @Test
@@ -104,10 +86,6 @@ class PlaylistTest {
         Playlist playlist = new Playlist("p-1", "Rock Classics");
         Track track = new Track("t-1", "Bohemian Rhapsody", "Queen", 354, "Rock", 1975);
         
-        // Verifichiamo che se qualcuno cerca di forzare l'inserimento aggirando il metodo addTrack(),
-        // la Collections.unmodifiableList lanci l'eccezione corretta bloccandolo.
-        assertThrows(UnsupportedOperationException.class, () -> {
-            playlist.getTracks().add(track);
-        });
+        assertThrows(UnsupportedOperationException.class, () -> playlist.getTracks().add(track));
     }
 }
