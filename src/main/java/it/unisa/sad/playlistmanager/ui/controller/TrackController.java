@@ -239,8 +239,6 @@ public class TrackController {
                 lblFeedback.setText("Traccia aggiunta con successo.");
                 loadCatalog();
             }
-            
-
         } catch (NumberFormatException e) {
             lblFeedback.setStyle("-fx-text-fill: red;");
             lblFeedback.setText("Durata e anno devono essere numeri validi.");
@@ -363,6 +361,7 @@ public class TrackController {
             lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
             lblFeedback.setText("Nessuna playlist selezionata.");
         }
+        
     }
 
     public void displayPlaylistTracks(Playlist playlist) {

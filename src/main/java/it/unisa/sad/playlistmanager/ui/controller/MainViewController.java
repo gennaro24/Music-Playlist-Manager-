@@ -29,7 +29,7 @@ public class MainViewController {
     @FXML
     private VBox trackContainer;
     @FXML
-    private TrackController trackContainerController;
+    private TrackController trackController;
     @FXML
     private PlaybackController playbackViewController;
     @FXML
@@ -40,25 +40,17 @@ public class MainViewController {
     
     @FXML
     private void initialize() {
-        // ==========================================
         // 1. INIZIALIZZAZIONE INFRASTRUTTURA E BUSINESS LOGIC
-        // ==========================================
         MusicPlaylistManagerFacade coreFacade = bootstrapApplicationContext();
         this.facade = coreFacade;
     
-        // ==========================================
         // 2. INIEZIONE DELLE DIPENDENZE NEI SOTTO-CONTROLLER
-        // ==========================================
         injectFacadeIntoSubControllers(coreFacade);
     
-        // ==========================================
         // 3. CONFIGURAZIONE DEI COMPORTAMENTI INTER-CONTROLLER (EVENT LISTENERS)
-        // ==========================================
         configurePlaylistSelectionBehavior();
     
-        // ==========================================
         // 4. AGGIORNAMENTO DELLO STATO INIZIALE DELLA UI
-        // ==========================================
         updateTitleLabel();
     }
     
@@ -94,8 +86,8 @@ public class MainViewController {
      * associati alle viste incluse nell'FXML principale.
      */
     private void injectFacadeIntoSubControllers(MusicPlaylistManagerFacade coreFacade) {
-        if (trackContainerController != null) {
-            trackContainerController.setFacade(coreFacade);
+        if (trackController != null) {
+            trackController.setFacade(coreFacade);
         }
         if (playlistViewController != null) {
             playlistViewController.setFacade(coreFacade);
@@ -127,16 +119,20 @@ public class MainViewController {
      */
     private void handlePlaylistSelected(Playlist playlist) {
         this.selectedPlaylist = playlist;
-    
+
+        //selezionata la playlist, mostro la tabella delle tracce di essa
         if (trackContainer != null) {
             trackContainer.setVisible(true);
             trackContainer.setManaged(true);
         }
-    
-        if (trackContainerController != null) {
-            trackContainerController.displayPlaylistTracks(playlist);
+
+
+        //non mostro elementi di trackController quando sono nella modalità playlist selezionata
+        if (trackController != null) {
+            trackController.displayPlaylistTracks(playlist);
         }
-    
+
+        //modifico il bottone, dando la possibilità di visualizzare il catalogo completo
         if (btnShowTracks != null) {
             btnShowTracks.setText("Visualizza Catalogo");
         }
@@ -150,19 +146,23 @@ public class MainViewController {
     private void handlePlaylistDeselected() {
         this.selectedPlaylist = null;
     
-        if (trackContainerController != null) {
-            trackContainerController.clearPlaylistView();
+        //rimuovo la visualizzazine degli elementi di trackController
+        if (trackController != null) {
+            trackController.clearPlaylistView();
         }
-    
+
+        //rimuovo la visualizzazine della trackContainer
         if (trackContainer != null) {
             trackContainer.setVisible(false);
             trackContainer.setManaged(false);
         }
-    
+
+        //modifico il bottone, dando la possibilità di visualizzare il catalogo completo
         if (btnShowTracks != null) {
             btnShowTracks.setText("Visualizza Catalogo");
         }
-    
+
+        //modifico il feedback in basso
         setUIVeedback("#1f7a1f", "Playlist deselezionata.");
     }
     
@@ -184,24 +184,29 @@ public class MainViewController {
         System.err.println("[CRITICAL] Fallimento inizializzazione DB: " + e.getMessage());
     }
     
+
+    /**
+     * metodo per visualizzare il catalogo completo, cliccando sul bottone "Visualizza Catalogo",
+     * sia quando la playlist è selezionata che quando non lo è.
+     * @param event
+     */
     @FXML
     private void handleShowTracks(ActionEvent event) {
         if (trackContainer == null || btnShowTracks == null || lblFeedback == null) {
             return;
         }
-        // Se siamo in vista playlist, il click su "Visualizza Catalogo" deve
-        // passare al catalogo (non chiudere il pannello).
+        //se la playlist è selezionata, la deseleziono e mostro la trackContainer
         if (selectedPlaylist != null) {
             selectedPlaylist = null;
             trackContainer.setVisible(true);
             trackContainer.setManaged(true);
-            if (trackContainerController != null) {
-                trackContainerController.clearForm();
-                trackContainerController.showCatalogView();
+            if (trackController != null) {
+                trackController.clearForm();
+                trackController.showCatalogView();
             }
+            //modifico il bottone, dando la possibilità di chiudere il catalogo
             btnShowTracks.setText("Chiudi Catalogo");
-            lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
-            lblFeedback.setText("Catalogo completo visualizzato.");
+            setUIVeedback("#1f7a1f", "Catalogo completo visualizzato.");
             updateTitleLabel();
             return;
         }
@@ -212,22 +217,21 @@ public class MainViewController {
 
         if (show) {
             // Quando riapro dal bottone, forzo sempre la vista catalogo completo.
-            if (trackContainerController != null) {
-                trackContainerController.clearForm();
-                trackContainerController.showCatalogView();
+            if (trackController != null) {
+                trackController.clearForm();
+                trackController.showCatalogView();
             }
             btnShowTracks.setText("Chiudi Catalogo");
-            lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
+            setUIVeedback("#1f7a1f", "Catalogo completo visualizzato.");
             if (selectedPlaylist != null) {
-                lblFeedback.setText("Catalogo completo visualizzato (playlist selezionata: " + selectedPlaylist.getName() + ").");
+                setUIVeedback("#1f7a1f", "Catalogo completo visualizzato (playlist selezionata: " + selectedPlaylist.getName() + ").");
             } else {
-                lblFeedback.setText("Catalogo completo visualizzato.");
+                setUIVeedback("#1f7a1f", "Catalogo completo visualizzato.");
             }
             updateTitleLabel();
         } else {
             btnShowTracks.setText("Visualizza Catalogo");
-            lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
-            lblFeedback.setText("Catalogo chiuso.");
+            setUIVeedback("#1f7a1f", "Catalogo chiuso.");
             updateTitleLabel();
         }
     }

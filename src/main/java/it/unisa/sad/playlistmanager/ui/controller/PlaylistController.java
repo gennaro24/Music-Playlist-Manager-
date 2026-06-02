@@ -159,14 +159,6 @@ public class PlaylistController {
             lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
             lblPlaylistFeedback.setText("Inserisci un nome playlist.");
             return;
-        } else {
-            System.out.println("\n[TEST UI] Nome playlist: " + name);
-            lblPlaylistFeedback.setStyle("-fx-text-fill: green;");
-            lblPlaylistFeedback.setText("Playlist " + name + " creata con successo.");
-            btnCreatePlaylist.setText("Nuova Playlist");
-            txtPlaylistName.setVisible(false);
-            txtPlaylistName.setManaged(false);
-            txtPlaylistName.clear();
         }
         if (facade != null) {
              
@@ -179,6 +171,9 @@ public class PlaylistController {
                     lblPlaylistFeedback.setStyle("-fx-text-fill: green;");
                     lblPlaylistFeedback.setText("Playlist creata con successo.");
                 }
+            }catch (IllegalArgumentException e) {
+                lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
+                lblPlaylistFeedback.setText(e.getMessage());
             } catch (Exception e) {
                 lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
                 lblPlaylistFeedback.setText("Errore durante la creazione della playlist.");
