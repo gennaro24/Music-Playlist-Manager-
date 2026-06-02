@@ -53,12 +53,22 @@ public class Playlist {
 
     /**
      * Metodo di business per aggiungere una traccia alla playlist.
-     * * @param track La traccia validata da inserire.
+     * Impedisce l'inserimento di tracce nulle o duplicate.
+     *
+     * @param track La traccia validata da inserire.
+     * @throws IllegalArgumentException Se la traccia è nulla o già presente nella playlist.
      */
     public void addTrack(Track track) {
         if (track == null) {
             throw new IllegalArgumentException("Impossibile aggiungere una traccia nulla alla playlist.");
         }
+        
+        for (Track t : this.tracks) {
+            if (t.getId() != null && t.getId().equals(track.getId())) {
+                throw new IllegalArgumentException("La traccia '" + track.getTitle() + "' è già presente in questa playlist.");
+            }
+        }
+        
         this.tracks.add(track);
     }
 }

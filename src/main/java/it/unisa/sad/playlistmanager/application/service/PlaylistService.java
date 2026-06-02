@@ -3,7 +3,9 @@ package it.unisa.sad.playlistmanager.application.service;
 import java.util.List;
 
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
+import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
+import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
 
 /**
  * Servizio applicativo responsabile del coordinamento dei casi d'uso legati alle playlist.
@@ -13,14 +15,19 @@ import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
 public class PlaylistService {
     
     private final PlaylistRepository playlistRepository;
+    private final TrackRepository trackRepository;
 
     /**
-     * Costruttore con Dependency Injection.
-     * * @param playlistRepository L'astrazione della persistenza.
+     * Costruttore con Dependency Injection delle astrazioni di persistenza.
+     *
+     * @param playlistRepository L'astrazione della persistenza delle playlist.
+     * @param trackRepository    L'astrazione della persistenza delle tracce.
      */
-    public PlaylistService(PlaylistRepository playlistRepository) {
+    public PlaylistService(PlaylistRepository playlistRepository, TrackRepository trackRepository) {
         this.playlistRepository = playlistRepository;
+        this.trackRepository = trackRepository;
     }
+
     /**
      * Coordina la creazione e il salvataggio di una nuova playlist vuota.
      * * @param name Il nome della playlist da creare.
@@ -53,5 +60,27 @@ public class PlaylistService {
     public Playlist getPlaylistById(String id) {
         // Estrae l'oggetto dall'Optional; restituisce null se l'Optional è vuoto (.orElse(null))
         return this.playlistRepository.findById(id).orElse(null);
+    }
+
+    /**
+     * Coordina il caso d'uso di aggiunta di una traccia esistente a una playlist (Task T-32).
+     *
+     * @param playlistId L'identificativo della playlist.
+     * @param trackId    L'identificativo della traccia da recuperare dal catalogo.
+     * @throws IllegalArgumentException Se la playlist o la traccia non esistono, o se viola le regole di dominio.
+     */
+    public void addTrackToPlaylist(String playlistId, String trackId) {
+        Playlist playlist = playlistRepository.findById(playlistId)
+                .orElseThrow(() -> new IllegalArgumentException("Playlist non trovata con l'ID specificato."));
+                
+        Track track = trackRepository.findById(trackId)
+                .orElseThrow(() -> new IllegalArgumentException("Traccia non trovata nel catalogo con l'ID microfilmato."));
+
+        // Esegue la business rule di dominio (inclusa la verifica dei duplicati T-30)
+        playlist.addTrack(track);
+
+        // Invoca la persistenza. Anche se il metodo concreto non è ancora scritto dal collega, 
+        // l'architettura compila correttamente e rispetta il DIP.
+        playlistRepository.save(playlist);
     }
 }
