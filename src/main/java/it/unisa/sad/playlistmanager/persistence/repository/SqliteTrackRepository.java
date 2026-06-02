@@ -62,9 +62,9 @@ public class SqliteTrackRepository implements TrackRepository {
                 statement.setInt(6, track.getYear());
 
                 statement.executeUpdate();
-                // I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+                
              }catch(SQLException exception){
-                // da rendere più robusto, viene inserito ora come placeholder.
+                //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
                 exception.getSQLState();
              }
     }
@@ -95,8 +95,9 @@ public class SqliteTrackRepository implements TrackRepository {
                     return Optional.empty();
                 }
 
-                // I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+                
              }catch(SQLException exception){
+                //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
                     exception.getSQLState();
                     return Optional.empty();
             }
@@ -125,8 +126,9 @@ public class SqliteTrackRepository implements TrackRepository {
                     }
                     return allTracks;
                 }
-                // I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+                
              }catch(SQLException exception){
+                //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
                 exception.getSQLState();
                 return null;
              }
