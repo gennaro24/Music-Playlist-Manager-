@@ -15,7 +15,7 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.VBox;
 import java.util.function.Consumer;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.ListCell; // Importato per la CellFactory della ComboBox
+import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -234,6 +234,7 @@ public class TrackController {
             String genre = toSentenceCase(txtGenre.getText());
             int duration = Integer.parseInt(txtDuration.getText().trim());
             int year = Integer.parseInt(txtYear.getText().trim());
+            validateDataInput(title, author, genre, duration, year);
 
             Track newTrack = facade.addTrack(title, author, duration, genre, year);
             if (newTrack != null) {
@@ -256,6 +257,24 @@ public class TrackController {
             lblFeedback.setStyle("-fx-text-fill: red;");
             lblFeedback.setText("Errore durante il salvataggio della traccia.");
             e.printStackTrace();
+        }
+    }
+
+    private void validateDataInput(String title, String author, String genre, int duration, int year) {
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Errore di inserimento titolo: il titolo della traccia è obbligatorio.");
+        }
+        if (author == null || author.trim().isEmpty()) {
+            throw new IllegalArgumentException("Errore di inserimento autore: l'autore della traccia è obbligatorio.");
+        }
+        if (genre == null || genre.trim().isEmpty()) {
+            throw new IllegalArgumentException("Errore di inserimento genere: il genere della traccia è obbligatorio.");
+        }
+        if (duration <= 0) {
+            throw new IllegalArgumentException("Errore di inserimento durata: la durata della traccia è obbligatorio.");
+        }
+        if (year <= 0 || year > java.time.Year.now().getValue()) {
+            throw new IllegalArgumentException("Errore di inserimento anno: l'anno della traccia è obbligatorio.");
         }
     }
 
@@ -321,6 +340,10 @@ public class TrackController {
             return;
         } else {
             tableTracks.setItems(FXCollections.observableArrayList(facade.getAllTracks()));
+            if (tableTracks.getItems().isEmpty() && lblFeedback != null) {
+                lblFeedback.setStyle("-fx-text-fill: #b0413e;");
+                lblFeedback.setText("Catalogo vuoto. Aggiungi una traccia.");
+            }
         }
     }
 
@@ -341,8 +364,13 @@ public class TrackController {
             tableTracks.refresh();
         }
         if (lblFeedback != null) {
-            lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
-            lblFeedback.setText("Visualizzazione catalogo completo.");
+            if (tableTracks != null && tableTracks.getItems() != null && tableTracks.getItems().isEmpty()) {
+                lblFeedback.setStyle("-fx-text-fill: #b0413e;");
+                lblFeedback.setText("Catalogo vuoto. Aggiungi una traccia.");
+            } else {
+                lblFeedback.setStyle("-fx-text-fill: #1f7a1f;");
+                lblFeedback.setText("Visualizzazione catalogo completo.");
+            }
         }
     }
 
