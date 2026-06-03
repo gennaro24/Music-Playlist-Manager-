@@ -51,6 +51,7 @@ public class MainViewController {
     
         // 3. CONFIGURAZIONE DEI COMPORTAMENTI INTER-CONTROLLER (EVENT LISTENERS)
         configurePlaylistSelectionBehavior();
+        configureTrackPlaybackBehavior();
     
         // 4. AGGIORNAMENTO DELLO STATO INIZIALE DELLA UI
         updateTitleLabel();
@@ -118,7 +119,17 @@ public class MainViewController {
             updateTitleLabel();
         });
     }
-    
+
+    /**
+     * Configura la callback reattiva sulla ListView del Catalogo, definendo
+     * il comportamento del layout quando viene richiesta la riproduzione di una traccia.
+     */
+    private void configureTrackPlaybackBehavior(){
+        if (trackContainerController == null || playbackViewController == null) return;
+        trackContainerController.setOnTrackPlayRequested(track ->{
+            playbackViewController.playTrack(track);
+        });
+    }
     /**
      * Gestisce il flusso visivo e logico all'atto della selezione di una playlist.
      */

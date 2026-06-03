@@ -22,12 +22,18 @@ import javafx.scene.layout.HBox;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 
+// menù contestuale al click destro sulla traccia
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.beans.binding.Bindings;
+
 public class TrackController {
 
     private MusicPlaylistManagerFacade facade;
     private Track selectedTrack;
     private Consumer<Track> onTrackSelectedHandler;
-
+    // consumer per gestire la callback
+    private Consumer<Track> onTrackPlayRequestedHandler;
     @FXML
     private TextField txtTitle;
     @FXML
@@ -183,7 +189,31 @@ public class TrackController {
     private void configureTableToggleDeselection() {
         tableTracks.setRowFactory(tv -> {
             final TableRow<Track> row = new TableRow<>();
+            // aggiunta del menù contestuale che contiene il "play"
+            MenuItem playItem = new MenuItem("play");
+            ContextMenu contextMenu = new ContextMenu(playItem);
+            /* gestisce la logica quando viene cliccato "play" 
+                Prende la traccia corrente della riga,
+                la selected track diventa quella selezionata con play
+                Se viene registrato un handler, viene eseguita la funzione Consumer.
+            */ 
+            
+            playItem.setOnAction(event -> {
+                Track track = row.getItem();
+                if (track == null) return;
+                tableTracks.getSelectionModel().select(track);
+                selectedTrack = track;
+                if (onTrackPlayRequestedHandler != null)
+                    onTrackPlayRequestedHandler.accept(track);
+            });
+            /*Fa in modo che quando una riga è vuota il menù contestuale non venga visualizzato.*/
+            row.contextMenuProperty().bind(
+                Bindings.when(row.emptyProperty())
+                        .then((ContextMenu) null)
+                        .otherwise(contextMenu)
+            );
 
+            /* Parte in cui vengono intercettati i click sulla riga */
             row.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
                 if (event.getButton() != MouseButton.PRIMARY) {
                     return;
@@ -267,6 +297,14 @@ public class TrackController {
 
     public void setOnTrackSelected(Consumer<Track> handler) {
         this.onTrackSelectedHandler = handler;
+    }
+
+    /**
+     * metodo che permette al Main di registrare cosa deve succedere
+     * quando parte la richiesta di play. Il metodo istanzia solo l'handler.
+     */
+    public void setOnTrackPlayRequested(Consumer<Track> handler){
+        this.onTrackPlayRequestedHandler = handler;
     }
 
     /**
