@@ -83,6 +83,7 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
         try (Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, id);
+                preparedStatement.setString(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
                 Playlist playlist = mapResultSetToPlaylist(resultSet);
@@ -171,17 +172,10 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
     @Override
     public void addTrackToPlaylist(String playlistId, String trackId) {
         String sql = """
-                    INSERT INTO playlist_tracks (playlist_id, track_id, position)
-                    VALUES (
-                    ?, ?,
-                    COALESCE(
-                        (SELECT MAX(position) + 1
-                        FROM playlist_tracks
-                        WHERE playlist_id = ?),
-                        1
-                    )
-                    )
-                    """;
+                INSERT INTO playlist_tracks (playlist_id, track_id, position)
+                VALUES (?, ?, COALESCE(SELECT MAX(position) + 1 FROM playlist_tracks WHERE playlist_id = ? ))
+
+                """;
         try (Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 
