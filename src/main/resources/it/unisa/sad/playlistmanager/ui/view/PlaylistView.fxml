@@ -6,14 +6,14 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox prefWidth="240.0" spacing="10" style="-fx-padding: 12;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="it.unisa.sad.playlistmanager.ui.controller.PlaylistController">
+<VBox prefWidth="240.0" spacing="10" style="-fx-padding: 12;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="it.unisa.sad.playlistmanager.ui.controller.PlaylistController">
       
     <Label style="-fx-font-weight: bold;" text="Le tue Playlist" />
     <ListView fx:id="listPlaylists" VBox.vgrow="ALWAYS" />
     <TextField fx:id="txtPlaylistName" promptText="Nome playlist" visible="false" />
     
     <Button fx:id="btnCreatePlaylist" maxWidth="Infinity" onAction="#handleCreatePlaylist" text="Nuova Playlist" />
-    <Button fx:id="btnRemovePlaylist" maxWidth="Infinity" onAction="#handleRemovePlaylist" text="Rimuovi Playlist" />
+    <Button fx:id="btnRemovePlaylist" maxWidth="Infinity" onAction="#handleRemovePlaylist" text="Rimuovi Playlist" visible="false" />
     <Label fx:id="lblPlaylistFeedback" style="-fx-text-fill: red;" text="" />
     
 </VBox>
