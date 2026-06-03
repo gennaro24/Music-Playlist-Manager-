@@ -62,7 +62,7 @@
                <Region HBox.hgrow="ALWAYS" />
                <HBox fx:id="hboxAddtoPlaylist" alignment="CENTER_RIGHT" spacing="15.0" visible="false">
                   <children>
-                     <ComboBox fx:id="dropdownPlaylists" promptText="Aggiungi a una playlist" />
+                     <ComboBox fx:id="dropdownPlaylists" promptText="Seleziona una playlist" />
                      <Button fx:id="btnSaveAddPlaylist" mnemonicParsing="false" onAction="#handleSaveAddPlaylist" text="Salva" />
                   </children>
                </HBox>

@@ -177,7 +177,11 @@ public class TrackController {
             @Override
             protected void updateItem(Playlist item, boolean empty) {
                 super.updateItem(item, empty);
-                setText((empty || item == null) ? null : item.getName());
+                if (empty || item == null) {
+                    setText("Seleziona una playlist");
+                } else {
+                    setText(item.getName());
+                }
             }
         });
     }
@@ -275,6 +279,11 @@ public class TrackController {
                     if (hboxAddtoPlaylist != null) {
                         hboxAddtoPlaylist.setVisible(true);
                         hboxAddtoPlaylist.setManaged(true);
+                    }
+                    if (dropdownPlaylists != null) {
+                        dropdownPlaylists.getSelectionModel().clearSelection();
+                        dropdownPlaylists.setValue(null);
+                        dropdownPlaylists.setPromptText("Seleziona una playlist");
                     }
                 }
             } else {
@@ -388,22 +397,12 @@ public class TrackController {
             Playlist targetPlaylist = dropdownPlaylists.getSelectionModel().getSelectedItem();
             String selectedTrackId = selectedTrack.getId();
             String targetPlaylistId = targetPlaylist.getId();
-            //controlla se la traccia è già presente nella playlist
-            //questa cosa la dovrebbe fare il service, ma non lo fa
-            System.out.println("tracks for playlist: " + facade.getTracksForPlaylist(targetPlaylistId));
-            // Controlla se la traccia selezionata è già presente nella lista delle tracce della playlist
-            //TODO: questa cosa la dovrebbe fare il service, ma non lo fa
-            boolean alreadyInPlaylist = facade.getTracksForPlaylist(targetPlaylistId)
-                    .stream()
-                    .anyMatch(track -> track.getId().equals(selectedTrack.getId()));
-            System.out.println("alreadyInPlaylist: " + alreadyInPlaylist);
-            if (alreadyInPlaylist) {
-                labelFeedback("La traccia '" + selectedTrack.getTitle() + "' è già presente nella playlist '"
-                        + targetPlaylist.getName() + "'.", "red");
+            try {
+                facade.addTrackToPlaylist(targetPlaylistId, selectedTrackId);
+            } catch (IllegalArgumentException e) {
+                labelFeedback(e.getMessage(), "red");
                 return;
             }
-    
-            facade.addTrackToPlaylist(targetPlaylistId, selectedTrackId);
 
             labelFeedback("Traccia '" + selectedTrack.getTitle() + "' aggiunta alla playlist '"
                     + targetPlaylist.getName() + "' con successo.", "green");
