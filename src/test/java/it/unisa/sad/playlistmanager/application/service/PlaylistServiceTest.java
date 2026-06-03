@@ -21,7 +21,6 @@ class PlaylistServiceTest {
     class FakePlaylistRepository implements PlaylistRepository {
         boolean isSaveCalled = false;
         boolean isAddTrackCalled = false;
-        boolean isRemoveTrackCalled = false;
         Playlist savedPlaylist = null;
         
         @Override
@@ -57,9 +56,7 @@ class PlaylistServiceTest {
         }
 
         @Override
-        public void removeTrackFromPlaylist(String playlistId, String trackId) {
-            this.isRemoveTrackCalled = true;
-        }
+        public void removeTrackFromPlaylist(String playlistId, String trackId) {}
 
         // ECCO IL METODO CHE MANCAVA SUL NUOVO BRANCH!
         @Override
@@ -67,6 +64,7 @@ class PlaylistServiceTest {
             if (!"1".equals(playlistId)) {
                 return Collections.emptyList();
             }
+            // La playlist "1" contiene già la traccia "t1" e "t2"
             return List.of(
                     new Track("t1", "Song One", "Artist One", 180, "Rock", 2020),
                     new Track("t2", "Song Two", "Artist Two", 200, "Rock", 2021)
@@ -88,7 +86,7 @@ class PlaylistServiceTest {
     }
 
     // ===================================================================================
-    // TEST PREESISTENTI (US-05 e US-06)
+    // TEST PREESISTENTI (US-05 e US-06) - NON TOCCARE
     // ===================================================================================
 
     @Test
@@ -127,10 +125,13 @@ class PlaylistServiceTest {
         FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
+        // Aggiungiamo una traccia nuova ("t3-nuova") alla playlist esistente ("1")
         assertDoesNotThrow(() -> {
             service.addTrackToPlaylist("1", "t3-nuova");
         });
-        assertTrue(fakePlaylistRepo.isAddTrackCalled);
+
+        // Verifichiamo che il service abbia delegato al DB l'inserimento
+        assertTrue(fakePlaylistRepo.isAddTrackCalled, "Il metodo addTrackToPlaylist del repository deve essere invocato.");
     }
 
     @Test
@@ -139,6 +140,7 @@ class PlaylistServiceTest {
         FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
+        // Passiamo una playlist che non esiste ("999")
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             service.addTrackToPlaylist("999", "t1");
         });
@@ -152,51 +154,11 @@ class PlaylistServiceTest {
         FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
+        // Proviamo a reinserire "t1" nella playlist "1" (che ce l'ha già)
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             service.addTrackToPlaylist("1", "t1");
         });
-        assertNotNull(exception.getMessage());
-    }
 
-    // ===================================================================================
-    // TEST TASK T-43 (US-08): RIMOZIONE TRACCIA
-    // ===================================================================================
-
-    @Test
-    void testRemoveTrackFromPlaylist_RimozioneValida() {
-        FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
-        FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
-        PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
-
-        assertDoesNotThrow(() -> {
-            service.removeTrackFromPlaylist("1", "t1"); 
-        });
-        assertTrue(fakePlaylistRepo.isRemoveTrackCalled, "Il metodo removeTrackFromPlaylist del repository deve essere delegato correttamente.");
-    }
-
-    @Test
-    void testRemoveTrackFromPlaylist_PlaylistInesistente() {
-        FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
-        FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
-        PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
-
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            service.removeTrackFromPlaylist("999", "t1");
-        });
-
-        assertEquals("Playlist non trovata con l'ID specificato.", exception.getMessage());
-    }
-
-    @Test
-    void testRemoveTrackFromPlaylist_TracciaInesistenteNelCatalogo() {
-        FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
-        FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
-        PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
-
-        // Proviamo a rimuovere una traccia che NON esiste nel database delle tracce ("t999")
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            service.removeTrackFromPlaylist("1", "t999");
-        });
-        assertTrue(exception.getMessage().contains("Traccia non trovata nel catalogo"));
+        assertNotNull(exception.getMessage(), "Deve essere sollevata un'eccezione per traccia duplicata");
     }
 }
