@@ -7,6 +7,7 @@ import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacad
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -76,7 +77,7 @@ public class MainViewController {
         
         // Istanziazione del Domain Service Layer
         TrackService trackService = new TrackService(trackRepository);
-        PlaylistService playlistService = new PlaylistService(playlistRepository);
+        PlaylistService playlistService = new PlaylistService(playlistRepository, trackRepository);
         
         // Generazione del Mediator unificato (Facade Pattern)
         return new MusicPlaylistManagerFacade(trackService, playlistService);
@@ -128,9 +129,12 @@ public class MainViewController {
         }
 
 
-        //non mostro elementi di trackController quando sono nella modalità playlist selezionata
+        // Evita rendering "deformato" al primo accesso:
+        // prima allinea il layout del catalogo (stesso workaround manuale che funziona quando apri il catalogo),
+        // poi mostra i dati playlist nel ciclo UI successivo.
         if (trackContainerController != null) {
-            trackContainerController.displayPlaylistTracks(playlist);
+            trackContainerController.showCatalogView();
+            Platform.runLater(() -> trackContainerController.displayPlaylistTracks(playlist));
         }
 
         //modifico il bottone, dando la possibilità di visualizzare il catalogo completo
@@ -199,6 +203,9 @@ public class MainViewController {
         //se la playlist è selezionata, la deseleziono e mostro la trackContainer
         if (selectedPlaylist != null) {
             selectedPlaylist = null;
+            if (playlistViewController != null) {
+                playlistViewController.clearCurrentSelection();
+            }
             trackContainer.setVisible(true);
             trackContainer.setManaged(true);
             if (trackContainerController != null) {

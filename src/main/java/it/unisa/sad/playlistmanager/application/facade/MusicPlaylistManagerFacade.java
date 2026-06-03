@@ -6,7 +6,6 @@ import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
-import it.unisa.sad.playlistmanager.domain.model.Playlist;
 
 /**
  * Facciata principale dell'applicazione (Facade Pattern).
@@ -90,5 +89,39 @@ public class MusicPlaylistManagerFacade {
     public Playlist getPlaylistById(String id) {
         // Delega del pass-through verso il servizio di competenza
         return this.playlistService.getPlaylistById(id);
+    }
+
+
+    /**
+     * Centralizza ed espone alla UI il caso d'uso di aggiunta traccia a una playlist.
+     *
+     * @param playlistId Identificativo della playlist di destinazione.
+     * @param trackId    Identificativo della traccia da aggiungere.
+     * @throws IllegalArgumentException Se l'operazione viola i criteri di validazione o duplicazione.
+     */
+    public void addTrackToPlaylist(String playlistId, String trackId) {
+        this.playlistService.addTrackToPlaylist(playlistId, trackId);
+    }
+
+    /**
+     * Espone al Presentation Layer la funzionalità di rimozione di una traccia da una playlist.
+     * Agisce da puro pass-through verso il servizio applicativo competente.
+     *
+     * @param playlistId L'identificativo unico della playlist di riferimento.
+     * @param trackId    L'identificativo unico della traccia da cancellare dalla playlist.
+     * @throws IllegalArgumentException Se i parametri o le regole di business vengono violate.
+     */
+    public void removeTrackFromPlaylist(String playlistId, String trackId) {
+        this.playlistService.removeTrackFromPlaylist(playlistId, trackId);
+    }
+
+
+    /**
+     * 
+     * @param playlistId
+     * @return
+     */
+    public List<Track> getTracksForPlaylist(String playlistId) {
+        return playlistService.getTracksForPlaylist(playlistId);
     }
 }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
+import it.unisa.sad.playlistmanager.domain.model.Track;
 
 /**
  * Interfaccia contrattuale per le operazioni di persistenza dell'entità Playlist.
@@ -54,5 +55,7 @@ public interface PlaylistRepository {
     void addTrackToPlaylist(String playlistId, String trackId );
     
     void removeTrackFromPlaylist(String playlistId, String trackId);
+
+    List<Track> findTracksByPlaylistId(String playlistId);
     
 }
