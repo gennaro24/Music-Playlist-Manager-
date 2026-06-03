@@ -4,6 +4,7 @@ import it.unisa.sad.playlistmanager.persistence.db.DatabaseInitializer;
 import it.unisa.sad.playlistmanager.persistence.repository.SqliteTrackRepository;
 import it.unisa.sad.playlistmanager.persistence.repository.SqlitePlaylistRepository;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
+import it.unisa.sad.playlistmanager.application.service.PlaybackService;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
@@ -50,6 +51,7 @@ public class MainViewController {
     
         // 3. CONFIGURAZIONE DEI COMPORTAMENTI INTER-CONTROLLER (EVENT LISTENERS)
         configurePlaylistSelectionBehavior();
+        configureTrackPlaybackBehavior();
     
         // 4. AGGIORNAMENTO DELLO STATO INIZIALE DELLA UI
         updateTitleLabel();
@@ -78,9 +80,11 @@ public class MainViewController {
         // Istanziazione del Domain Service Layer
         TrackService trackService = new TrackService(trackRepository);
         PlaylistService playlistService = new PlaylistService(playlistRepository, trackRepository);
-        
+        // Aggiunta del PlaybackService a causa di aggiornamento del facade.
+        PlaybackService playbackService = new PlaybackService();
         // Generazione del Mediator unificato (Facade Pattern)
-        return new MusicPlaylistManagerFacade(trackService, playlistService);
+        // Modificato il costruttore del facade a causa di aggiunta del PlaybackService.
+        return new MusicPlaylistManagerFacade(trackService, playlistService, playbackService);
     }
     
     /**
@@ -115,7 +119,17 @@ public class MainViewController {
             updateTitleLabel();
         });
     }
-    
+
+    /**
+     * Configura la callback reattiva sulla ListView del Catalogo, definendo
+     * il comportamento del layout quando viene richiesta la riproduzione di una traccia.
+     */
+    private void configureTrackPlaybackBehavior(){
+        if (trackContainerController == null || playbackViewController == null) return;
+        trackContainerController.setOnTrackPlayRequested(track ->{
+            playbackViewController.playTrack(track);
+        });
+    }
     /**
      * Gestisce il flusso visivo e logico all'atto della selezione di una playlist.
      */
