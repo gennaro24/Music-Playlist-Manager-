@@ -199,7 +199,6 @@ public class TrackController {
                         hboxAddtoPlaylist.setManaged(false);
                     }
 
-                    System.out.println("[UI TOGGLE] Track deselezionata correttamente.");
                     // Consumiamo l'evento per impedire che JavaFX riattivi la selezione standard
                     event.consume();
                 }
@@ -217,7 +216,6 @@ public class TrackController {
             if (newSel != null) {
                 // SCENARIO: Riga selezionata con successo
                 selectedTrack = newSel;
-                System.out.println("Track selected: " + selectedTrack.getTitle());
 
                 // Propaga l'evento al modulo padre (MainViewController) tramite callback
                 if (onTrackSelectedHandler != null) {
@@ -352,8 +350,21 @@ public class TrackController {
             Playlist targetPlaylist = dropdownPlaylists.getSelectionModel().getSelectedItem();
             String selectedTrackId = selectedTrack.getId();
             String targetPlaylistId = targetPlaylist.getId();
-            System.out.println("selectedTrackId: " + selectedTrackId);
-            System.out.println("targetPlaylistId: " + targetPlaylistId);
+            //controlla se la traccia è già presente nella playlist
+            //questa cosa la dovrebbe fare il service, ma non lo fa
+            System.out.println("tracks for playlist: " + facade.getTracksForPlaylist(targetPlaylistId));
+            // Controlla se la traccia selezionata è già presente nella lista delle tracce della playlist
+            //TODO: questa cosa la dovrebbe fare il service, ma non lo fa
+            boolean alreadyInPlaylist = facade.getTracksForPlaylist(targetPlaylistId)
+                    .stream()
+                    .anyMatch(track -> track.getId().equals(selectedTrack.getId()));
+            System.out.println("alreadyInPlaylist: " + alreadyInPlaylist);
+            if (alreadyInPlaylist) {
+                labelFeedback("La traccia '" + selectedTrack.getTitle() + "' è già presente nella playlist '"
+                        + targetPlaylist.getName() + "'.", "red");
+                return;
+            }
+    
             facade.addTrackToPlaylist(targetPlaylistId, selectedTrackId);
 
             labelFeedback("Traccia '" + selectedTrack.getTitle() + "' aggiunta alla playlist '"
