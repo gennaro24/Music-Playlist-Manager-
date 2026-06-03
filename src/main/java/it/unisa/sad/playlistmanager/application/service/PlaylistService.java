@@ -76,6 +76,13 @@ public class PlaylistService {
         trackRepository.findById(trackId)
                 .orElseThrow(() -> new IllegalArgumentException("Traccia non trovata nel catalogo con l'ID specificato."));
 
+        boolean alreadyInPlaylist = playlistRepository.findTracksByPlaylistId(playlistId)
+                .stream()
+                .anyMatch(track -> track.getId().equals(trackId));
+        if (alreadyInPlaylist) {
+            throw new IllegalArgumentException("La traccia è già presente nella playlist.");
+        }
+
         // Persistenza sulla tabella ponte playlist_tracks.
         playlistRepository.addTrackToPlaylist(playlistId, trackId);
     }

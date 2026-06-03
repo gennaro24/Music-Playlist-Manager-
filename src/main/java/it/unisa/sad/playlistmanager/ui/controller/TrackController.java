@@ -177,7 +177,11 @@ public class TrackController {
             @Override
             protected void updateItem(Playlist item, boolean empty) {
                 super.updateItem(item, empty);
-                setText((empty || item == null) ? null : item.getName());
+                if (empty || item == null) {
+                    setText("Seleziona una playlist");
+                } else {
+                    setText(item.getName());
+                }
             }
         });
     }
@@ -229,7 +233,6 @@ public class TrackController {
                         hboxAddtoPlaylist.setManaged(false);
                     }
 
-                    System.out.println("[UI TOGGLE] Track deselezionata correttamente.");
                     // Consumiamo l'evento per impedire che JavaFX riattivi la selezione standard
                     event.consume();
                 }
@@ -247,7 +250,6 @@ public class TrackController {
             if (newSel != null) {
                 // SCENARIO: Riga selezionata con successo
                 selectedTrack = newSel;
-                System.out.println("Track selected: " + selectedTrack.getTitle());
 
                 // Propaga l'evento al modulo padre (MainViewController) tramite callback
                 if (onTrackSelectedHandler != null) {
@@ -277,6 +279,11 @@ public class TrackController {
                     if (hboxAddtoPlaylist != null) {
                         hboxAddtoPlaylist.setVisible(true);
                         hboxAddtoPlaylist.setManaged(true);
+                    }
+                    if (dropdownPlaylists != null) {
+                        dropdownPlaylists.getSelectionModel().clearSelection();
+                        dropdownPlaylists.setValue(null);
+                        dropdownPlaylists.setPromptText("Seleziona una playlist");
                     }
                 }
             } else {
@@ -390,9 +397,12 @@ public class TrackController {
             Playlist targetPlaylist = dropdownPlaylists.getSelectionModel().getSelectedItem();
             String selectedTrackId = selectedTrack.getId();
             String targetPlaylistId = targetPlaylist.getId();
-            System.out.println("selectedTrackId: " + selectedTrackId);
-            System.out.println("targetPlaylistId: " + targetPlaylistId);
-            facade.addTrackToPlaylist(targetPlaylistId, selectedTrackId);
+            try {
+                facade.addTrackToPlaylist(targetPlaylistId, selectedTrackId);
+            } catch (IllegalArgumentException e) {
+                labelFeedback(e.getMessage(), "red");
+                return;
+            }
 
             labelFeedback("Traccia '" + selectedTrack.getTitle() + "' aggiunta alla playlist '"
                     + targetPlaylist.getName() + "' con successo.", "green");
