@@ -3,9 +3,9 @@ package it.unisa.sad.playlistmanager.application.service;
 import java.util.List;
 
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
-import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
+import it.unisa.sad.playlistmanager.domain.model.Track;
 
 /**
  * Servizio applicativo responsabile del coordinamento dei casi d'uso legati alle playlist.
@@ -70,17 +70,14 @@ public class PlaylistService {
      * @throws IllegalArgumentException Se la playlist o la traccia non esistono, o se viola le regole di dominio.
      */
     public void addTrackToPlaylist(String playlistId, String trackId) {
-        Playlist playlist = playlistRepository.findById(playlistId)
+        playlistRepository.findById(playlistId)
                 .orElseThrow(() -> new IllegalArgumentException("Playlist non trovata con l'ID specificato."));
-                
-        Track track = trackRepository.findById(trackId)
-                .orElseThrow(() -> new IllegalArgumentException("Traccia non trovata nel catalogo con l'ID microfilmato."));
 
-        // Esegue la business rule di dominio (inclusa la verifica dei duplicati T-30)
-        playlist.addTrack(track);
+        trackRepository.findById(trackId)
+                .orElseThrow(() -> new IllegalArgumentException("Traccia non trovata nel catalogo con l'ID specificato."));
 
-        // Invoca la persistenza.
-        playlistRepository.save(playlist);
+        // Persistenza sulla tabella ponte playlist_tracks.
+        playlistRepository.addTrackToPlaylist(playlistId, trackId);
     }
 
     /**
@@ -94,13 +91,25 @@ public class PlaylistService {
      */
     public void removeTrackFromPlaylist(String playlistId, String trackId) {
         // Recupero sicuro tramite l'Optional esposto dal repository reale
-        Playlist playlist = playlistRepository.findById(playlistId)
+        playlistRepository.findById(playlistId)
                 .orElseThrow(() -> new IllegalArgumentException("Playlist non trovata con l'ID specificato."));
 
-        // Delega la regola di business e la rimozione fisica dalla lista in memoria al dominio
-        playlist.removeTrack(trackId);
+        trackRepository.findById(trackId)
+                .orElseThrow(() -> new IllegalArgumentException("Traccia non trovata nel catalogo con l'ID specificato."));
 
-        // Invoca il salvataggio per aggiornare lo stato
-        playlistRepository.save(playlist);
+        // Rimozione fisica sulla tabella ponte playlist_tracks.
+        playlistRepository.removeTrackFromPlaylist(playlistId, trackId);
+    }
+
+    
+    /**
+     * 
+     * @param playlistId
+     * @return
+     */
+    public List<Track> getTracksForPlaylist(String playlistId) {
+        playlistRepository.findById(playlistId)
+            .orElseThrow(() -> new IllegalArgumentException("Playlist non trovata con l'ID specificato."));
+        return playlistRepository.findTracksByPlaylistId(playlistId);
     }
 }

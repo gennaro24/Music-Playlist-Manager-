@@ -1,7 +1,9 @@
 package it.unisa.sad.playlistmanager.persistence.repository;
 
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
+import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.db.DatabaseConnectionManager;
+
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,6 +12,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
 
 /**
  * Implementazione SQLite del repository delle playlist.
@@ -83,7 +86,6 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
         try (Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, id);
-                preparedStatement.setString(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
                 Playlist playlist = mapResultSetToPlaylist(resultSet);
@@ -173,8 +175,13 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
     public void addTrackToPlaylist(String playlistId, String trackId) {
         String sql = """
                 INSERT INTO playlist_tracks (playlist_id, track_id, position)
-                VALUES (?, ?, COALESCE(SELECT MAX(position) + 1 FROM playlist_tracks WHERE playlist_id = ? ))
-
+                VALUES (
+                    ?, ?,
+                    COALESCE(
+                        (SELECT MAX(position) + 1 FROM playlist_tracks WHERE playlist_id = ?),
+                        1
+                    )
+                )
                 """;
         try (Connection connection = connectionManager.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
@@ -215,6 +222,39 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
         } catch (SQLException exception) {
             // TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
             exception.getSQLState();
+        }
+    }
+
+    @Override
+    public List<Track> findTracksByPlaylistId(String playlistId) {
+        String sql = """
+                SELECT t.id, t.title, t.author, t.duration, t.genre, t.year
+                FROM playlist_tracks pt
+                JOIN tracks t ON t.id = pt.track_id
+                WHERE pt.playlist_id = ?
+                ORDER BY pt.position ASC
+                """;
+
+        try (Connection connection = connectionManager.getConnection();
+                PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, playlistId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Track> tracks = new ArrayList<>();
+                while (rs.next()) {
+                    tracks.add(new Track(
+                            rs.getString("id"),
+                            rs.getString("title"),
+                            rs.getString("author"),
+                            rs.getInt("duration"),
+                            rs.getString("genre"),
+                            rs.getInt("year")));
+                }
+                return tracks;
+            }
+        } catch (SQLException exception) {
+            // TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+            exception.getSQLState();
+            return List.of();
         }
     }
 }

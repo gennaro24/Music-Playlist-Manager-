@@ -114,4 +114,14 @@ public class MusicPlaylistManagerFacade {
     public void removeTrackFromPlaylist(String playlistId, String trackId) {
         this.playlistService.removeTrackFromPlaylist(playlistId, trackId);
     }
+
+
+    /**
+     * 
+     * @param playlistId
+     * @return
+     */
+    public List<Track> getTracksForPlaylist(String playlistId) {
+        return playlistService.getTracksForPlaylist(playlistId);
+    }
 }

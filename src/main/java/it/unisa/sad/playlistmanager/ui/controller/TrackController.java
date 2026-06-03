@@ -68,7 +68,9 @@ public class TrackController {
     public void setFacade(MusicPlaylistManagerFacade facade) {
         this.facade = facade;
         loadCatalog();
-        
+        if (dropdownPlaylists != null) {
+            dropdownPlaylists.setItems(FXCollections.observableArrayList(this.facade.getAllPlaylists()));
+        }
     }
 
     @FXML
@@ -356,7 +358,11 @@ public class TrackController {
 
             labelFeedback("Traccia '" + selectedTrack.getTitle() + "' aggiunta alla playlist '"
                     + targetPlaylist.getName() + "' con successo.", "green");
-            refreshCurrentPlaylistTable(targetPlaylistId);
+            // Aggiorna la tabella solo se stiamo visualizzando proprio quella playlist.
+            // In vista catalogo non dobbiamo sostituire la tabella del catalogo.
+            if (playlistViewMode && currentPlaylist != null && currentPlaylist.getId().equals(targetPlaylistId)) {
+                loadPlaylistTracks(currentPlaylist);
+            }
             //aggiorna la lista delle playlist
             dropdownPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
             // Opzionale: Nascondiamo l'HBox dopo il salvataggio per pulizia di interfaccia
@@ -383,14 +389,12 @@ public class TrackController {
         }
 
         facade.removeTrackFromPlaylist(currentPlaylist.getId(), selectedTrack.getId());
-        System.out.println("currentPlaylistTracks: " + currentPlaylistTracks);
-        tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
-        tableTracks.getSelectionModel().clearSelection();
+        // Ricarica immediatamente lo stato dal DB per evitare dati stantii in tabella.
+        loadPlaylistTracks(currentPlaylist);
         if (btnRemoveFromPlaylist != null) {
             btnRemoveFromPlaylist.setVisible(false);
             btnRemoveFromPlaylist.setManaged(false);
         }
-        tableTracks.refresh();
 
         if (lblFeedback != null) {
             if (currentPlaylistTracks.isEmpty()) {
@@ -414,18 +418,6 @@ public class TrackController {
         }
     }
 
-    private void refreshCurrentPlaylistTable(String playlistId) {
-        Playlist refreshed = facade.getPlaylistById(playlistId);
-        if (refreshed == null || tableTracks == null) return;
-    
-        currentPlaylist = refreshed;
-        currentPlaylistTracks = new java.util.ArrayList<>(refreshed.getTracks());
-        System.out.println("currentPlaylistTracks: " + currentPlaylistTracks);
-    
-        tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
-        tableTracks.getSelectionModel().clearSelection();
-        tableTracks.refresh();
-    }
     
 
     public void showCatalogView() {
@@ -507,9 +499,7 @@ public class TrackController {
             btnRemoveFromPlaylist.setVisible(false);
             btnRemoveFromPlaylist.setManaged(false);
         }
-        tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
-        tableTracks.getSelectionModel().clearSelection();
-        tableTracks.refresh();
+        loadPlaylistTracks(playlist);
         // Primo accesso: forza il layout dopo che il nodo è realmente visibile nel
         // scene graph.
         Platform.runLater(() -> {
@@ -517,10 +507,19 @@ public class TrackController {
             tableTracks.layout();
             tableTracks.refresh();
         });
-        System.out.println("Contenuto playlist: " + currentPlaylistTracks);
         if (lblFeedback != null) {
             labelFeedback("Contenuto playlist: " + playlist.getName(), "#0066cc");
         }
+    }
+
+    public void loadPlaylistTracks(Playlist playlist) {
+        if (tableTracks == null || playlist == null || facade == null) {
+            return;
+        }
+        currentPlaylistTracks = facade.getTracksForPlaylist(playlist.getId());
+        tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
+        tableTracks.getSelectionModel().clearSelection();
+        tableTracks.refresh();
     }
 
     public void clearForm() {
