@@ -7,7 +7,7 @@ import it.unisa.sad.playlistmanager.domain.model.Track;
 /**
  * Gestisce lo stato logico del playback. 
  */
-public class PlayBackService {
+public class PlaybackService {
     private PlaybackState currentState = PlaybackState.STOPPED;
     private PlaybackMode currentMode = PlaybackMode.SEQUENTIAL;
     private Track currentTrack = null;
