@@ -4,6 +4,7 @@ import it.unisa.sad.playlistmanager.persistence.db.DatabaseInitializer;
 import it.unisa.sad.playlistmanager.persistence.repository.SqliteTrackRepository;
 import it.unisa.sad.playlistmanager.persistence.repository.SqlitePlaylistRepository;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
+import it.unisa.sad.playlistmanager.application.service.PlaybackService;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
@@ -78,9 +79,11 @@ public class MainViewController {
         // Istanziazione del Domain Service Layer
         TrackService trackService = new TrackService(trackRepository);
         PlaylistService playlistService = new PlaylistService(playlistRepository, trackRepository);
-        
+        // Aggiunta del PlaybackService a causa di aggiornamento del facade.
+        PlaybackService playbackService = new PlaybackService();
         // Generazione del Mediator unificato (Facade Pattern)
-        return new MusicPlaylistManagerFacade(trackService, playlistService);
+        // Modificato il costruttore del facade a causa di aggiunta del PlaybackService.
+        return new MusicPlaylistManagerFacade(trackService, playlistService, playbackService);
     }
     
     /**

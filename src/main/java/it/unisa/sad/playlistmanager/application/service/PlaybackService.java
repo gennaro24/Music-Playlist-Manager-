@@ -29,7 +29,7 @@ public class PlaybackService {
     public PlaybackMode getCurrentMode() {
         return currentMode;
     }
-
+    
     /**
      * Restituisce la traccia corrente.
      *
@@ -69,6 +69,6 @@ public class PlaybackService {
      * @return snapshot del playback
      */
     public PlaybackSnapshot getSnapshot() {
-        return new PlaybackSnapshot(currentState, currentTrack);
+        return new PlaybackSnapshot(getCurrentState(), getCurrentTrack());
     }
 }
