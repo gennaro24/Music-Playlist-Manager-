@@ -11,13 +11,15 @@ public class PlaybackService {
     private PlaybackState currentState = PlaybackState.STOPPED;
     private PlaybackMode currentMode = PlaybackMode.SEQUENTIAL;
     private Track currentTrack = null;
+    private int elapsedSeconds = 0;
+    private long lastTickMillis = 0L;
 
     /**
      * Restituisce lo stato corrente del playback.
      *
      * @return stato corrente
      */
-    public PlaybackState getCurrentState() {
+    public synchronized PlaybackState getCurrentState() {
         return currentState;
     }
 
@@ -26,7 +28,7 @@ public class PlaybackService {
      *
      * @return modalità corrente
      */
-    public PlaybackMode getCurrentMode() {
+    public synchronized PlaybackMode getCurrentMode() {
         return currentMode;
     }
     
@@ -35,8 +37,12 @@ public class PlaybackService {
      *
      * @return traccia corrente, oppure {@code null} se assente
      */
-    public Track getCurrentTrack() {
+    public synchronized Track getCurrentTrack() {
         return currentTrack;
+    }
+
+    public synchronized int getElapsedSeconds() {
+        return elapsedSeconds;
     }
 
     /**
@@ -45,22 +51,41 @@ public class PlaybackService {
      * @param track traccia da riprodurre
      * @throws IllegalArgumentException se {@code track} è {@code null}
      */
-    public void playTrack(Track track) {
+    public synchronized void playTrack(Track track) {
         if (track == null) {
             throw new IllegalArgumentException("Track cannot be null");
         }
 
-        currentTrack = track;
+        updateElapsedFromClock();
+
+        boolean sameTrack = currentTrack != null && currentTrack.getId().equals(track.getId());
+        if (!sameTrack) {
+            currentTrack = track;
+            elapsedSeconds = 0;
+        } else if (currentState == PlaybackState.STOPPED) {
+            // Da stopped riparte dall'inizio della stessa traccia.
+            elapsedSeconds = 0;
+        }
+
         currentState = PlaybackState.PLAYING;
+        lastTickMillis = System.currentTimeMillis();
     }
 
     /**
      * Mette in pausa il playback se è in esecuzione.
      */
-    public void pause() {
+    public synchronized void pause() {
+        updateElapsedFromClock();
         if (currentState == PlaybackState.PLAYING) {
             currentState = PlaybackState.PAUSED;
         }
+    }
+
+    public synchronized void stop() {
+        updateElapsedFromClock();
+        currentState = PlaybackState.STOPPED;
+        elapsedSeconds = 0;
+        lastTickMillis = 0L;
     }
 
     /**
@@ -68,7 +93,31 @@ public class PlaybackService {
      *
      * @return snapshot del playback
      */
-    public PlaybackSnapshot getSnapshot() {
-        return new PlaybackSnapshot(getCurrentState(), getCurrentTrack());
+    public synchronized PlaybackSnapshot getSnapshot() {
+        updateElapsedFromClock();
+        return new PlaybackSnapshot(getCurrentState(), getCurrentTrack(), getElapsedSeconds());
+    }
+
+    private void updateElapsedFromClock() {
+        if (currentState != PlaybackState.PLAYING || currentTrack == null) {
+            return;
+        }
+        long nowMillis = System.currentTimeMillis();
+        if (lastTickMillis == 0L) {
+            lastTickMillis = nowMillis;
+            return;
+        }
+        long elapsedDeltaSeconds = (nowMillis - lastTickMillis) / 1000;
+        if (elapsedDeltaSeconds <= 0L) {
+            return;
+        }
+        elapsedSeconds += (int) elapsedDeltaSeconds;
+        lastTickMillis += elapsedDeltaSeconds * 1000L;
+
+        int duration = currentTrack.getDuration();
+        if (elapsedSeconds >= duration) {
+            elapsedSeconds = duration;
+            currentState = PlaybackState.STOPPED;
+        }
     }
 }

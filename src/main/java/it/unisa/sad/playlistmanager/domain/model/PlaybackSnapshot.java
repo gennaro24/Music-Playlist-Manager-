@@ -5,9 +5,11 @@ package it.unisa.sad.playlistmanager.domain.model;
  *
  * @param state stato corrente
  * @param currentTrack traccia corrente, oppure {@code null} se assente
+ * @param elapsedSeconds secondi riprodotti della traccia corrente
  */
 
 public record PlaybackSnapshot(
         PlaybackState state,
-        Track currentTrack
+        Track currentTrack,
+        int elapsedSeconds
 ) {}
