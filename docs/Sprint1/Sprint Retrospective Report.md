@@ -59,7 +59,7 @@ L’incremento consegnato include funzionalità visibili e verificabili da inter
 
 #### Catalogo tracce
 
-![Catalogo tracce](docs/Sprint1/imgs/TracceCatalogopng.png)
+![Catalogo tracce](imgs/TracceCatalogopng.png)
 
 
 #### Creazione e visualizzazione playlist
