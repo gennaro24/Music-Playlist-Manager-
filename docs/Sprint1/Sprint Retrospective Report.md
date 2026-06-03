@@ -64,22 +64,22 @@ L’incremento consegnato include funzionalità visibili e verificabili da inter
 
 #### Creazione e visualizzazione playlist
 
-![Visualizzazione playlist](docs/Sprint1/imgs/Creazioneevisualizzazioneplaylist.png)
+![Visualizzazione playlist](imgs/Creazioneevisualizzazioneplaylist.png)
 
 #### Contenuto playlist
 
-![Contenuto playlist](docs/Sprint1/imgs/Contenutoplaylist.png)
+![Contenuto playlist](imgs/Contenutoplaylist.png)
 
 #### Playback simulato
 
-![Playback simulato](docs/Sprint1/imgs/Playbacksimulato.png)
+![Playback simulato](imgs/Playbacksimulato.png)
 
 
 ## 3. Burndown chart
 
 Inserire nella cartella del report l’immagine del burndown chart e aggiornare il path seguente.
 
-![Sprint 1 Burndown Chart](docs/Sprint1/imgs/Burndownchart.png)
+![Sprint 1 Burndown Chart](imgs/Burndownchart.png)
 
 Il burndown chart mostra un andamento inizialmente quasi orizzontale. Questo non rappresenta inattività del team, ma una fase di setup tecnico necessaria per rendere stabile lo sviluppo successivo. Nei primi giorni lo Sprint ha richiesto attività tecniche propedeutiche: configurazione del progetto Maven/JavaFX, impostazione SQLite, definizione delle repository interface, implementazione delle repository concrete, inizializzazione dello schema del database e collegamento con facade/service.
 
