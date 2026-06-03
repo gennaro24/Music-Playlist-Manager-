@@ -1,7 +1,8 @@
 package it.unisa.sad.playlistmanager.application.facade;
 
 import java.util.List;
-
+import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
+import it.unisa.sad.playlistmanager.application.service.PlaybackService;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
@@ -18,14 +19,17 @@ public class MusicPlaylistManagerFacade {
     /** Riferimento al servizio applicativo per la gestione delle tracce. */
     private final TrackService trackService;
     private final PlaylistService playlistService;
+    private final PlaybackService playbackService;
 
     /**
      * Costruttore della Facade. Inietta le dipendenze dei servizi necessari.
      *
      * @param trackService Il servizio incaricato della logica di business delle tracce.
      * @param playlistService Il servizio incaricato della logica di business delle playlist.
+     * @param playbackService Il servizio incaricato della logica di business del playback.
      */
-    public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService) {
+    public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService, PlaybackService playbackService) {
+        this.playbackService = playbackService;
         this.trackService = trackService;
         this.playlistService = playlistService;
     }
@@ -124,4 +128,40 @@ public class MusicPlaylistManagerFacade {
     public List<Track> getTracksForPlaylist(String playlistId) {
         return playlistService.getTracksForPlaylist(playlistId);
     }
+    // =====================METODI PER IL PLAYBACK=====================:
+    
+
+    
+     /**
+     * Espone al Presentation Layer la funzionalità di avvio del playback di una traccia specifica.
+     * Recupera la traccia tramite il servizio TrackService e delega l'operazione al PlaybackService.
+     * @return Una fotografia dello stato corrente del playback dopo l'avvio (PlaybackSnapshot).
+     * @param trackId L'identificativo della traccia da riprodurre.
+     * @throws IllegalArgumentException Se la traccia non esiste o se il playback non può essere avviato.
+     */
+    public PlaybackSnapshot playTrack(String trackId) {
+        Track track = trackService.getTrackById(trackId);
+        if (track == null) {
+            throw new IllegalArgumentException("Traccia non trovata con ID: " + trackId);
+        }
+        playbackService.playTrack(track);
+        return getPlaybackSnapshot();
+    }
+
+    /**
+     * Espone al Presentation Layer la funzionalità di pausa del playback.
+     * Delega l'operazione al PlaybackService.\
+     * @return Una fotografia dello stato corrente del playback dopo la pausa (PlaybackSnapshot).
+     */
+    public PlaybackSnapshot pausePlayback(){
+        playbackService.pause();
+        return getPlaybackSnapshot();
+    }
+    /**
+     * @return Una fotografia dello stato corrente del playback (PlaybackSnapshot).
+     */
+    public PlaybackSnapshot getPlaybackSnapshot() {
+        return playbackService.getSnapshot();
+    }
+
 }

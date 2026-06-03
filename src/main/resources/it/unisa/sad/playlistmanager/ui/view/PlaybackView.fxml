@@ -7,26 +7,52 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<HBox alignment="CENTER_LEFT" maxWidth="Infinity" prefHeight="56.0" prefWidth="1280.0" spacing="15.0" style="-fx-padding: 10; -fx-background-color: #f4f4f4; -fx-border-color: #cccccc; -fx-border-width: 1 0 0 0;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="it.unisa.sad.playlistmanager.ui.controller.PlaybackController">
+<HBox alignment="CENTER_LEFT"
+      maxWidth="Infinity"
+      prefHeight="64.0"
+      prefWidth="1280.0"
+      spacing="15.0"
+      style="-fx-padding: 10; -fx-background-color: #f4f4f4; -fx-border-color: #cccccc; -fx-border-width: 1 0 0 0;"
+      xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="it.unisa.sad.playlistmanager.ui.controller.PlaybackController">
+
    <children>
-      
-      <VBox alignment="CENTER_LEFT" prefHeight="44.0" prefWidth="250.0" spacing="2.0">
+
+      <VBox alignment="CENTER_LEFT" prefHeight="44.0" prefWidth="300.0" spacing="2.0">
          <children>
             <Label fx:id="labelTitle" text="Nessuna traccia in riproduzione">
                <font>
                   <Font name="System Bold" size="14.0" />
                </font>
             </Label>
-            <Label fx:id="labelArtist" managed="false" text="Titolo Traccia" visible="false">
+
+            <Label fx:id="labelArtist" managed="false" text="" visible="false">
                <font>
                   <Font size="12.0" />
                </font>
             </Label>
          </children>
       </VBox>
-      
+
+      <VBox alignment="CENTER_LEFT" prefWidth="120.0" spacing="2.0">
+         <children>
+            <Label text="Stato">
+               <font>
+                  <Font size="11.0" />
+               </font>
+            </Label>
+
+            <Label fx:id="lblPlaybackStatus" text="STOPPED">
+               <font>
+                  <Font name="System Bold" size="12.0" />
+               </font>
+            </Label>
+         </children>
+      </VBox>
+
       <Region HBox.hgrow="ALWAYS" />
-      
+
       <HBox alignment="CENTER" spacing="5.0">
          <children>
             <Label fx:id="timerTrack" text="0:00">
@@ -34,11 +60,13 @@
                   <Font size="14.0" />
                </font>
             </Label>
+
             <Label text="/">
                <font>
                   <Font size="14.0" />
                </font>
             </Label>
+
             <Label fx:id="durationTrack" text="0:00">
                <font>
                   <Font size="14.0" />
@@ -46,15 +74,18 @@
             </Label>
          </children>
       </HBox>
-      
+
       <Region HBox.hgrow="ALWAYS" />
-      
+
       <HBox alignment="CENTER_RIGHT" spacing="15.0" style="-fx-padding: 0 10 0 0;">
          <children>
-            <Button fx:id="btnPlayPauseTrack" mnemonicParsing="false" onAction="#PlayPauseTrack" prefWidth="70.0" text="▶" />
-            <!--Button fx:id="skipButton" mnemonicParsing="false" onAction="#handleNext" prefWidth="70.0" text="Skip" />-->
+            <Button fx:id="btnPlayPauseTrack"
+                    mnemonicParsing="false"
+                    onAction="#PlayPauseTrack"
+                    prefWidth="70.0"
+                    text="▶" />
          </children>
       </HBox>
-      
+
    </children>
 </HBox>

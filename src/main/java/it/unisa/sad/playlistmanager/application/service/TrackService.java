@@ -1,5 +1,5 @@
 package it.unisa.sad.playlistmanager.application.service;
-
+import java.util.Optional;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
 import java.util.List;
@@ -58,5 +58,13 @@ public class TrackService {
     public List<Track> getAllTracks() {
         // Delega l'estrazione totale al repository astratto
         return this.trackRepository.findAll();
+    }
+    /**
+     * Ritorna la traccia cercata tramite il suo ID. 
+     * Siccome il metodo findById del repository ritorna un Optional, è necessario gestire il caso in cui la traccia non esista.
+     * @return La traccia cercata, oppure {@code null} se non esiste.
+     */
+    public Track getTrackById(String trackId) {
+        return trackRepository.findById(trackId).orElse(null);
     }
 }
