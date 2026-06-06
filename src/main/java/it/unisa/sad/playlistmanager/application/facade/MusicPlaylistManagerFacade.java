@@ -101,7 +101,6 @@ public class MusicPlaylistManagerFacade {
      *
      * @param playlistId Identificativo della playlist di destinazione.
      * @param trackId    Identificativo della traccia da aggiungere.
-     * @throws IllegalArgumentException Se l'operazione viola i criteri di validazione o duplicazione.
      */
     public void addTrackToPlaylist(String playlistId, String trackId) {
         this.playlistService.addTrackToPlaylist(playlistId, trackId);
@@ -137,13 +136,10 @@ public class MusicPlaylistManagerFacade {
      * Recupera la traccia tramite il servizio TrackService e delega l'operazione al PlaybackService.
      * @return Una fotografia dello stato corrente del playback dopo l'avvio (PlaybackSnapshot).
      * @param trackId L'identificativo della traccia da riprodurre.
-     * @throws IllegalArgumentException Se la traccia non esiste o se il playback non può essere avviato.
+     * @throws TrackNotFoundException Se la traccia non esiste (propagata dal Service).
      */
     public PlaybackSnapshot playTrack(String trackId) {
         Track track = trackService.getTrackById(trackId);
-        if (track == null) {
-            throw new IllegalArgumentException("Traccia non trovata con ID: " + trackId);
-        }
         playbackService.playTrack(track);
         return getPlaybackSnapshot();
     }

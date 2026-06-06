@@ -3,7 +3,7 @@ package it.unisa.sad.playlistmanager.persistence.repository;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.db.DatabaseConnectionManager;
-
+import it.unisa.sad.playlistmanager.persistence.exceptions.RepositoryException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -47,6 +47,7 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
      * @param playlist che vuole essere salvata, con nome e id.
      *                 Il controllo della validità del nome è delegato alla classe
      *                 di dominio {@Link Playlist}
+     * @throws RepositoryException che viene propagata nei livelli superiori.
      */
     @Override
     public void save(Playlist playlist) {
@@ -59,9 +60,9 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
             preparedStatement.setString(1, playlist.getId());
             preparedStatement.setString(2, playlist.getName());
             preparedStatement.executeUpdate();
-            // TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
+
         } catch (SQLException exception) {
-            exception.getSQLState();
+            throw new RepositoryException("Errore nel salvataggio della Playlist con id: [" + playlist.getId() + "]", exception);
         }
     }
 
@@ -92,10 +93,8 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
                 return Optional.of(playlist);
             }
             return Optional.empty();
-            // TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
         } catch (SQLException exception) {
-            exception.getSQLState();
-            return Optional.empty();
+            throw new RepositoryException("Errore nel trovare la Playlist con id [" + id + "]", exception);
         }
     }
 
@@ -124,10 +123,8 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
                 playlists.add(playlist);
             }
             return playlists;
-            // TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
         } catch (SQLException exception) {
-            exception.getSQLState();
-            return null;
+            throw new RepositoryException("Errore nel trovare tutte le Playlists.",exception);
         }
     }
 
@@ -156,9 +153,7 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
             }
 
         } catch (SQLException exception) {
-            // TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
-            exception.getSQLState();
-            return false;
+             throw new RepositoryException("Errore nel trovare la playlist con nome: [" + name + "]",exception);
         }
     }
 
@@ -192,8 +187,8 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
             preparedStatement.executeUpdate();
 
         } catch (SQLException exception) {
-            // TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
-            exception.getSQLState();
+             throw new RepositoryException("Errore nell'aggiunta della Track con id [" + trackId +"]" + 
+                                            "Alla Playlist con id: [" + playlistId + "]" ,exception);
         }
     }
 
@@ -220,8 +215,8 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
             statement.executeUpdate();
 
         } catch (SQLException exception) {
-            // TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
-            exception.getSQLState();
+             throw new RepositoryException("Errore nella rimozione della Track con id [" + trackId +"]" + 
+                                            "Dalla Playlist con id: [" + playlistId + "]" ,exception);
         }
     }
 
@@ -252,9 +247,8 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
                 return tracks;
             }
         } catch (SQLException exception) {
-            // TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
-            exception.getSQLState();
-            return List.of();
+             throw new RepositoryException("Errore nel trovare tutte le Track " + 
+                                            "della Playlist con id: [" + playlistId + "]" ,exception);
         }
     }
 }

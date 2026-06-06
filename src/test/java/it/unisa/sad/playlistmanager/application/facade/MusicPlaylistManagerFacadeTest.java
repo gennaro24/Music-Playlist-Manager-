@@ -39,7 +39,7 @@ class MusicPlaylistManagerFacadeTest {
     @Test
     void testAddTrackDelegaCorrettamente() {
         FakeTrackService fakeService = new FakeTrackService();
-        //TODO: Modificato il costruttore a causa di modifica al facade. Ora richiede anche il PlaybackService.
+        
         MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService, null, null);
 
         facade.addTrack("Shape of You", "Ed Sheeran", 233, "Pop", 2017);
@@ -50,7 +50,7 @@ class MusicPlaylistManagerFacadeTest {
     @Test
     void testGetAllTracksDelegaCorrettamente() {
         FakeTrackService fakeService = new FakeTrackService();
-        //TODO: Modificato il costruttore a causa di modifica al facade. Ora richiede anche il PlaybackService.
+        
         MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService, null, null);
 
         List<Track> result = facade.getAllTracks();

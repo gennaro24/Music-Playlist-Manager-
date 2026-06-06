@@ -2,6 +2,7 @@ package it.unisa.sad.playlistmanager.persistence.repository;
 
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.db.DatabaseConnectionManager;
+import it.unisa.sad.playlistmanager.persistence.exceptions.RepositoryException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -64,8 +65,7 @@ public class SqliteTrackRepository implements TrackRepository {
                 statement.executeUpdate();
                 
              }catch(SQLException exception){
-                //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
-                exception.getSQLState();
+             throw new RepositoryException("Errore nel salvataggio della Track con id: [" + track.getId() + "]", exception);
              }
     }
     /**
@@ -97,9 +97,7 @@ public class SqliteTrackRepository implements TrackRepository {
 
                 
              }catch(SQLException exception){
-                //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
-                    exception.getSQLState();
-                    return Optional.empty();
+                throw new RepositoryException("Errore nel trovare la Track con id: [" + id + "]", exception);
             }
         
     }
@@ -128,9 +126,7 @@ public class SqliteTrackRepository implements TrackRepository {
                 }
                 
              }catch(SQLException exception){
-                //TODO: I CATCH VANNO MODIFICATI CON UN EXCEPTION DEDICATA.
-                exception.getSQLState();
-                return null;
+                throw new RepositoryException("Errore nel trovare tutte le Track del catalogo.", exception);
              }
 
     }

@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import it.unisa.sad.playlistmanager.domain.model.Track;
-import java.util.List;
 
 /**
  * Interfaccia per la gestione della persistenza delle tracce musicali.

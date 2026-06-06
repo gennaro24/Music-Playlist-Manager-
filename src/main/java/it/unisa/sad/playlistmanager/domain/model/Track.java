@@ -3,6 +3,8 @@ package it.unisa.sad.playlistmanager.domain.model;
 import java.time.Year;
 import java.util.UUID;
 
+import it.unisa.sad.playlistmanager.domain.exceptions.ValidationException;
+
 /**
  * Rappresenta un'entità Traccia (canzone) all'interno del catalogo musicale.
  * Questa classe è immutabile per garantire la consistenza dei dati nel dominio.
@@ -63,7 +65,7 @@ public class Track {
      */
     private void validateTitle(String title) {
         if (title == null || title.trim().isEmpty()) {
-            throw new IllegalArgumentException("Errore di validazione: Il titolo della traccia è obbligatorio.");
+            throw new ValidationException("Errore di validazione: Il titolo della traccia è obbligatorio.");
         }
     }
 
@@ -72,7 +74,7 @@ public class Track {
      */
     private void validateAuthor(String author) {
         if (author == null || author.trim().isEmpty()) {
-            throw new IllegalArgumentException("Errore di validazione: L'autore della traccia è obbligatorio.");
+            throw new ValidationException("Errore di validazione: L'autore della traccia è obbligatorio.");
         }
     }
 
@@ -81,7 +83,7 @@ public class Track {
      */
     private void validateDuration(int duration) {
         if (duration <= 0) {
-            throw new IllegalArgumentException("Errore di validazione: La durata deve essere maggiore di zero.");
+            throw new ValidationException("Errore di validazione: La durata deve essere maggiore di zero.");
         }
     }
 
@@ -91,7 +93,7 @@ public class Track {
     private void validateYear(int year) {
         int currentYear = Year.now().getValue();
         if (year <= 0 || year > currentYear) {
-            throw new IllegalArgumentException("Errore di validazione: Anno di pubblicazione non valido (" + year + ").");
+            throw new ValidationException("Errore di validazione: Anno di pubblicazione non valido (" + year + ").");
         }
     }
 
