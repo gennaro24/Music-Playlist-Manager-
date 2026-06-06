@@ -41,9 +41,8 @@ public class Main extends Application {
 
         // Configurazione della finestra principale (Stage)
         Scene scene = new Scene(root);
-        stage.setTitle("Music Playlist Manager - Clean Architecture");
+        stage.setTitle("Music Playlist Manager");
         stage.setScene(scene);
-        stage.setResizable(false); // Garantisce la consistenza del layout geometrico della UI
         stage.show();
     }
 
