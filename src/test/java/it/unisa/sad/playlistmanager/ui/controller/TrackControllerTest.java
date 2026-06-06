@@ -77,8 +77,9 @@ class TrackControllerTest {
     @Test
     void testAggiuntaTracciaPassaDatiAllaFacciata() throws Exception {
         // PREPARAZIONE
-        TrackController controller = new TrackController();
         FakeFacade fakeFacade = new FakeFacade();
+        TrackController controller = new TrackController(fakeFacade);
+        
 
         // Tramite Reflection, iniettiamo delle finte caselle di testo nel Controller
         // per simulare l'utente che ha digitato i dati nell'interfaccia.
@@ -90,8 +91,6 @@ class TrackControllerTest {
         injectPrivateField(controller, "lblFeedback", new Label());
         injectPrivateField(controller, "tableTracks", new TableView<>());
 
-        // Colleghiamo la finta Facciata al Controller
-        controller.setFacade(fakeFacade);
 
         // ESECUZIONE
         // Chiamiamo il metodo privato handleTrackAddition tramite Reflection
