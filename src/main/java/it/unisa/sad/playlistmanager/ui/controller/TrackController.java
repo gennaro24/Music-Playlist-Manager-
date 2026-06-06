@@ -5,149 +5,125 @@ import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
 import javafx.collections.FXCollections;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.control.TextField;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableRow;
 import javafx.scene.layout.VBox;
-import java.util.function.Consumer;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-
-// menù contestuale al click destro sulla traccia
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.beans.binding.Bindings;
+import java.util.function.Consumer;
 
+/**
+ * Sotto-controllore delegato alla visualizzazione, manipolazione e immissione dati
+ * concernenti il catalogo globale delle tracce e le canzoni interne a una specifica playlist.
+ * * <p><b>Revisione Sprint 2:</b> Implementa la Constructor Injection sanando l'accoppiamento
+ * temporale. Sposta l'invocazione di {@code loadCatalog()} all'interno dell'inizializzazione
+ * nativa, sfruttando in totale sicurezza l'istanza immutabile della Facade.</p>
+ * @version 2.0
+ */
 public class TrackController {
 
-    private MusicPlaylistManagerFacade facade;
+    private final MusicPlaylistManagerFacade facade;
     private Track selectedTrack;
     private Consumer<Track> onTrackSelectedHandler;
-    // consumer per gestire la callback
     private Consumer<Track> onTrackPlayRequestedHandler;
-    @FXML
-    private TextField txtTitle;
-    @FXML
-    private TextField txtAuthor;
-    @FXML
-    private TextField txtDuration;
-    @FXML
-    private TextField txtGenre;
-    @FXML
-    private TextField txtYear;
-    @FXML
-    private Label lblFeedback;
 
-    @FXML
-    private TableView<Track> tableTracks;
-    @FXML
-    private TableColumn<Track, String> colTitle;
-    @FXML
-    private TableColumn<Track, String> colAuthor;
-    @FXML
-    private TableColumn<Track, Integer> colDuration;
-    @FXML
-    private TableColumn<Track, String> colGenre;
-    @FXML
-    private TableColumn<Track, Integer> colYear;
-    @FXML
-    private VBox formAddTrack;
-    @FXML
-    private ComboBox<Playlist> dropdownPlaylists;
-    @FXML
-    private HBox hboxAddtoPlaylist;
-    @FXML
-    private Button btnRemoveFromPlaylist;
+    @FXML private TextField txtTitle;
+    @FXML private TextField txtAuthor;
+    @FXML private TextField txtDuration;
+    @FXML private TextField txtGenre;
+    @FXML private TextField txtYear;
+    @FXML private Label lblFeedback;
+
+    @FXML private TableView<Track> tableTracks;
+    @FXML private TableColumn<Track, String> colTitle;
+    @FXML private TableColumn<Track, String> colAuthor;
+    @FXML private TableColumn<Track, Integer> colDuration;
+    @FXML private TableColumn<Track, String> colGenre;
+    @FXML private TableColumn<Track, Integer> colYear;
+    @FXML private VBox formAddTrack;
+    @FXML private ComboBox<Playlist> dropdownPlaylists;
+    @FXML private HBox hboxAddtoPlaylist;
+    @FXML private Button btnRemoveFromPlaylist;
+
     private boolean playlistViewMode = false;
     private Playlist currentPlaylist;
     private java.util.List<Track> currentPlaylistTracks = new java.util.ArrayList<>();
 
-    public void setFacade(MusicPlaylistManagerFacade facade) {
+    /**
+     * Costruttore per Constructor Injection (Task T-63).
+     *
+     * @param facade L'istanza centralizzata dell'Application Facade.
+     */
+    public TrackController(MusicPlaylistManagerFacade facade) {
         this.facade = facade;
-        loadCatalog();
-        if (dropdownPlaylists != null) {
-            dropdownPlaylists.setItems(FXCollections.observableArrayList(this.facade.getAllPlaylists()));
-        }
     }
 
+    /**
+     * Inizializza i componenti grafici della TableView, effettua il data-binding delle
+     * colonne tramite Reflection ed esegue il caricamento dei dati di catalogo a startup.
+     */
     @FXML
     private void initialize() {
-        // 1. INIZIALIZZAZIONE VALUE FACTORIES (PRESENTATION LAYER BINDING)
+        // 1. INIZIALIZZAZIONE VALUE FACTORIES
         initializeTableColumns();
-        // 2. CONFIGURAZIONE RENDERING GRAFICO (CUSTOM CELL FACTORIES)
+        // 2. CONFIGURAZIONE RENDERING GRAFICO
         configureDropdownPlaylistsRendering();
-        // 3. COMPORTAMENTO REATTIVO E LISTENER (EVENT-DRIVEN LOGIC)
+        // 3. COMPORTAMENTO REATTIVO E LISTENER
         if (tableTracks != null) {
             configureTableToggleDeselection();
             configureTableSelectionListener();
         }
+
+        // 4. CARICAMENTO DATI SICURO DAL LIFECYCLE (Task T-63)
+        if (this.facade != null) {
+            loadCatalog();
+            if (dropdownPlaylists != null) {
+                dropdownPlaylists.setItems(FXCollections.observableArrayList(this.facade.getAllPlaylists()));
+            }
+        }
     }
 
     /**
-     * Inizializza le CellValueFactory per mappare le proprietà del Domain Model
-     * (Track) sulle colonne della TableView mediante Reflection.
+     * Associa le colonne della TableView ai campi dati del Domain Model (Track).
      */
     private void initializeTableColumns() {
-        if (colTitle != null)
-            colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
-        if (colAuthor != null)
-            colAuthor.setCellValueFactory(new PropertyValueFactory<>("author"));
-        if (colDuration != null)
-            colDuration.setCellValueFactory(new PropertyValueFactory<>("duration"));
-        if (colGenre != null)
-            colGenre.setCellValueFactory(new PropertyValueFactory<>("genre"));
-        if (colYear != null)
-            colYear.setCellValueFactory(new PropertyValueFactory<>("year"));
+        if (colTitle != null) colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
+        if (colAuthor != null) colAuthor.setCellValueFactory(new PropertyValueFactory<>("author"));
+        if (colDuration != null) colDuration.setCellValueFactory(new PropertyValueFactory<>("duration"));
+        if (colGenre != null) colGenre.setCellValueFactory(new PropertyValueFactory<>("genre"));
+        if (colYear != null) colYear.setCellValueFactory(new PropertyValueFactory<>("year"));
         configureResponsiveColumnWidths();
     }
 
     /**
-     * Configura il dimensionamento responsive delle colonne in base alle
-     * proporzioni ideali,
-     * definendo limiti di usabilità (minWidth) per evitare il collasso visivo dei
-     * dati.
+     * Imposta il dimensionamento proporzionale e vincolato (Responsive) delle colonne 
+     * per preservare l'integrità geometrica del layout desktop.
      */
     private void configureResponsiveColumnWidths() {
         if (tableTracks == null || colTitle == null || colAuthor == null
                 || colDuration == null || colGenre == null || colYear == null) {
             return;
         }
-
-        //Abilitazione della politica di ridimensionamento vincolata nativa
         tableTracks.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
-        // 2. Definizione dei pesi proporzionali (Percentuali ideali espresse come
-        // double)
         final double weightTitle = 0.30;
         final double weightAuthor = 0.30;
         final double weightDuration = 0.12;
         final double weightGenre = 0.18;
         final double weightYear = 0.10;
-
-        // Binding dinamico normalizzato sul contenitore
-        // Sottraiamo un offset fisso empirico per prevenire l'attivazione della
-        // scrollbar orizzontale
         double scrollbarOffset = 15.0;
 
         colTitle.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightTitle));
-        colAuthor.prefWidthProperty()
-                .bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightAuthor));
-        colDuration.prefWidthProperty()
-                .bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightDuration));
+        colAuthor.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightAuthor));
+        colDuration.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightDuration));
         colGenre.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightGenre));
         colYear.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightYear));
 
-        // Width)
-        // Impedisce che il ridimensionamento della finestra renda il testo illeggibile
         colTitle.setMinWidth(150);
         colAuthor.setMinWidth(130);
         colDuration.setMinWidth(70);
@@ -156,14 +132,11 @@ public class TrackController {
     }
 
     /**
-     * Configura il rendering custom per la ComboBox delle Playlist, garantendo
-     * che sia nella tendina che nella cella di bottone venga mostrato solo il nome.
+     * Configura il rendering custom all'interno del menu a tendina delle playlist,
+     * assicurando l'estrazione pulita della proprietà stringa del nome dell'oggetto.
      */
     private void configureDropdownPlaylistsRendering() {
-        if (dropdownPlaylists == null)
-            return;
-
-        // Configurazione delle celle all'interno del menu a tendina srotolato
+        if (dropdownPlaylists == null) return;
         dropdownPlaylists.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(Playlist item, boolean empty) {
@@ -171,36 +144,24 @@ public class TrackController {
                 setText((empty || item == null) ? null : item.getName());
             }
         });
-
-        // Configurazione della cella visibile quando il menu è chiuso
         dropdownPlaylists.setButtonCell(new ListCell<>() {
             @Override
             protected void updateItem(Playlist item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText("Seleziona una playlist");
-                } else {
-                    setText(item.getName());
-                }
+                setText((empty || item == null) ? "Seleziona una playlist" : item.getName());
             }
         });
     }
 
     /**
-     * Applica una RowFactory personalizzata alla TableView intercettando l'evento
-     * MOUSE_PRESSED per implementare il comportamento di "Toggle Deselection".
+     * Configura la riga della tabella iniettando un menu contestuale per il comando "Play"
+     * e implementando l'intercettazione degli eventi mouse per abilitare la deselezione totale alternata.
      */
     private void configureTableToggleDeselection() {
         tableTracks.setRowFactory(tv -> {
             final TableRow<Track> row = new TableRow<>();
-            // aggiunta del menù contestuale che contiene il "play"
             MenuItem playItem = new MenuItem("play");
             ContextMenu contextMenu = new ContextMenu(playItem);
-            /* gestisce la logica quando viene cliccato "play" 
-                Prende la traccia corrente della riga,
-                la selected track diventa quella selezionata con play
-                Se viene registrato un handler, viene eseguita la funzione Consumer.
-            */ 
             
             playItem.setOnAction(event -> {
                 Track track = row.getItem();
@@ -210,30 +171,22 @@ public class TrackController {
                 if (onTrackPlayRequestedHandler != null)
                     onTrackPlayRequestedHandler.accept(track);
             });
-            /*Fa in modo che quando una riga è vuota il menù contestuale non venga visualizzato.*/
+
             row.contextMenuProperty().bind(
                 Bindings.when(row.emptyProperty())
                         .then((ContextMenu) null)
                         .otherwise(contextMenu)
             );
 
-            /* Parte in cui vengono intercettati i click sulla riga */
             row.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
-                if (event.getButton() != MouseButton.PRIMARY) {
-                    return;
-                }
-                // Se l'utente clicca su una riga che risulta già graficamente selezionata
+                if (event.getButton() != MouseButton.PRIMARY) return;
                 if (!row.isEmpty() && row.isSelected()) {
-                    // Interrompiamo la selezione forzando lo stato asettico
                     tableTracks.getSelectionModel().clearSelection();
                     selectedTrack = null;
-
                     if (hboxAddtoPlaylist != null) {
                         hboxAddtoPlaylist.setVisible(false);
                         hboxAddtoPlaylist.setManaged(false);
                     }
-
-                    // Consumiamo l'evento per impedire che JavaFX riattivi la selezione standard
                     event.consume();
                 }
             });
@@ -242,22 +195,16 @@ public class TrackController {
     }
 
     /**
-     * Configura il listener sulla proprietà di selezione della TableView per
-     * sincronizzare la barra di aggiunta rapida e popolare la ComboBox.
+     * Gestisce i mutamenti di stato della riga selezionata, allineando dinamicamente
+     * la visibilità dei pannelli d'azione contestuali (Barra d'aggiunta vs Rimozione).
      */
     private void configureTableSelectionListener() {
         tableTracks.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
             if (newSel != null) {
-                // SCENARIO: Riga selezionata con successo
                 selectedTrack = newSel;
-
-                // Propaga l'evento al modulo padre (MainViewController) tramite callback
                 if (onTrackSelectedHandler != null) {
                     onTrackSelectedHandler.accept(newSel);
                 }
-
-                // Interrogazione dinamica della Facade per aggiornare il dropdown delle
-                // playlist
                 if (facade != null && dropdownPlaylists != null) {
                     dropdownPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
                 }
@@ -275,7 +222,6 @@ public class TrackController {
                         btnRemoveFromPlaylist.setVisible(false);
                         btnRemoveFromPlaylist.setManaged(false);
                     }
-                    // Spostamento reattivo del layout: mostra la barra inferiore
                     if (hboxAddtoPlaylist != null) {
                         hboxAddtoPlaylist.setVisible(true);
                         hboxAddtoPlaylist.setManaged(true);
@@ -287,7 +233,6 @@ public class TrackController {
                     }
                 }
             } else {
-                // SCENARIO: Selezione svuotata (attivata da clearSelection() o filtro)
                 selectedTrack = null;
                 if (hboxAddtoPlaylist != null) {
                     hboxAddtoPlaylist.setVisible(false);
@@ -307,18 +252,19 @@ public class TrackController {
     }
 
     /**
-     * metodo che permette al Main di registrare cosa deve succedere
-     * quando parte la richiesta di play. Il metodo istanzia solo l'handler.
+     * Registra il consumatore delegato a catturare gli eventi di riproduzione forzata.
+     *
+     * @param handler Routine di callback esposta dal coordinatore principale.
      */
     public void setOnTrackPlayRequested(Consumer<Track> handler){
         this.onTrackPlayRequestedHandler = handler;
     }
 
     /**
-     * metodo per aggiungere una traccia al catalogo
-     * controlla che il facade sia inizializzato e che i dati inseriti siano validi
-     * 
-     * @param event
+     * Intercetta la richiesta di inserimento di una nuova traccia nel sistema.
+     * Valida sintatticamente i campi e delega la persistenza all'Application Facade.
+     *
+     * @param event Evento di click associato al pulsante d'aggiunta.
      */
     @FXML
     private void handleTrackAddition(ActionEvent event) {
@@ -327,7 +273,6 @@ public class TrackController {
             lblFeedback.setText("Errore interno: facade non inizializzata.");
             return;
         }
-        // controlla che i campi siano compilati
         try {
             String title = toSentenceCase(txtTitle.getText());
             String author = toSentenceCase(txtAuthor.getText());
@@ -335,21 +280,14 @@ public class TrackController {
             int duration = Integer.parseInt(txtDuration.getText().trim());
             int year = Integer.parseInt(txtYear.getText().trim());
             validateDataInput(title, author, genre, duration, year);
-            // se la funzione validateDataInput non genera eccezioni, aggiunge la traccia al
-            // catalogo
 
             Track newTrack = facade.addTrack(title, author, duration, genre, year);
             if (newTrack != null) {
-                // aggiunge la traccia alla tabella
                 tableTracks.getItems().add(newTrack);
-
                 tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
-                // pulisce la selezione della tabella
                 tableTracks.getSelectionModel().clearSelection();
                 tableTracks.refresh();
-                // pulisce il form
                 clearForm();
-                // modifica il feedback in verde
                 labelFeedback("Traccia aggiunta con successo.", "green");
                 loadCatalog();
             }
@@ -363,57 +301,38 @@ public class TrackController {
         }
     }
 
+    /**
+     * Valida la correttezza dei dati di input della traccia prima dell'invio ai servizi.
+     */
     private void validateDataInput(String title, String author, String genre, int duration, int year) {
-        if (title == null || title.trim().isEmpty()) {
-            throw new IllegalArgumentException("Errore di inserimento titolo: il titolo della traccia è obbligatorio.");
-        }
-        if (author == null || author.trim().isEmpty()) {
-            throw new IllegalArgumentException("Errore di inserimento autore: l'autore della traccia è obbligatorio.");
-        }
-        if (genre == null || genre.trim().isEmpty()) {
-            throw new IllegalArgumentException("Errore di inserimento genere: il genere della traccia è obbligatorio.");
-        }
-        if (duration <= 0) {
-            throw new IllegalArgumentException("Errore di inserimento durata: la durata della traccia è obbligatorio.");
-        }
-        if (year <= 0 || year > java.time.Year.now().getValue()) {
-            throw new IllegalArgumentException("Errore di inserimento anno: l'anno della traccia è obbligatorio.");
-        }
+        if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("Errore di inserimento titolo: il titolo della traccia è obbligatorio.");
+        if (author == null || author.trim().isEmpty()) throw new IllegalArgumentException("Errore di inserimento autore: l'autore della traccia è obbligatorio.");
+        if (genre == null || genre.trim().isEmpty()) throw new IllegalArgumentException("Errore di inserimento genere: il genere della traccia è obbligatorio.");
+        if (duration <= 0) throw new IllegalArgumentException("Errore di inserimento durata: la durata della traccia deve essere maggiore di zero.");
+        if (year <= 0 || year > java.time.Year.now().getValue()) throw new IllegalArgumentException("Errore di inserimento anno: l'anno della traccia non è valido.");
     }
 
     /**
-     * metodo per aggiungere una traccia a una playlist, tramite la combo box delle
-     * playlist
-     * e il bottone di save
-     * 
-     * @param event
+     * Lega la traccia selezionata alla playlist bersaglio scelta all'interno del menu a tendina.
+     *
+     * @param event Evento di click del bottone di salvataggio.
      */
     @FXML
     private void handleSaveAddPlaylist(ActionEvent event) {
-        // controlla che la traccia selezionata e la playlist selezionata siano non
-        // nulle
-        if (selectedTrack != null && dropdownPlaylists != null
-                && dropdownPlaylists.getSelectionModel().getSelectedItem() != null) {
+        if (selectedTrack != null && dropdownPlaylists != null && dropdownPlaylists.getSelectionModel().getSelectedItem() != null) {
             Playlist targetPlaylist = dropdownPlaylists.getSelectionModel().getSelectedItem();
-            String selectedTrackId = selectedTrack.getId();
-            String targetPlaylistId = targetPlaylist.getId();
             try {
-                facade.addTrackToPlaylist(targetPlaylistId, selectedTrackId);
+                facade.addTrackToPlaylist(targetPlaylist.getId(), selectedTrack.getId());
             } catch (IllegalArgumentException e) {
                 labelFeedback(e.getMessage(), "red");
                 return;
             }
 
-            labelFeedback("Traccia '" + selectedTrack.getTitle() + "' aggiunta alla playlist '"
-                    + targetPlaylist.getName() + "' con successo.", "green");
-            // Aggiorna la tabella solo se stiamo visualizzando proprio quella playlist.
-            // In vista catalogo non dobbiamo sostituire la tabella del catalogo.
-            if (playlistViewMode && currentPlaylist != null && currentPlaylist.getId().equals(targetPlaylistId)) {
+            labelFeedback("Traccia '" + selectedTrack.getTitle() + "' aggiunta alla playlist '" + targetPlaylist.getName() + "' con successo.", "green");
+            if (playlistViewMode && currentPlaylist != null && currentPlaylist.getId().equals(targetPlaylist.getId())) {
                 loadPlaylistTracks(currentPlaylist);
             }
-            //aggiorna la lista delle playlist
             dropdownPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
-            // Opzionale: Nascondiamo l'HBox dopo il salvataggio per pulizia di interfaccia
             if (hboxAddtoPlaylist != null) {
                 hboxAddtoPlaylist.setVisible(false);
                 hboxAddtoPlaylist.setManaged(false);
@@ -428,16 +347,16 @@ public class TrackController {
         removeSelectedTrackFromCurrentPlaylist();
     }
 
+    /**
+     * Rimuove la traccia selezionata dalla playlist corrente interrogando la Facade.
+     */
     private void removeSelectedTrackFromCurrentPlaylist() {
         if (!playlistViewMode || currentPlaylist == null || selectedTrack == null) {
-            if (lblFeedback != null) {
-                labelFeedback("Seleziona una traccia della playlist da rimuovere.", "red");
-            }
+            labelFeedback("Seleziona una traccia della playlist da rimuovere.", "red");
             return;
         }
 
         facade.removeTrackFromPlaylist(currentPlaylist.getId(), selectedTrack.getId());
-        // Ricarica immediatamente lo stato dal DB per evitare dati stantii in tabella.
         loadPlaylistTracks(currentPlaylist);
         if (btnRemoveFromPlaylist != null) {
             btnRemoveFromPlaylist.setVisible(false);
@@ -453,21 +372,21 @@ public class TrackController {
         }
     }
 
+    /**
+     * Interroga la Facade per caricare tutte le tracce presenti nel sistema all'interno della TableView.
+     */
     private void loadCatalog() {
-        if (facade == null || tableTracks == null) {
-            return;
-        } else {
-            tableTracks.setItems(FXCollections.observableArrayList(facade.getAllTracks()));
-            tableTracks.setPlaceholder(new Label("Catalogo vuoto. Aggiungi una traccia."));
-            if (tableTracks.getItems().isEmpty() && lblFeedback != null) {
-                lblFeedback.setStyle("-fx-text-fill: #b0413e;");
-                lblFeedback.setText("Catalogo vuoto. Aggiungi una traccia.");
-            }
+        if (facade == null || tableTracks == null) return;
+        tableTracks.setItems(FXCollections.observableArrayList(facade.getAllTracks()));
+        tableTracks.setPlaceholder(new Label("Catalogo vuoto. Aggiungi una traccia."));
+        if (tableTracks.getItems().isEmpty() && lblFeedback != null) {
+            labelFeedback("Catalogo vuoto. Aggiungi una traccia.", "#b0413e");
         }
     }
 
-    
-
+    /**
+     * Commuta lo stato visivo abilitando il form di immissione dati per la visualizzazione catalogo.
+     */
     public void showCatalogView() {
         playlistViewMode = false;
         currentPlaylist = null;
@@ -481,9 +400,7 @@ public class TrackController {
             btnRemoveFromPlaylist.setManaged(false);
         }
         loadCatalog();
-        if (tableTracks != null) {
-            tableTracks.refresh();
-        }
+        if (tableTracks != null) tableTracks.refresh();
         if (lblFeedback != null) {
             if (tableTracks != null && tableTracks.getItems() != null && tableTracks.getItems().isEmpty()) {
                 labelFeedback("Catalogo vuoto. Aggiungi una traccia.", "#b0413e");
@@ -494,9 +411,7 @@ public class TrackController {
     }
 
     /**
-     * Pulisce la vista playlist quando la selezione viene rimossa o la playlist
-     * viene eliminata.
-     * Evita la persistenza di dati "fantasma" nella tabella.
+     * Annulla lo stato dei dati e svuota la tabella quando non vi è selezione attiva.
      */
     public void clearPlaylistView() {
         playlistViewMode = false;
@@ -516,29 +431,25 @@ public class TrackController {
             btnRemoveFromPlaylist.setVisible(false);
             btnRemoveFromPlaylist.setManaged(false);
         }
-        if (lblFeedback != null) {
-            labelFeedback("Nessuna playlist selezionata.", "#1f7a1f");
-        }
-
+        labelFeedback("Nessuna playlist selezionata.", "#1f7a1f");
     }
 
+    /**
+     * Predispone la tabella per accogliere esclusivamente i brani della playlist sotto analisi.
+     *
+     * @param playlist L'istanza di Playlist da ispezionare.
+     */
     public void displayPlaylistTracks(Playlist playlist) {
-        if (tableTracks == null || playlist == null) {
-            return;
-        }
+        if (tableTracks == null || playlist == null) return;
         playlistViewMode = true;
         currentPlaylist = playlist;
-        java.util.List<Track> tracksForPlaylist = facade != null
-                ? playlist.getTracks()
-                : playlist.getTracks();
-        currentPlaylistTracks = new java.util.ArrayList<>(tracksForPlaylist);
+        currentPlaylistTracks = new java.util.ArrayList<>(facade != null ? facade.getTracksForPlaylist(playlist.getId()) : playlist.getTracks());
         tableTracks.setPlaceholder(new Label("Questa playlist non contiene tracce."));
+        
         if (formAddTrack != null) {
             formAddTrack.setVisible(false);
             formAddTrack.setManaged(false);
         }
-        // Quando visualizziamo una playlist specifica, nascondiamo la barra di aggiunta
-        // rapida
         if (hboxAddtoPlaylist != null) {
             hboxAddtoPlaylist.setVisible(false);
             hboxAddtoPlaylist.setManaged(false);
@@ -548,28 +459,29 @@ public class TrackController {
             btnRemoveFromPlaylist.setManaged(false);
         }
         loadPlaylistTracks(playlist);
-        // Primo accesso: forza il layout dopo che il nodo è realmente visibile nel
-        // scene graph.
+        
         Platform.runLater(() -> {
             tableTracks.applyCss();
             tableTracks.layout();
             tableTracks.refresh();
         });
-        if (lblFeedback != null) {
-            labelFeedback("Contenuto playlist: " + playlist.getName(), "#0066cc");
-        }
+        labelFeedback("Contenuto playlist: " + playlist.getName(), "#0066cc");
     }
 
+    /**
+     * Esegue il recupero sincrono dei brani di una playlist aggiornando gli elementi della TableView.
+     */
     public void loadPlaylistTracks(Playlist playlist) {
-        if (tableTracks == null || playlist == null || facade == null) {
-            return;
-        }
+        if (tableTracks == null || playlist == null || facade == null) return;
         currentPlaylistTracks = facade.getTracksForPlaylist(playlist.getId());
         tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
         tableTracks.getSelectionModel().clearSelection();
         tableTracks.refresh();
     }
 
+    /**
+     * Svuota i campi testuali del modulo di inserimento.
+     */
     public void clearForm() {
         txtTitle.clear();
         txtAuthor.clear();
@@ -579,14 +491,15 @@ public class TrackController {
     }
 
     private String toSentenceCase(String value) {
-        if (value == null)
-            return "";
+        if (value == null) return "";
         String trimmed = value.trim().replaceAll("\\s+", " ");
-        if (trimmed.isEmpty())
-            return "";
+        if (trimmed.isEmpty()) return "";
         return trimmed.substring(0, 1).toUpperCase() + trimmed.substring(1).toLowerCase();
     }
 
+    /**
+     * Modifica lo stile cromatico e il testo della etichetta informativa inferiore.
+     */
     public void labelFeedback(String text, String color) {
         if (lblFeedback != null) {
             lblFeedback.setStyle("-fx-text-fill: " + color + ";");
