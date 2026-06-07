@@ -1,5 +1,6 @@
 package it.unisa.sad.playlistmanager.application.service;
 
+import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
@@ -46,11 +47,9 @@ class PlaybackServiceTest {
     @Test
     void testPlayTrack_TracciaInesistenteNulla() {
         // Esecuzione e Verifica US-09: Gestione eccezione per traccia nulla
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(TrackNotFoundException.class, () -> {
             playbackService.playTrack(null);
         });
-
-        assertEquals("Track cannot be null", exception.getMessage());
         
         // Assicurati che lo stato del player non sia cambiato a causa dell'errore
         assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());

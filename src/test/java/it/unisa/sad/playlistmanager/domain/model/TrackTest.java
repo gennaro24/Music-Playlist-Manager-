@@ -1,5 +1,6 @@
 package it.unisa.sad.playlistmanager.domain.model;
 
+import it.unisa.sad.playlistmanager.domain.exceptions.ValidationException;
 import org.junit.jupiter.api.Test;
 import java.time.Year;
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,31 +37,31 @@ class TrackTest {
 
     @Test
     void testErroreTitoloMancante() {
-        assertThrows(IllegalArgumentException.class, () -> new Track("1", null, "Autore", 200, "Pop", 2020));
-        assertThrows(IllegalArgumentException.class, () -> new Track("1", "   ", "Autore", 200, "Pop", 2020));
+        assertThrows(ValidationException.class, () -> new Track("1", null, "Autore", 200, "Pop", 2020));
+        assertThrows(ValidationException.class, () -> new Track("1", "   ", "Autore", 200, "Pop", 2020));
     }
 
     @Test
     void testErroreAutoreMancante() {
-        assertThrows(IllegalArgumentException.class, () -> new Track("1", "Titolo", null, 200, "Pop", 2020));
-        assertThrows(IllegalArgumentException.class, () -> new Track("1", "Titolo", "   ", 200, "Pop", 2020));
+        assertThrows(ValidationException.class, () -> new Track("1", "Titolo", null, 200, "Pop", 2020));
+        assertThrows(ValidationException.class, () -> new Track("1", "Titolo", "   ", 200, "Pop", 2020));
     }
 
     @Test
     void testErroreDurataZeroONegativa() {
-        assertThrows(IllegalArgumentException.class, () -> new Track("1", "Titolo", "Autore", 0, "Pop", 2020));
-        assertThrows(IllegalArgumentException.class, () -> new Track("1", "Titolo", "Autore", -10, "Pop", 2020));
+        assertThrows(ValidationException.class, () -> new Track("1", "Titolo", "Autore", 0, "Pop", 2020));
+        assertThrows(ValidationException.class, () -> new Track("1", "Titolo", "Autore", -10, "Pop", 2020));
     }
 
     @Test
     void testErroreAnnoNelFuturo() {
         int nextYear = Year.now().getValue() + 1;
-        assertThrows(IllegalArgumentException.class, () -> new Track("1", "Titolo", "Autore", 200, "Pop", nextYear));
+        assertThrows(ValidationException.class, () -> new Track("1", "Titolo", "Autore", 200, "Pop", nextYear));
     }
 
     @Test
     void testErroreAnnoZeroONegativo() {
-        assertThrows(IllegalArgumentException.class, () -> new Track("1", "Titolo", "Autore", 200, "Pop", 0));
-        assertThrows(IllegalArgumentException.class, () -> new Track("1", "Titolo", "Autore", 200, "Pop", -1990));
+        assertThrows(ValidationException.class, () -> new Track("1", "Titolo", "Autore", 200, "Pop", 0));
+        assertThrows(ValidationException.class, () -> new Track("1", "Titolo", "Autore", 200, "Pop", -1990));
     }
 }

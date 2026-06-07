@@ -1,5 +1,6 @@
 package it.unisa.sad.playlistmanager.domain.model;
 
+import it.unisa.sad.playlistmanager.domain.exceptions.ValidationException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -19,8 +20,8 @@ class PlaylistTest {
 
     @Test
     void testErroreNomeMancanteCostruttore() {
-        assertThrows(IllegalArgumentException.class, () -> new Playlist("p-1", null));
-        assertThrows(IllegalArgumentException.class, () -> new Playlist("p-1", "   "));
+        assertThrows(ValidationException.class, () -> new Playlist("p-1", null));
+        assertThrows(ValidationException.class, () -> new Playlist("p-1", "   "));
     }
 
     @Test
@@ -33,7 +34,7 @@ class PlaylistTest {
     @Test
     void testErroreNomeMancanteSetter() {
         Playlist playlist = new Playlist("p-1", "Playlist Valida");
-        assertThrows(IllegalArgumentException.class, () -> playlist.setName(null));
+        assertThrows(ValidationException.class, () -> playlist.setName(null));
     }
 
     // --- TEST AGGIUNTA E ORDINE TRACCE ---
@@ -52,7 +53,7 @@ class PlaylistTest {
     @Test
     void testErroreAggiuntaTracciaNulla() {
         Playlist playlist = new Playlist("p-1", "Rock Classics");
-        assertThrows(IllegalArgumentException.class, () -> playlist.addTrack(null));
+        assertThrows(ValidationException.class, () -> playlist.addTrack(null));
     }
 
     @Test

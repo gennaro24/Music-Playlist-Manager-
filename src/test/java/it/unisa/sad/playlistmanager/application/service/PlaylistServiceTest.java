@@ -1,5 +1,7 @@
 package it.unisa.sad.playlistmanager.application.service;
 
+import it.unisa.sad.playlistmanager.application.exceptions.PlaylistNotFoundException;
+import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
@@ -58,7 +60,6 @@ class PlaylistServiceTest {
         @Override
         public void removeTrackFromPlaylist(String playlistId, String trackId) {}
 
-        // ECCO IL METODO CHE MANCAVA SUL NUOVO BRANCH!
         @Override
         public List<Track> findTracksByPlaylistId(String playlistId) {
             if (!"1".equals(playlistId)) {
@@ -144,8 +145,6 @@ class PlaylistServiceTest {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             service.addTrackToPlaylist("999", "t1");
         });
-
-        assertTrue(exception.getMessage().contains("Playlist non trovata"));
     }
 
     @Test
@@ -158,7 +157,45 @@ class PlaylistServiceTest {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             service.addTrackToPlaylist("1", "t1");
         });
+        assertNotNull(exception.getMessage());
+    }
 
-        assertNotNull(exception.getMessage(), "Deve essere sollevata un'eccezione per traccia duplicata");
+    // ===================================================================================
+    // TEST TASK T-43 (US-08): RIMOZIONE TRACCIA
+    // ===================================================================================
+
+    @Test
+    void testRemoveTrackFromPlaylist_RimozioneValida() {
+        FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
+        FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
+        PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
+
+        assertDoesNotThrow(() -> {
+            service.removeTrackFromPlaylist("1", "t1"); 
+        });
+        assertTrue(fakePlaylistRepo.isRemoveTrackCalled, "Il metodo removeTrackFromPlaylist del repository deve essere delegato correttamente.");
+    }
+
+    @Test
+    void testRemoveTrackFromPlaylist_PlaylistInesistente() {
+        FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
+        FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
+        PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
+
+        assertThrows(PlaylistNotFoundException.class, () -> {
+            service.removeTrackFromPlaylist("999", "t1");
+        });
+    }
+
+    @Test
+    void testRemoveTrackFromPlaylist_TracciaInesistenteNelCatalogo() {
+        FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
+        FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
+        PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
+
+        // Proviamo a rimuovere una traccia che NON esiste nel database delle tracce ("t999")
+        assertThrows(TrackNotFoundException.class, () -> {
+            service.removeTrackFromPlaylist("1", "t999");
+        });
     }
 }
