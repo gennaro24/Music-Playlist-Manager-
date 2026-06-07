@@ -23,6 +23,7 @@ class PlaylistServiceTest {
     class FakePlaylistRepository implements PlaylistRepository {
         boolean isSaveCalled = false;
         boolean isAddTrackCalled = false;
+        boolean isRemoveTrackCalled = false;
         Playlist savedPlaylist = null;
         
         @Override
@@ -58,7 +59,9 @@ class PlaylistServiceTest {
         }
 
         @Override
-        public void removeTrackFromPlaylist(String playlistId, String trackId) {}
+        public void removeTrackFromPlaylist(String playlistId, String trackId) {
+            this.isRemoveTrackCalled = true;
+        }
 
         @Override
         public List<Track> findTracksByPlaylistId(String playlistId) {
@@ -142,7 +145,7 @@ class PlaylistServiceTest {
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
         // Passiamo una playlist che non esiste ("999")
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        Exception exception = assertThrows(PlaylistNotFoundException.class, () -> {
             service.addTrackToPlaylist("999", "t1");
         });
     }
