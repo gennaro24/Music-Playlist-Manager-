@@ -3,8 +3,6 @@ package it.unisa.sad.playlistmanager.persistence.repository;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.db.DatabaseConnectionManager;
 import it.unisa.sad.playlistmanager.persistence.exceptions.RepositoryException;
-import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

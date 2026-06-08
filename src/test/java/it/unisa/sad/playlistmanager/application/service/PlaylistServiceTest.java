@@ -81,8 +81,9 @@ class PlaylistServiceTest {
         }
 
         @Override
-        public void deleteById(String playlistId) {
+        public Optional<Playlist> deleteById(String playlistId) {
             // no-op per test
+            return Optional.empty();
         }
     }
 
@@ -105,8 +106,9 @@ class PlaylistServiceTest {
         }
 
         @Override
-        public void deleteById(String id) {
+        public Optional<Track> deleteById(String id) {
             // no-op per test
+            return Optional.empty();
         }
 
         @Override
