@@ -3,6 +3,7 @@ package it.unisa.sad.playlistmanager.persistence.repository;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.db.DatabaseConnectionManager;
 import it.unisa.sad.playlistmanager.persistence.exceptions.RepositoryException;
+import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -24,27 +25,29 @@ public class SqliteTrackRepository implements TrackRepository {
 
     /**
      * Utility method per costruire l'oggetto Track a partire dal ResultSet.
+     * 
      * @param ResultSet
      */
 
-    private Track mapResultSetToTrack(ResultSet resultSet) throws SQLException{
+    private Track mapResultSetToTrack(ResultSet resultSet) throws SQLException {
 
         return new Track(
-            resultSet.getString("id"),
-            resultSet.getString("title"),
-            resultSet.getString("author"),
-            resultSet.getInt("duration"),
-            resultSet.getString("genre"),
-            resultSet.getInt("year")
-        );
+                resultSet.getString("id"),
+                resultSet.getString("title"),
+                resultSet.getString("author"),
+                resultSet.getInt("duration"),
+                resultSet.getString("genre"),
+                resultSet.getInt("year"));
     }
 
     public SqliteTrackRepository(DatabaseConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
     }
+
     /**
      * Salva una nuova Track all'interno della tabella tracks in SQlite.
-     * lo statement viene scritto indicando per ogni "?" la posizione rispettiva e il tipo da salvare.
+     * lo statement viene scritto indicando per ogni "?" la posizione rispettiva e
+     * il tipo da salvare.
      * Infine, viene eseguito l'executeUpdate
      */
     @Override
@@ -54,25 +57,28 @@ public class SqliteTrackRepository implements TrackRepository {
                 VALUES(?,?,?,?,?,?)
                 """;
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)){
-                statement.setString(1, track.getId());
-                statement.setString(2, track.getTitle());
-                statement.setString(3, track.getAuthor());
-                statement.setInt(4, track.getDuration());
-                statement.setString(5, track.getGenre());
-                statement.setInt(6, track.getYear());
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, track.getId());
+            statement.setString(2, track.getTitle());
+            statement.setString(3, track.getAuthor());
+            statement.setInt(4, track.getDuration());
+            statement.setString(5, track.getGenre());
+            statement.setInt(6, track.getYear());
 
-                statement.executeUpdate();
-                
-             }catch(SQLException exception){
-             throw new RepositoryException("Errore nel salvataggio della Track con id: [" + track.getId() + "]", exception);
-             }
+            statement.executeUpdate();
+
+        } catch (SQLException exception) {
+            throw new RepositoryException("Errore nel salvataggio della Track con id: [" + track.getId() + "]",
+                    exception);
+        }
     }
+
     /**
      * Trova una Track tramite il suo id.
      * Se la query viene eseguita correttamente, potrà dare due esiti:
-     *  - la Track è stata trovata, dunque vengono estratti i campi e @return Optional.of(Track)
-     *  - La Track con quello specifico id non esiste, @return Optional.empty()     
+     * - la Track è stata trovata, dunque vengono estratti i campi e @return
+     * Optional.of(Track)
+     * - La Track con quello specifico id non esiste, @return Optional.empty()
      */
     @Override
     public Optional<Track> findById(String id) {
@@ -82,52 +88,115 @@ public class SqliteTrackRepository implements TrackRepository {
                 WHERE id = ?
                 """;
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)){
-                statement.setString(1, id);
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, id);
 
-                try (ResultSet resultSet = statement.executeQuery()){
-                    if (resultSet.next()){
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
 
-                        Track track = mapResultSetToTrack(resultSet);
-                        return Optional.of(track);
+                    Track track = mapResultSetToTrack(resultSet);
+                    return Optional.of(track);
 
-                    }
-                    return Optional.empty();
                 }
-
-                
-             }catch(SQLException exception){
-                throw new RepositoryException("Errore nel trovare la Track con id: [" + id + "]", exception);
+                return Optional.empty();
             }
-        
+
+        } catch (SQLException exception) {
+            throw new RepositoryException("Errore nel trovare la Track con id: [" + id + "]", exception);
+        }
+
     }
+
     /**
      * Trova tutte le Track presenti nella tabella tracks.
-     * @return un'ArrayList<Track> contenente oggetti di tipo Track. 
-     * Se la tabella non contiene nessuna traccia, ritorna una lista vuota.
+     * 
+     * @return un'ArrayList<Track> contenente oggetti di tipo Track.
+     *         Se la tabella non contiene nessuna traccia, ritorna una lista vuota.
      */
     @Override
     public List<Track> findAll() {
-                String sql = """
+        String sql = """
                 SELECT id, title, author, duration, genre, year
                 FROM tracks
                 """;
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)){
-                try (ResultSet resultSet = preparedStatement.executeQuery()){
-                    List<Track> allTracks = new ArrayList<>();
-                    while (resultSet.next()){
+                PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                List<Track> allTracks = new ArrayList<>();
+                while (resultSet.next()) {
 
-                        Track currentTrack = mapResultSetToTrack(resultSet);
-                        allTracks.add(currentTrack);
+                    Track currentTrack = mapResultSetToTrack(resultSet);
+                    allTracks.add(currentTrack);
 
-                    }
-                    return allTracks;
                 }
-                
-             }catch(SQLException exception){
-                throw new RepositoryException("Errore nel trovare tutte le Track del catalogo.", exception);
-             }
+                return allTracks;
+            }
 
+        } catch (SQLException exception) {
+            throw new RepositoryException("Errore nel trovare tutte le Track del catalogo.", exception);
+        }
+
+    }
+
+    /**
+     * Elimina una track nel sistema di persistenza in base al suo id.
+     * 
+     * @param id dell'oggetto Track da eliminare
+     */
+    @Override
+    public void deleteById(String id) {
+        String sql = """
+                DELETE FROM tracks
+                WHERE id = ?
+                """;
+        try (Connection connection = connectionManager.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, id);
+            int affected = statement.executeUpdate();
+            if (affected == 0) {
+                throw new TrackNotFoundException("Track non trovata");
+            }
+        } catch (SQLException exception) {
+            throw new RepositoryException("Errore nell'eliminazione della Track con id: [" + id + "]", exception);
+        }
+    }
+
+    /**
+     * Aggiorna una track nel sistema di persistenza in base al suo id.
+     * @param track l'oggetto Track da aggiornare
+     */
+    @Override
+    public void update(Track track) {
+        if (track == null) {
+            throw new IllegalArgumentException("Track nulla.");
+        }
+        if (track.getId() == null || track.getId().trim().isEmpty()) {
+            throw new IllegalArgumentException("ID track non valido.");
+        }
+
+        String sql = """
+                UPDATE tracks
+                SET title = ?, author = ?, duration = ?, genre = ?, year = ?
+                WHERE id = ?
+                """;
+
+        try (Connection connection = connectionManager.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, track.getTitle());
+            statement.setString(2, track.getAuthor());
+            statement.setInt(3, track.getDuration());
+            statement.setString(4, track.getGenre());
+            statement.setInt(5, track.getYear());
+            statement.setString(6, track.getId());
+
+            int rows = statement.executeUpdate();
+            if (rows == 0) {
+                throw new TrackNotFoundException("Track non trovata");
+            }
+
+        } catch (SQLException exception) {
+            throw new RepositoryException("Errore nell'aggiornamento della Track con id");
+        }
     }
 }
