@@ -251,4 +251,9 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
                                             "della Playlist con id: [" + playlistId + "]" ,exception);
         }
     }
+
+    @Override
+    public Optional<Playlist> deleteById(String playlistId){
+        return Optional.empty();
+    }
 }

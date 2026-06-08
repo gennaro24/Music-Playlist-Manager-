@@ -2,6 +2,7 @@ package it.unisa.sad.playlistmanager.application.service;
 
 import it.unisa.sad.playlistmanager.application.exceptions.PlaylistNotFoundException;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
+import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
@@ -74,6 +75,8 @@ class PlaylistServiceTest {
                     new Track("t2", "Song Two", "Artist Two", 200, "Rock", 2021)
             );
         }
+        //TODO: Implementa casi di test per il metodo Playlist.deleteById
+        @Override public Optional<Playlist> deleteById(String playlistId){return Optional.empty();}
     }
 
     class FakeTrackRepository implements TrackRepository {
@@ -92,6 +95,7 @@ class PlaylistServiceTest {
         @Override public Optional<Track> update(Track track){return Optional.empty();}
         //TODO: Implementa casi di test per il metodo deleteById
         @Override public Optional<Track> deleteById(String id){return Optional.empty();}
+
     }
 
     // ===================================================================================
@@ -162,7 +166,7 @@ class PlaylistServiceTest {
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
         // Proviamo a reinserire "t1" nella playlist "1" (che ce l'ha già)
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        Exception exception = assertThrows(ValidationException.class, () -> {
             service.addTrackToPlaylist("1", "t1");
         });
         assertNotNull(exception.getMessage());
