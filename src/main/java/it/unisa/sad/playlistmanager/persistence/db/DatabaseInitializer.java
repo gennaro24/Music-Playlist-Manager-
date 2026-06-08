@@ -45,6 +45,8 @@ public class DatabaseInitializer {
     public void initializeDatabase() throws SQLException {
         try (Connection connection = connectionManager.getConnection();
              Statement statement = connection.createStatement()) {
+                // Attiva i vincoli di chiave esterna esplicitamente
+                statement.execute("PRAGMA foreign_keys = ON;");
                 statement.executeUpdate("""
                         CREATE TABLE IF NOT EXISTS tracks (
                             id TEXT PRIMARY KEY,
@@ -68,8 +70,9 @@ public class DatabaseInitializer {
                             track_id TEXT NOT NULL,
                             position INTEGER NOT NULL,
                             PRIMARY KEY (playlist_id, track_id),
-                            FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
-                            FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+                            FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                            FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE ON UPDATE CASCADE
+                       
                         )
                         """);
              }
