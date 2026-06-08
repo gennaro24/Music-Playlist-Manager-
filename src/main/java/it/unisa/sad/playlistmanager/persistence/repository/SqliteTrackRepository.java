@@ -142,22 +142,25 @@ public class SqliteTrackRepository implements TrackRepository {
      * Elimina una track nel sistema di persistenza in base al suo id.
      * 
      * @param id dell'oggetto Track da eliminare
+     * @return un Optional contenente la traccia eliminata se presente, altrimenti Optional.empty()
      */
     @Override
-    public void deleteById(String id) {
+    public Optional<Track> deleteById(String id) {
+        Optional<Track> trackOpt = findById(id);
         String sql = """
                 DELETE FROM tracks
                 WHERE id = ?
                 """;
         try (Connection connection = connectionManager.getConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, id);
             int affected = statement.executeUpdate();
             if (affected == 0) {
-                throw new TrackNotFoundException("Track non trovata");
+                return Optional.empty();
             }
+            return trackOpt;
         } catch (SQLException exception) {
-            throw new RepositoryException("Errore nell'eliminazione della Track con id");
+            throw new RepositoryException("Errore nell'eliminazione della Track");
         }
     }
 

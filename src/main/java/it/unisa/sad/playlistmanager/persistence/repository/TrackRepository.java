@@ -34,7 +34,7 @@ public interface TrackRepository {
      * Elimina una track nel sistema di persistenza in base al suo id.
      * @param id dell'oggetto Track da eliminare
      */
-    void deleteById(String id);
+    Optional<Track> deleteById(String id);
 
     /**
      * Aggiorna una track nel sistema di persistenza in base al suo id.

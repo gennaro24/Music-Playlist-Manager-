@@ -258,7 +258,8 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
      * @param playlistId dell'oggetto Playlist da eliminare
      */
     @Override
-    public void deleteById(String playlistId) {
+    public Optional<Playlist> deleteById(String playlistId) {
+        Optional<Playlist> playlistOpt = findById(playlistId);
         String sql = """
                 DELETE FROM playlists
                 WHERE id = ?
@@ -268,8 +269,9 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
             statement.setString(1, playlistId);
             int affected = statement.executeUpdate();
             if (affected == 0) {
-                throw new PlaylistNotFoundException("Playlist non trovata");
+                return Optional.empty();
             }
+            return playlistOpt;
         } catch (SQLException exception) {
             throw new RepositoryException("Errore nell'eliminazione della Playlist");
         }
