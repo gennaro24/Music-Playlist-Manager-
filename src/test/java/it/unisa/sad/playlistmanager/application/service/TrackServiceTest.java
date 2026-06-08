@@ -31,11 +31,18 @@ class TrackServiceTest {
         public List<Track> findAll() {
             return this.simulatedDatabase;
         }
-        
-        //TODO: Implementa casi di test per il metodo update
-        @Override public Optional<Track> update(Track track){return Optional.empty();}
-        //TODO: Implementa casi di test per il metodo deleteById
-        @Override public Optional<Track> deleteById(String id){return Optional.empty();}
+
+        @Override
+        public Optional<Track> deleteById(String id) {
+            // no-op per test
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Track> update(Track track) {
+            // no-op per test
+            return Optional.empty();
+        }
     }
 
     @Test

@@ -25,7 +25,7 @@ class PlaylistServiceTest {
         boolean isAddTrackCalled = false;
         boolean isRemoveTrackCalled = false;
         Playlist savedPlaylist = null;
-        
+
         @Override
         public void save(Playlist playlist) {
             this.isSaveCalled = true;
@@ -41,13 +41,19 @@ class PlaylistServiceTest {
         }
 
         @Override
-        public Optional<Playlist> findByName(String name) { return Optional.empty(); }
+        public Optional<Playlist> findByName(String name) {
+            return Optional.empty();
+        }
 
         @Override
-        public List<Playlist> findAll() { return Collections.emptyList(); }
+        public List<Playlist> findAll() {
+            return Collections.emptyList();
+        }
 
         @Override
-        public boolean existsByName(String name) { return false; }
+        public boolean existsByName(String name) {
+            return false;
+        }
 
         @Override
         public void addTrackToPlaylist(String playlistId, String trackId) {
@@ -71,8 +77,13 @@ class PlaylistServiceTest {
             // La playlist "1" contiene già la traccia "t1" e "t2"
             return List.of(
                     new Track("t1", "Song One", "Artist One", 180, "Rock", 2020),
-                    new Track("t2", "Song Two", "Artist Two", 200, "Rock", 2021)
-            );
+                    new Track("t2", "Song Two", "Artist Two", 200, "Rock", 2021));
+        }
+
+        @Override
+        public Optional<Playlist> deleteById(String playlistId) {
+            // no-op per test
+            return Optional.empty();
         }
     }
 
@@ -84,14 +95,27 @@ class PlaylistServiceTest {
             }
             return Optional.empty();
         }
-        //TODO: Implementa casi di test per il metodo update
-        @Override public void save(Track track) {}
-        //TODO: Implementa casi di test per il metodo update
-        @Override public List<Track> findAll() { return Collections.emptyList(); }
-        //TODO: Implementa casi di test per il metodo update
-        @Override public Optional<Track> update(Track track){return Optional.empty();}
-        //TODO: Implementa casi di test per il metodo deleteById
-        @Override public Optional<Track> deleteById(String id){return Optional.empty();}
+
+        @Override
+        public void save(Track track) {
+        }
+
+        @Override
+        public List<Track> findAll() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public Optional<Track> deleteById(String id) {
+            // no-op per test
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Track> update(Track track) {
+            // no-op per test
+            return Optional.empty();
+        }
     }
 
     // ===================================================================================
@@ -117,7 +141,7 @@ class PlaylistServiceTest {
         PlaylistService service = new PlaylistService(fakeRepo, null);
         Playlist playlist = new Playlist("1", "Rock Classics");
         List<Track> tracks = service.getTracksForPlaylist(playlist.getId());
-        
+
         assertNotNull(tracks);
         assertEquals(2, tracks.size());
         assertEquals("Song One", tracks.get(0).getTitle());
@@ -140,7 +164,8 @@ class PlaylistServiceTest {
         });
 
         // Verifichiamo che il service abbia delegato al DB l'inserimento
-        assertTrue(fakePlaylistRepo.isAddTrackCalled, "Il metodo addTrackToPlaylist del repository deve essere invocato.");
+        assertTrue(fakePlaylistRepo.isAddTrackCalled,
+                "Il metodo addTrackToPlaylist del repository deve essere invocato.");
     }
 
     @Test
@@ -179,9 +204,10 @@ class PlaylistServiceTest {
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
         assertDoesNotThrow(() -> {
-            service.removeTrackFromPlaylist("1", "t1"); 
+            service.removeTrackFromPlaylist("1", "t1");
         });
-        assertTrue(fakePlaylistRepo.isRemoveTrackCalled, "Il metodo removeTrackFromPlaylist del repository deve essere delegato correttamente.");
+        assertTrue(fakePlaylistRepo.isRemoveTrackCalled,
+                "Il metodo removeTrackFromPlaylist del repository deve essere delegato correttamente.");
     }
 
     @Test
@@ -201,9 +227,11 @@ class PlaylistServiceTest {
         FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
-        // Proviamo a rimuovere una traccia che NON esiste nel database delle tracce ("t999")
+        // Proviamo a rimuovere una traccia che NON esiste nel database delle tracce
+        // ("t999")
         assertThrows(TrackNotFoundException.class, () -> {
             service.removeTrackFromPlaylist("1", "t999");
         });
     }
+
 }

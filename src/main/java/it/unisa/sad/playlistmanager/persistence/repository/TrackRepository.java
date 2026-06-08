@@ -30,7 +30,17 @@ public interface TrackRepository {
      */
     List<Track> findAll();
 
+    /**
+     * Elimina una track nel sistema di persistenza in base al suo id.
+     * @param id dell'oggetto Track da eliminare
+     */
+    Optional<Track> deleteById(String id);
+
+    /**
+     * Aggiorna una track nel sistema di persistenza in base al suo id.
+     * @param track l'oggetto Track da aggiornare
+     * @return un Optional contenente la nuova traccia aggiornata se presente, altrimenti Optional.empty()
+     */
     Optional<Track> update(Track track);
-    Optional<Track> deleteById(String trackId);
     
 }
