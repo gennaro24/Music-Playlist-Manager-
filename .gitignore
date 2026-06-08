@@ -16,7 +16,6 @@ data/
 
 .DS_Store
 Thumbs.db
-
 # Local AI/Codex working notes
 AGENTS.md
 docs/Codex/
