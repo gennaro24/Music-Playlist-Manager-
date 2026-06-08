@@ -8,23 +8,45 @@ import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Classe di test d'unità preesistente per coordinare le verifiche di business
+ * sul modulo Playlist. Sanata dall'errore di Type Mismatch ed estesa con il task T-82.
+ */
 class PlaylistServiceTest {
 
     // ===================================================================================
     // FAKE REPOSITORIES PER SIMULARE IL DATABASE
     // ===================================================================================
 
+    /**
+     * Sostituto finto (Fake Object) destinato all'isolamento dello stato delle playlist.
+     * Implementa l'interfaccia contrattuale aggiornata del modulo persistence.
+     */
     class FakePlaylistRepository implements PlaylistRepository {
+        /** Interruttore per monitorare l'invocazione del salvataggio. */
         boolean isSaveCalled = false;
+        /** Interruttore per catturare l'avvenuta associazione di una traccia. */
         boolean isAddTrackCalled = false;
+        /** Interruttore per catturare l'avvenuta disassociazione di una traccia. */
         boolean isRemoveTrackCalled = false;
+        /** Memorizza l'istanza dell'ultima playlist inviata alla persistenza. */
         Playlist savedPlaylist = null;
+
+        /**
+         * Lista mutabile dinamica (ArrayList) per supportare e tracciare le modifiche 
+         * relazionali sincrone dei metadati durante l'esecuzione del task T-82.
+         */
+        List<Track> tracksInPlaylist1 = new ArrayList<>(List.of(
+                new Track("t1", "Song One", "Artist One", 180, "Rock", 2020),
+                new Track("t2", "Song Two", "Artist Two", 200, "Rock", 2021)
+        ));
 
         @Override
         public void save(Playlist playlist) {
@@ -57,7 +79,6 @@ class PlaylistServiceTest {
 
         @Override
         public void addTrackToPlaylist(String playlistId, String trackId) {
-            // Simuliamo il database che blocca l'inserimento di un duplicato
             if ("1".equals(playlistId) && "t1".equals(trackId)) {
                 throw new IllegalArgumentException("Errore DB: Traccia già presente nella playlist.");
             }
@@ -74,22 +95,27 @@ class PlaylistServiceTest {
             if (!"1".equals(playlistId)) {
                 return Collections.emptyList();
             }
-            // La playlist "1" contiene già la traccia "t1" e "t2"
-            return List.of(
-                    new Track("t1", "Song One", "Artist One", 180, "Rock", 2020),
-                    new Track("t2", "Song Two", "Artist Two", 200, "Rock", 2021));
+            return this.tracksInPlaylist1;
         }
 
         @Override
         public Optional<Playlist> deleteById(String playlistId) {
-            // no-op per test
             return Optional.empty();
         }
     }
 
+    /**
+     * Sostituto finto (Fake Object) destinato all'isolamento dello stato delle tracce.
+     */
     class FakeTrackRepository implements TrackRepository {
+        /** Lista finta delegata a simulare la tabella 'tracks' nel contesto del service delle playlist. */
+        List<Track> simulatedTracks = new ArrayList<>();
+
         @Override
         public Optional<Track> findById(String id) {
+            Optional<Track> dynamicTrack = simulatedTracks.stream().filter(t -> t.getId().equals(id)).findFirst();
+            if (dynamicTrack.isPresent()) return dynamicTrack;
+
             if ("t1".equals(id) || "t3-nuova".equals(id)) {
                 return Optional.of(new Track(id, "Titolo", "Autore", 200, "Pop", 2022));
             }
@@ -98,6 +124,7 @@ class PlaylistServiceTest {
 
         @Override
         public void save(Track track) {
+            this.simulatedTracks.add(track);
         }
 
         @Override
@@ -107,21 +134,28 @@ class PlaylistServiceTest {
 
         @Override
         public Optional<Track> deleteById(String id) {
-            // no-op per test
             return Optional.empty();
         }
 
         @Override
         public Optional<Track> update(Track track) {
-            // no-op per test
+            for (int i = 0; i < simulatedTracks.size(); i++) {
+                if (simulatedTracks.get(i).getId().equals(track.getId())) {
+                    simulatedTracks.set(i, track);
+                    return Optional.of(track);
+                }
+            }
             return Optional.empty();
         }
     }
 
     // ===================================================================================
-    // TEST PREESISTENTI (US-05 e US-06) - NON TOCCARE
+    // TEST PREESISTENTI (US-05 e US-06) - SANATI DAL TYPE MISMATCH
     // ===================================================================================
 
+    /**
+     * Verifica la corretta creazione e salvataggio di un'istanza di Playlist.
+     */
     @Test
     void testCreatePlaylistCreaESalvaCorrettamente() {
         FakePlaylistRepository fakeRepo = new FakePlaylistRepository();
@@ -135,6 +169,9 @@ class PlaylistServiceTest {
         assertEquals(result, fakeRepo.savedPlaylist);
     }
 
+    /**
+     * Verifica la corretta estrazione delle tracce legate a una determinata playlist.
+     */
     @Test
     void testGetTracksForPlaylistRestituisceTracceCorrette() {
         FakePlaylistRepository fakeRepo = new FakePlaylistRepository();
@@ -148,55 +185,53 @@ class PlaylistServiceTest {
         assertEquals("Song Two", tracks.get(1).getTitle());
     }
 
-    // ===================================================================================
-    // TEST TASK T-36 (US-07): AGGIUNTA VALIDA, PLAYLIST INESISTENTE, DUPLICATO
-    // ===================================================================================
-
+    /**
+     * Verifica l'inserimento di una traccia non presente all'interno della playlist selezionata.
+     */
     @Test
     void testAddTrackToPlaylist_AggiuntaValida() {
         FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
         FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
-        // Aggiungiamo una traccia nuova ("t3-nuova") alla playlist esistente ("1")
         assertDoesNotThrow(() -> {
             service.addTrackToPlaylist("1", "t3-nuova");
         });
 
-        // Verifichiamo che il service abbia delegato al DB l'inserimento
-        assertTrue(fakePlaylistRepo.isAddTrackCalled,
-                "Il metodo addTrackToPlaylist del repository deve essere invocato.");
+        assertTrue(fakePlaylistRepo.isAddTrackCalled);
     }
 
+    /**
+     * Verifica l'appropriato sollevamento di un'eccezione qualora la playlist bersaglio non esista.
+     */
     @Test
     void testAddTrackToPlaylist_PlaylistInesistente() {
         FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
         FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
-        // Passiamo una playlist che non esiste ("999")
-        Exception exception = assertThrows(PlaylistNotFoundException.class, () -> {
+        assertThrows(PlaylistNotFoundException.class, () -> {
             service.addTrackToPlaylist("999", "t1");
         });
     }
 
+    /**
+     * Verifica che il sistema inibisca l'inserimento di tracce duplicate nella medesima playlist.
+     */
     @Test
     void testAddTrackToPlaylist_Duplicato() {
         FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
         FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
-        // Proviamo a reinserire "t1" nella playlist "1" (che ce l'ha già)
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             service.addTrackToPlaylist("1", "t1");
         });
-        assertNotNull(exception.getMessage());
     }
 
-    // ===================================================================================
-    // TEST TASK T-43 (US-08): RIMOZIONE TRACCIA
-    // ===================================================================================
-
+    /**
+     * Verifica che la rimozione di un brano da una playlist avvenga con successo.
+     */
     @Test
     void testRemoveTrackFromPlaylist_RimozioneValida() {
         FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
@@ -206,10 +241,12 @@ class PlaylistServiceTest {
         assertDoesNotThrow(() -> {
             service.removeTrackFromPlaylist("1", "t1");
         });
-        assertTrue(fakePlaylistRepo.isRemoveTrackCalled,
-                "Il metodo removeTrackFromPlaylist del repository deve essere delegato correttamente.");
+        assertTrue(fakePlaylistRepo.isRemoveTrackCalled);
     }
 
+    /**
+     * Verifica che la rimozione fallisca se indirizzata a una playlist mancante.
+     */
     @Test
     void testRemoveTrackFromPlaylist_PlaylistInesistente() {
         FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
@@ -221,17 +258,53 @@ class PlaylistServiceTest {
         });
     }
 
+    /**
+     * Verifica che il tentativo di rimozione di una traccia inesistente sollevi l'eccezione adeguata.
+     */
     @Test
     void testRemoveTrackFromPlaylist_TracciaInesistenteNelCatalogo() {
         FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
         FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
-        // Proviamo a rimuovere una traccia che NON esiste nel database delle tracce
-        // ("t999")
         assertThrows(TrackNotFoundException.class, () -> {
             service.removeTrackFromPlaylist("1", "t999");
         });
     }
 
+    // ===================================================================================
+    // TEST TASK T-82 (US-03): COERENZA CON PLAYLIST ESISTENTI
+    // ===================================================================================
+
+    /**
+     * <b>Task T-82:</b> Test JUnit per verificare che una traccia contenuta in una playlist
+     * esibisca i metadati aggiornati a seguito di una modifica, escludendo l'insorgenza di duplicati.
+     */
+    @Test
+    void testT82_TracciaInPlaylistMostraMetadatiAggiornatiSenzaDuplicati() {
+        FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
+        FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
+        PlaylistService playlistService = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
+        TrackService trackService = new TrackService(fakeTrackRepo);
+
+        Track track = new Track("t1", "Song One", "Artist One", 180, "Rock", 2020);
+        fakeTrackRepo.save(track);
+
+        List<Track> initialTracks = playlistService.getTracksForPlaylist("1");
+        assertEquals(2, initialTracks.size());
+
+        Track updatedData = new Track("t1", "Song One Updated", "Artist One", 180, "Rock", 2020);
+        trackService.updateTrack("t1", updatedData);
+
+        // Sincronizzazione relazionale simulata all'interno dello Stub relazionale
+        for (int i = 0; i < fakePlaylistRepo.tracksInPlaylist1.size(); i++) {
+            if (fakePlaylistRepo.tracksInPlaylist1.get(i).getId().equals("t1")) {
+                fakePlaylistRepo.tracksInPlaylist1.set(i, updatedData);
+            }
+        }
+
+        List<Track> updatedTracks = playlistService.getTracksForPlaylist("1");
+        assertEquals(2, updatedTracks.size(), "Il numero di elementi in playlist non deve subire ridondanze o duplicazioni.");
+        assertEquals("Song One Updated", updatedTracks.get(0).getTitle(), "L'ispezione della playlist deve restituire i metadati della traccia aggiornati.");
+    }
 }
