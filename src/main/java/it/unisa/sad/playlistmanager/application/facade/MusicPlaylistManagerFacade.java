@@ -2,6 +2,7 @@ package it.unisa.sad.playlistmanager.application.facade;
 
 import java.util.List;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
+import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.application.service.PlaybackService;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
@@ -120,9 +121,9 @@ public class MusicPlaylistManagerFacade {
 
 
     /**
-     * 
-     * @param playlistId
-     * @return
+     * Espone al Presentation Layer la funzionalità di recupero delle tracce associate a una playlist.
+     * @param playlistId L'identificativo unico della playlist di riferimento.
+     * @return Una lista di tracce associate alla playlist.
      */
     public List<Track> getTracksForPlaylist(String playlistId) {
         return playlistService.getTracksForPlaylist(playlistId);
@@ -158,6 +159,22 @@ public class MusicPlaylistManagerFacade {
      */
     public PlaybackSnapshot getPlaybackSnapshot() {
         return playbackService.getSnapshot();
+    }
+    /**
+     * Espone al presentation layer la funzionalità di modifica di una traccia.
+     * @return la traccia modificata da ritornare alla UI.
+     */
+    public Track updateTrack(String trackId, Track updatedTrack) {
+        return trackService.updateTrack(trackId, updatedTrack);
+    }
+    /**
+     * Espone al presentation layer la funzionalità di eliminazione di una traccia.
+     * Notifica il PlayBackService se la traccia corrente è in playback.
+     * @return la traccia eliminata da ritornare alla UI.
+     */    
+    public Track deleteTrack(String trackId) {
+        playbackService.handleDeletedTrack(trackId);
+        return trackService.deleteTrack(trackId);
     }
 
 }

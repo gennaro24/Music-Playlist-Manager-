@@ -16,46 +16,88 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.MenuItem;
 import javafx.beans.binding.Bindings;
 import java.util.function.Consumer;
 
 /**
  * Sotto-controllore delegato alla visualizzazione, manipolazione e immissione dati
  * concernenti il catalogo globale delle tracce e le canzoni interne a una specifica playlist.
- * * <p><b>Revisione Sprint 2:</b> Implementa la Constructor Injection sanando l'accoppiamento
+ * <p><b>Revisione Sprint 2:</b> Implementa la Constructor Injection sanando l'accoppiamento
  * temporale. Sposta l'invocazione di {@code loadCatalog()} all'interno dell'inizializzazione
  * nativa, sfruttando in totale sicurezza l'istanza immutabile della Facade.</p>
- * @version 2.0
+ * <p><b>Integrazione US-03 (Sprint 2):</b> Introduce l'Inline Table Editing con salvataggio 
+ * automatico alla perdita di focus (blur) e messaggistica d'errore standardizzata.</p>
+ * * @version 3.0
  */
 public class TrackController {
 
+    /** Istanza centralizzata dell'Application Facade per il pass-through dei casi d'uso. */
     private final MusicPlaylistManagerFacade facade;
+    
+    /** Riferimento alla traccia attualmente selezionata nella TableView. */
     private Track selectedTrack;
+    
+    /** Routine di callback per notificare la selezione di una traccia al coordinatore. */
     private Consumer<Track> onTrackSelectedHandler;
+    
+    /** Routine di callback per intercettare le richieste di riproduzione forzata. */
     private Consumer<Track> onTrackPlayRequestedHandler;
 
+    /** Campo di testo per l'immissione del titolo della traccia. */
     @FXML private TextField txtTitle;
+    
+    /** Campo di testo per l'immissione dell'autore della traccia. */
     @FXML private TextField txtAuthor;
+    
+    /** Campo di testo per l'immissione della durata in secondi. */
     @FXML private TextField txtDuration;
+    
+    /** Campo di testo per l'immissione del genere musicale. */
     @FXML private TextField txtGenre;
+    
+    /** Campo di testo per l'immissione dell'anno di pubblicazione. */
     @FXML private TextField txtYear;
+    
+    /** Etichetta informativa inferiore destinata ai feedback operativi per l'utente. */
     @FXML private Label lblFeedback;
 
+    /** Tabella principale per la renderizzazione delle tracce musicali. */
     @FXML private TableView<Track> tableTracks;
+    
+    /** Colonna per la visualizzazione e l'editing del titolo. */
     @FXML private TableColumn<Track, String> colTitle;
+    
+    /** Colonna per la visualizzazione e l'editing dell'autore. */
     @FXML private TableColumn<Track, String> colAuthor;
+    
+    /** Colonna per la visualizzazione e l'editing della durata. */
     @FXML private TableColumn<Track, Integer> colDuration;
+    
+    /** Colonna per la visualizzazione e l'editing del genere. */
     @FXML private TableColumn<Track, String> colGenre;
+    
+    /** Colonna per la visualizzazione e l'editing dell'anno. */
     @FXML private TableColumn<Track, Integer> colYear;
+    
+    /** Contenitore grafico del modulo di inserimento tracce. */
     @FXML private VBox formAddTrack;
+    
+    /** Menu a tendina per la scelta della playlist a cui associare il brano. */
     @FXML private ComboBox<Playlist> dropdownPlaylists;
+    
+    /** Contenitore dei comandi di aggiunta rapida a una playlist. */
     @FXML private HBox hboxAddtoPlaylist;
+    
+    /** Pulsante contestuale per escludere una traccia dalla playlist visualizzata. */
     @FXML private Button btnRemoveFromPlaylist;
 
+    /** Flag discriminante per comprendere se la UI mostra il catalogo o una playlist. */
     private boolean playlistViewMode = false;
+    
+    /** Riferimento alla playlist attualmente visualizzata nella TableView. */
     private Playlist currentPlaylist;
+    
+    /** Lista interna contenente la copia speculare delle tracce della playlist attiva. */
     private java.util.List<Track> currentPlaylistTracks = new java.util.ArrayList<>();
 
     /**
@@ -68,22 +110,22 @@ public class TrackController {
     }
 
     /**
-     * Inizializza i componenti grafici della TableView, effettua il data-binding delle
-     * colonne tramite Reflection ed esegue il caricamento dei dati di catalogo a startup.
+     * Inizializza i componenti grafici della TableView, abilita l'editing in linea,
+     * effettua il data-binding ed esegue il caricamento dei dati di catalogo a startup.
      */
     @FXML
     private void initialize() {
-        // 1. INIZIALIZZAZIONE VALUE FACTORIES
+        if (tableTracks != null) {
+            tableTracks.setEditable(true);
+        }
+
         initializeTableColumns();
-        // 2. CONFIGURAZIONE RENDERING GRAFICO
         configureDropdownPlaylistsRendering();
-        // 3. COMPORTAMENTO REATTIVO E LISTENER
         if (tableTracks != null) {
             configureTableToggleDeselection();
             configureTableSelectionListener();
         }
 
-        // 4. CARICAMENTO DATI SICURO DAL LIFECYCLE (Task T-63)
         if (this.facade != null) {
             loadCatalog();
             if (dropdownPlaylists != null) {
@@ -93,15 +135,153 @@ public class TrackController {
     }
 
     /**
-     * Associa le colonne della TableView ai campi dati del Domain Model (Track).
+     * Associa le colonne della TableView ai campi dati del Domain Model (Track)
+     * e configura i cell factory custom per l'inline editing automatico al focus lost.
      */
     private void initializeTableColumns() {
-        if (colTitle != null) colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
-        if (colAuthor != null) colAuthor.setCellValueFactory(new PropertyValueFactory<>("author"));
-        if (colDuration != null) colDuration.setCellValueFactory(new PropertyValueFactory<>("duration"));
-        if (colGenre != null) colGenre.setCellValueFactory(new PropertyValueFactory<>("genre"));
-        if (colYear != null) colYear.setCellValueFactory(new PropertyValueFactory<>("year"));
+        if (colTitle != null) {
+            colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
+            colTitle.setCellFactory(col -> new EditableTableCell<>(val -> val));
+            colTitle.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
+                val -> new Track(event.getRowValue().getId(), val, event.getRowValue().getAuthor(), event.getRowValue().getDuration(), event.getRowValue().getGenre(), event.getRowValue().getYear()), event.getNewValue()));
+        }
+        if (colAuthor != null) {
+            colAuthor.setCellValueFactory(new PropertyValueFactory<>("author"));
+            colAuthor.setCellFactory(col -> new EditableTableCell<>(val -> val));
+            colAuthor.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
+                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), val, event.getRowValue().getDuration(), event.getRowValue().getGenre(), event.getRowValue().getYear()), event.getNewValue()));
+        }
+        if (colDuration != null) {
+            colDuration.setCellValueFactory(new PropertyValueFactory<>("duration"));
+            colDuration.setCellFactory(col -> new EditableTableCell<>(Integer::parseInt));
+            colDuration.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
+                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), event.getRowValue().getAuthor(), val, event.getRowValue().getGenre(), event.getRowValue().getYear()), event.getNewValue()));
+        }
+        if (colGenre != null) {
+            colGenre.setCellValueFactory(new PropertyValueFactory<>("genre"));
+            colGenre.setCellFactory(col -> new EditableTableCell<>(val -> val));
+            colGenre.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
+                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), event.getRowValue().getAuthor(), event.getRowValue().getDuration(), val, event.getRowValue().getYear()), event.getNewValue()));
+        }
+        if (colYear != null) {
+            colYear.setCellValueFactory(new PropertyValueFactory<>("year"));
+            colYear.setCellFactory(col -> new EditableTableCell<>(Integer::parseInt));
+            colYear.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
+                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), event.getRowValue().getAuthor(), event.getRowValue().getDuration(), event.getRowValue().getGenre(), val), event.getNewValue()));
+        }
         configureResponsiveColumnWidths();
+    }
+
+    /**
+     * Coordina ed esegue in differita l'aggiornamento dei dati tramite Facade, intercettando
+     * le eccezioni di validazione per stampare a schermo l'errore standardizzato (Task T-79).
+     * * @param <T>          Il tipo di dato generico gestito dalla colonna.
+     * @param oldTrack     L'istanza originale della traccia prima della modifica.
+     * @param trackCreator Funzione lambda funzionale atta a istanziare la nuova traccia immutabile.
+     * @param newValue     Il valore testuale o numerico appena inserito dall'utente.
+     */
+    private <T> void handleInlineEdit(Track oldTrack, java.util.function.Function<T, Track> trackCreator, T newValue) {
+        Platform.runLater(() -> {
+            try {
+                if (newValue == null) throw new IllegalArgumentException();
+                Track updatedTrack = trackCreator.apply(newValue);
+                facade.updateTrack(oldTrack.getId(), updatedTrack);
+                labelFeedback("Traccia modificata con successo.", "green");
+            } catch (Exception e) {
+                labelFeedback("Errore nella modifica", "red");
+            }
+            loadCatalog();
+            if (playlistViewMode && currentPlaylist != null) {
+                loadPlaylistTracks(currentPlaylist);
+            }
+        });
+    }
+
+    /**
+     * Classe interna di supporto per incorporare un TextField reattivo all'interno delle celle.
+     * Consolida le modifiche in modo sincrono non appena viene perso il focus (Blur).
+     * * @param <R> Tipo di riga del modello (Track).
+     * @param <T> Tipo di cella specifico.
+     */
+    private class EditableTableCell<R, T> extends TableCell<R, T> {
+        /** Componente di input testuale inserito dinamicamente nella cella in stato di editing. */
+        private TextField textField;
+        /** Funzione di conversione per mappare la stringa digitata nel tipo T appropriato. */
+        private final java.util.function.Function<String, T> converter;
+
+        /**
+         * Costruttore della cella editabile inline.
+         * * @param converter Convertitore funzionale da String a T.
+         */
+        public EditableTableCell(java.util.function.Function<String, T> converter) {
+            this.converter = converter;
+        }
+
+        @Override
+        public void startEdit() {
+            if (!isEmpty()) {
+                super.startEdit();
+                createTextField();
+                setText(null);
+                setGraphic(textField);
+                textField.requestFocus();
+                textField.selectAll();
+            }
+        }
+
+        @Override
+        public void cancelEdit() {
+            super.cancelEdit();
+            setText(getItem() != null ? getItem().toString() : null);
+            setGraphic(null);
+        }
+
+        @Override
+        public void updateItem(T item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty) {
+                setText(null);
+                setGraphic(null);
+            } else {
+                if (isEditing()) {
+                    if (textField != null) {
+                        textField.setText(item != null ? item.toString() : "");
+                    }
+                    setText(null);
+                    setGraphic(textField);
+                } else {
+                    setText(item != null ? item.toString() : null);
+                    setGraphic(null);
+                }
+            }
+        }
+
+        /**
+         * Istanzia il TextField e aggancia i relativi listener per intercettare l'Invio
+         * o la perdita del focus da parte dell'utente (Blur).
+         */
+        private void createTextField() {
+            textField = new TextField(getItem() != null ? getItem().toString() : "");
+            textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
+            textField.setOnAction(e -> triggerCommit());
+            textField.focusedProperty().addListener((obs, oldVal, newVal) -> {
+                if (!newVal && isEditing()) {
+                    triggerCommit();
+                }
+            });
+        }
+
+        /**
+         * Tenta il commit del valore modificato catturando le eccezioni di parsing sintattico.
+         */
+        private void triggerCommit() {
+            try {
+                commitEdit(converter.apply(textField.getText().trim()));
+            } catch (Exception ex) {
+                cancelEdit();
+                labelFeedback("Errore nella modifica", "red");
+            }
+        }
     }
 
     /**
@@ -158,13 +338,15 @@ public class TrackController {
 
     /**
      * Configura la riga della tabella iniettando un menu contestuale per il comando "Play"
-     * e implementando l'intercettazione degli eventi mouse per abilitare la deselezione totale alternata.
+     * e implementando il comando "Modifica" in modo dinamico sulla cella mirata (Task T-78),
+     * preservando la stabilità dei listener nativi delle sotto-celle.
      */
     private void configureTableToggleDeselection() {
         tableTracks.setRowFactory(tv -> {
             final TableRow<Track> row = new TableRow<>();
             MenuItem playItem = new MenuItem("play");
-            ContextMenu contextMenu = new ContextMenu(playItem);
+            MenuItem editItem = new MenuItem("Modifica"); // Task T-78
+            ContextMenu contextMenu = new ContextMenu(playItem, editItem);
             
             playItem.setOnAction(event -> {
                 Track track = row.getItem();
@@ -175,22 +357,38 @@ public class TrackController {
                     onTrackPlayRequestedHandler.accept(track);
             });
 
+            // TASK T-78: Attivazione programmatica dell'edit sulla colonna cliccata col tasto destro
+            editItem.setOnAction(event -> {
+                Track track = row.getItem();
+                if (track == null) return;
+                tableTracks.getSelectionModel().select(track);
+                selectedTrack = track;
+                
+                // Rileva dinamicamente la colonna focalizzata dal FocusModel di JavaFX
+                TableColumn<Track, ?> focusedColumn = tableTracks.getFocusModel().getFocusedCell().getTableColumn();
+                if (focusedColumn != null && focusedColumn.isEditable()) {
+                    tableTracks.edit(row.getIndex(), focusedColumn);
+                } else {
+                    tableTracks.edit(row.getIndex(), colTitle);
+                }
+            });
+
             row.contextMenuProperty().bind(
                 Bindings.when(row.emptyProperty())
                         .then((ContextMenu) null)
                         .otherwise(contextMenu)
             );
 
-            row.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
-                if (event.getButton() != MouseButton.PRIMARY) return;
-                if (!row.isEmpty() && row.isSelected()) {
+            // Corretto: Rimosso addEventFilter aggressivo che consumava i click sulle celle.
+            // La deselezione sicura viene gestita controllando lo spazio vuoto o tramite click singolo non distruttivo.
+            row.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 1 && row.isEmpty()) {
                     tableTracks.getSelectionModel().clearSelection();
                     selectedTrack = null;
                     if (hboxAddtoPlaylist != null) {
                         hboxAddtoPlaylist.setVisible(false);
                         hboxAddtoPlaylist.setManaged(false);
                     }
-                    event.consume();
                 }
             });
             return row;
@@ -250,6 +448,10 @@ public class TrackController {
         });
     }
 
+    /**
+     * Registra il consumatore delegato a catturare gli eventi di selezione traccia.
+     * * @param handler Routine di callback esposta dal coordinatore principale.
+     */
     public void setOnTrackSelected(Consumer<Track> handler) {
         this.onTrackSelectedHandler = handler;
     }
@@ -273,7 +475,7 @@ public class TrackController {
     private void handleTrackAddition(ActionEvent event) {
         lblFeedback.setText("");
         if (facade == null) {
-            lblFeedback.setText("Errore interno: facade non inizializzata.");
+            labelFeedback("Errore interno: facade non inizializzata.", "red");
             return;
         }
         try {
@@ -286,10 +488,7 @@ public class TrackController {
 
             Track newTrack = facade.addTrack(title, author, duration, genre, year);
             if (newTrack != null) {
-                tableTracks.getItems().add(newTrack);
-                tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
                 tableTracks.getSelectionModel().clearSelection();
-                tableTracks.refresh();
                 clearForm();
                 labelFeedback("Traccia aggiunta con successo.", "green");
                 loadCatalog();
@@ -347,6 +546,10 @@ public class TrackController {
         }
     }
 
+    /**
+     * Intercetta la sottomissione del pulsante grafico per rimuovere il brano dalla playlist corrente.
+     * * @param event Evento di click associato al pulsante.
+     */
     @FXML
     private void handleRemoveFromPlaylist(ActionEvent event) {
         removeSelectedTrackFromCurrentPlaylist();
@@ -389,9 +592,6 @@ public class TrackController {
         if (facade == null || tableTracks == null) return;
         tableTracks.setItems(FXCollections.observableArrayList(facade.getAllTracks()));
         tableTracks.setPlaceholder(new Label("Catalogo vuoto. Aggiungi una traccia."));
-        if (tableTracks.getItems().isEmpty() && lblFeedback != null) {
-            labelFeedback("Catalogo vuoto. Aggiungi una traccia.", "#b0413e");
-        }
     }
 
     /**
@@ -480,6 +680,7 @@ public class TrackController {
 
     /**
      * Esegue il recupero sincrono dei brani di una playlist aggiornando gli elementi della TableView.
+     * * @param playlist L'istanza di Playlist da aggiornare a livello grafico.
      */
     public void loadPlaylistTracks(Playlist playlist) {
         if (tableTracks == null || playlist == null || facade == null) return;
@@ -505,6 +706,9 @@ public class TrackController {
         txtYear.clear();
     }
 
+    /**
+     * Uniforma la formattazione di una stringa impostando in maiuscolo il primo carattere.
+     */
     private String toSentenceCase(String value) {
         if (value == null) return "";
         String trimmed = value.trim().replaceAll("\\s+", " ");
@@ -514,6 +718,8 @@ public class TrackController {
 
     /**
      * Modifica lo stile cromatico e il testo della etichetta informativa inferiore.
+     * * @param text  Il testo descrittivo da stampare.
+     * @param color La specifica CSS per la colorazione del font.
      */
     public void labelFeedback(String text, String color) {
         if (lblFeedback != null) {
