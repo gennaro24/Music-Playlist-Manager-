@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
+import it.unisa.sad.playlistmanager.domain.exceptions.ValidationException;
 /**
  * Entità del Modello di Dominio che rappresenta una Playlist musicale.
  * Incapsula lo stato e le regole di business, auto-validandosi.
@@ -19,11 +19,11 @@ public class Playlist {
      * Costruttore completo dell'entità Playlist.
      * @param id   L'identificativo univoco. Se nullo o vuoto, viene generato automaticamente un UUID.
      * @param name Il nome assegnato alla playlist.
-     * @throws IllegalArgumentException Se il nome viola le regole di validazione del dominio.
+     * @throws ValidationException Se il nome viola le regole di validazione del dominio.
      */
     public Playlist(String id, String name) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Il nome della playlist non può essere vuoto o nullo.");
+            throw new ValidationException("Il nome della playlist non può essere vuoto o nullo.");
         }
         this.id = (id == null || id.trim().isEmpty()) ? UUID.randomUUID().toString() : id;
         this.name = name;
@@ -46,7 +46,7 @@ public class Playlist {
     // --- SETTERS ---
     public void setName(String name) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Il nome della playlist non può essere vuoto o nullo.");
+            throw new ValidationException("Il nome della playlist non può essere vuoto o nullo.");
         }
         this.name = name;
     }
@@ -60,12 +60,12 @@ public class Playlist {
      */
     public void addTrack(Track track) {
         if (track == null) {
-            throw new IllegalArgumentException("Impossibile aggiungere una traccia nulla alla playlist.");
+            throw new ValidationException("Impossibile aggiungere una traccia nulla alla playlist.");
         }
         
         for (Track t : this.tracks) {
             if (t.getId() != null && t.getId().equals(track.getId())) {
-                throw new IllegalArgumentException("La traccia '" + track.getTitle() + "' è già presente in questa playlist.");
+                throw new ValidationException("La traccia '" + track.getTitle() + "' è già presente in questa playlist.");
             }
         }
         
@@ -81,7 +81,7 @@ public class Playlist {
      */
     public void removeTrack(String trackId) {
         if (trackId == null || trackId.trim().isEmpty()) {
-            throw new IllegalArgumentException("Impossibile rimuovere una traccia fornendo un ID nullo o vuoto.");
+            throw new ValidationException("Impossibile rimuovere una traccia fornendo un ID nullo o vuoto.");
         }
 
         boolean removed = false;
@@ -97,7 +97,7 @@ public class Playlist {
         }
 
         if (!removed) {
-            throw new IllegalArgumentException("Errore: La traccia con ID '" + trackId + "' non è presente in questa playlist.");
+            throw new ValidationException("Errore: La traccia con ID '" + trackId + "' non è presente in questa playlist.");
         }
     }
 }

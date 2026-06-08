@@ -1,5 +1,6 @@
 package it.unisa.sad.playlistmanager.application.service;
-import java.util.Optional;
+
+import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
 import java.util.List;
@@ -9,9 +10,7 @@ import java.util.List;
  * Funge da intermediario tra il Presentation Layer e il Domain/Persistence Layer.
  * * @version 1.1
  */
-/** 
-TODO: Necessario un cambiamento di playlistRepository. Deve essere concretizzato da SqlitePlaylistRepository
-*/
+
 public class TrackService {
 
     /** Riferimento all'interfaccia di persistenza per il disaccoppiamento (DIP). */
@@ -65,6 +64,7 @@ public class TrackService {
      * @return La traccia cercata, oppure {@code null} se non esiste.
      */
     public Track getTrackById(String trackId) {
-        return trackRepository.findById(trackId).orElse(null);
+
+        return trackRepository.findById(trackId).orElseThrow(() -> new TrackNotFoundException("Track non trovata."));
     }
 }

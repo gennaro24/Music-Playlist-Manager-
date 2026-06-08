@@ -1,5 +1,6 @@
 package it.unisa.sad.playlistmanager.application.service;
 
+import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
@@ -43,11 +44,11 @@ public class PlaybackService {
      * Avvia il playback della traccia indicata.
      *
      * @param track traccia da riprodurre
-     * @throws IllegalArgumentException se {@code track} è {@code null}
+     * @throws TrackNotFoundException se {@code track} è {@code null}
      */
     public void playTrack(Track track) {
         if (track == null) {
-            throw new IllegalArgumentException("Track cannot be null");
+            throw new TrackNotFoundException("Track non trovata.");
         }
 
         currentTrack = track;
