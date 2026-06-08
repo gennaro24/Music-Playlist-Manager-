@@ -2,6 +2,7 @@ package it.unisa.sad.playlistmanager.application.facade;
 
 import java.util.List;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
+import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.application.service.PlaybackService;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
@@ -159,5 +160,11 @@ public class MusicPlaylistManagerFacade {
     public PlaybackSnapshot getPlaybackSnapshot() {
         return playbackService.getSnapshot();
     }
-
+    /**
+     * Espone al presentation layer la funzionalità di modifica di una traccia.
+     * @return la traccia modificata da ritornare alla UI.
+     */
+    public Track updateTrack(String trackId, Track updatedTrack) {
+        return trackService.updateTrack(trackId, updatedTrack);
+    }
 }
