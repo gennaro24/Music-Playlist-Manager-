@@ -102,7 +102,7 @@ public class TrackService {
     }
 
     /**
-     * Valida un id obbligatorio.
+     * UTILITY: Valida un id obbligatorio.
      */
     private void validateId(String id, String errorMessage) {
         if (id == null || id.trim().isEmpty()) {
@@ -111,7 +111,7 @@ public class TrackService {
     }
 
     /**
-     * Valida che la traccia usata come input non sia nulla.
+     * UTILITY: Valida che la traccia usata come input non sia nulla.
      *
      * I singoli campi della traccia sono già validati dal costruttore di {@link Track}.
      */
@@ -122,7 +122,7 @@ public class TrackService {
     }
 
     /**
-     * Recupera una traccia esistente o lancia un errore applicativo coerente.
+     * UTILITY: Recupera una traccia esistente o lancia un errore applicativo coerente.
      */
     private Track getExistingTrack(String trackId) {
         validateId(trackId, "L'id della Track è nullo o vuoto.");
@@ -132,7 +132,7 @@ public class TrackService {
     }
 
     /**
-     * Costruisce una nuova istanza immutabile di Track mantenendo l'id originale.
+     * UTILITY: Costruisce una nuova istanza immutabile di Track mantenendo l'id originale.
      */
     private Track buildUpdatedTrack(Track existingTrack, Track newTrack) {
         return new Track(

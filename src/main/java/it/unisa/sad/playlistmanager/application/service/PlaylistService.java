@@ -140,7 +140,7 @@ public class PlaylistService {
     }
 
     /**
-     * Valida una stringa obbligatoria.
+     * UTILITY: Valida una stringa obbligatoria.
      */
     private void validateText(String value, String errorMessage) {
         if (value == null || value.trim().isEmpty()) {
@@ -149,7 +149,7 @@ public class PlaylistService {
     }
 
     /**
-     * Recupera una playlist esistente o lancia un errore applicativo coerente.
+     * UTILITY: Recupera una playlist esistente o lancia un errore applicativo coerente.
      */
     private Playlist getExistingPlaylist(String playlistId) {
         validateText(playlistId, "L'id della Playlist è nullo o vuoto.");
@@ -159,7 +159,7 @@ public class PlaylistService {
     }
 
     /**
-     * Recupera una traccia esistente o lancia un errore applicativo coerente.
+     * UTILITY: Recupera una traccia esistente o lancia un errore applicativo coerente.
      */
     private Track getExistingTrack(String trackId) {
         validateText(trackId, "L'id della Track è nullo o vuoto.");
@@ -169,7 +169,7 @@ public class PlaylistService {
     }
 
     /**
-     * Verifica se una traccia è già presente nella playlist.
+     * UTILITY: Verifica se una traccia è già presente nella playlist.
      */
     private boolean isTrackAlreadyInPlaylist(String playlistId, String trackId) {
         return playlistRepository.findTracksByPlaylistId(playlistId)

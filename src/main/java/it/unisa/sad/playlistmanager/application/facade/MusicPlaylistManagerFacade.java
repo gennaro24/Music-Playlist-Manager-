@@ -177,4 +177,13 @@ public class MusicPlaylistManagerFacade {
         return trackService.deleteTrack(trackId);
     }
 
+    /**
+     * Espone al presentation layer la funzionalità di eliminazione di una Playlist.
+     * TODO: Notifica il PlayBackService se la traccia corrente è in playback.
+     * @return la traccia eliminata da ritornare alla UI.
+     */ 
+    public Playlist deletePlaylist(String playlistId){
+        return playlistService.deletePlaylist(playlistId);
+    }
+
 }
