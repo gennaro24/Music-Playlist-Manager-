@@ -96,4 +96,15 @@ public class TrackService {
 
             
     }
+    
+    /**
+     * Coordina il caso d'uso di eliminazione di una traccia.
+     * Ritorna la traccia eliminata se nel livello inferiore (Repository) viene effettivamente eliminata.
+     * @throws ValidationException nel caso in cui l'id della traccia da eliminare sia nullo o vuoto.
+     * @throws TrackNotFoundException nel caso in cui la traccia da eliminare non esista all'interno del sistema di persistenza.
+     */
+    public Track deleteTrack(String trackId){
+        if (null == trackId || trackId.trim().isEmpty()) throw new ValidationException("L'id della Track da eliminare è nullo o vuoto.");
+        return trackRepository.deleteById(trackId).orElseThrow(() -> new TrackNotFoundException("La traccia da eliminare non è stata trovata."));
+    }
 }
