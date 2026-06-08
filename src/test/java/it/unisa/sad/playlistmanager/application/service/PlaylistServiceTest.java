@@ -110,8 +110,9 @@ class PlaylistServiceTest {
         }
 
         @Override
-        public void update(Track track) {
+        public Optional<Track> update(Track track) {
             // no-op per test
+            return Optional.empty();
         }
     }
 

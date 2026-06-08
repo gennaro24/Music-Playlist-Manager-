@@ -39,7 +39,8 @@ public interface TrackRepository {
     /**
      * Aggiorna una track nel sistema di persistenza in base al suo id.
      * @param track l'oggetto Track da aggiornare
+     * @return un Optional contenente la nuova traccia aggiornata se presente, altrimenti Optional.empty()
      */
-    void update(Track track);
+    Optional<Track> update(Track track);
     
 }

@@ -166,14 +166,7 @@ public class SqliteTrackRepository implements TrackRepository {
      * @param track l'oggetto Track da aggiornare
      */
     @Override
-    public void update(Track track) {
-        if (track == null) {
-            throw new IllegalArgumentException("Track nulla.");
-        }
-        if (track.getId() == null || track.getId().trim().isEmpty()) {
-            throw new IllegalArgumentException("ID track non valido.");
-        }
-
+    public Optional<Track> update(Track track) {
         String sql = """
                 UPDATE tracks
                 SET title = ?, author = ?, duration = ?, genre = ?, year = ?
@@ -192,8 +185,9 @@ public class SqliteTrackRepository implements TrackRepository {
 
             int rows = statement.executeUpdate();
             if (rows == 0) {
-                throw new TrackNotFoundException("Track non trovata");
+                Optional.empty();
             }
+            return Optional.of(track);
 
         } catch (SQLException exception) {
             throw new RepositoryException("Errore nell'aggiornamento della Track con id");
