@@ -136,4 +136,9 @@ public class SqliteTrackRepository implements TrackRepository {
     public Optional<Track> update(Track track) {
     throw new UnsupportedOperationException("Track update not implemented yet.");
     }
+     //TODO: Rimuovere dopo il merge
+    @Override
+    public Optional<Track> deleteById(String id) {
+    throw new UnsupportedOperationException("Track update not implemented yet.");
+    }
 }

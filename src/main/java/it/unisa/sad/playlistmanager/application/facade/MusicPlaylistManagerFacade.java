@@ -121,9 +121,9 @@ public class MusicPlaylistManagerFacade {
 
 
     /**
-     * 
-     * @param playlistId
-     * @return
+     * Espone al Presentation Layer la funzionalità di recupero delle tracce associate a una playlist.
+     * @param playlistId L'identificativo unico della playlist di riferimento.
+     * @return Una lista di tracce associate alla playlist.
      */
     public List<Track> getTracksForPlaylist(String playlistId) {
         return playlistService.getTracksForPlaylist(playlistId);
@@ -167,4 +167,12 @@ public class MusicPlaylistManagerFacade {
     public Track updateTrack(String trackId, Track updatedTrack) {
         return trackService.updateTrack(trackId, updatedTrack);
     }
+    /**
+     * Espone al presentation layer la funzionalità di eliminazione di una traccia.
+     * @return la traccia eliminata da ritornare alla UI.
+     */    
+    public Track deleteTrack(String trackId) {
+        return trackService.deleteTrack(trackId);
+    }
+
 }

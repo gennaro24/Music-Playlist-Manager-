@@ -31,5 +31,6 @@ public interface TrackRepository {
     List<Track> findAll();
 
     Optional<Track> update(Track track);
+    Optional<Track> deleteById(String trackId);
     
 }
