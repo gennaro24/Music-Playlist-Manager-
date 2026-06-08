@@ -31,6 +31,16 @@ class TrackServiceTest {
         public List<Track> findAll() {
             return this.simulatedDatabase;
         }
+
+        @Override
+        public void deleteById(String id) {
+            // no-op per test
+        }
+
+        @Override
+        public void update(Track track) {
+            // no-op per test
+        }
     }
 
     @Test
