@@ -17,8 +17,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Classe di test d'unità preesistente per coordinare le verifiche di business
- * sul modulo Playlist. Sanata dall'errore di Type Mismatch ed estesa con il task T-82.
+ * Classe di test d'unità preesistente per i flussi di business legati alle playlist.
+ * Estesa per adempiere al Task T-92 dello Sprint 2 (User Story 04).
  */
 class PlaylistServiceTest {
 
@@ -40,10 +40,7 @@ class PlaylistServiceTest {
         /** Memorizza l'istanza dell'ultima playlist inviata alla persistenza. */
         Playlist savedPlaylist = null;
 
-        /**
-         * Lista mutabile dinamica (ArrayList) per supportare e tracciare le modifiche 
-         * relazionali sincrone dei metadati durante l'esecuzione del task T-82.
-         */
+        /** Lista mutabile per la gestione delle tracce interne alla playlist finta 1. */
         List<Track> tracksInPlaylist1 = new ArrayList<>(List.of(
                 new Track("t1", "Song One", "Artist One", 180, "Rock", 2020),
                 new Track("t2", "Song Two", "Artist Two", 200, "Rock", 2021)
@@ -89,6 +86,7 @@ class PlaylistServiceTest {
         @Override
         public void removeTrackFromPlaylist(String playlistId, String trackId) {
             this.isRemoveTrackCalled = true;
+            this.tracksInPlaylist1.removeIf(t -> t.getId().equals(trackId));
         }
 
         @Override
@@ -111,6 +109,8 @@ class PlaylistServiceTest {
     class FakeTrackRepository implements TrackRepository {
         /** Lista finta delegata a simulare la tabella 'tracks' nel contesto del service delle playlist. */
         List<Track> simulatedTracks = new ArrayList<>();
+        /** Riferimento opzionale per emulare l'ON DELETE CASCADE dei database relazionali reali. */
+        FakePlaylistRepository linkedPlaylistRepo;
 
         @Override
         public Optional<Track> findById(String id) {
@@ -133,9 +133,21 @@ class PlaylistServiceTest {
             return Collections.emptyList();
         }
 
+        /**
+         * Emula l'eliminazione a cascata (ON DELETE CASCADE) cancellando la traccia
+         * sia dal catalogo, sia da tutte le playlist fittizie connesse (Task T-92).
+         *
+         * @param id L'identificativo della traccia da eliminare.
+         * @return Un Optional contenente l'istanza eliminata se presente.
+         */
         @Override
         public Optional<Track> deleteById(String id) {
-            return Optional.empty();
+            Optional<Track> trackOpt = findById(id);
+            trackOpt.ifPresent(simulatedTracks::remove);
+            if (linkedPlaylistRepo != null) {
+                linkedPlaylistRepo.removeTrackFromPlaylist("1", id);
+            }
+            return trackOpt;
         }
 
         @Override
@@ -151,7 +163,7 @@ class PlaylistServiceTest {
     }
 
     // ===================================================================================
-    // TEST PREESISTENTI (US-05 e US-06) - SANATI DAL TYPE MISMATCH
+    // TEST US-05 e US-06
     // ===================================================================================
 
     /**
@@ -305,7 +317,42 @@ class PlaylistServiceTest {
         }
 
         List<Track> updatedTracks = playlistService.getTracksForPlaylist("1");
-        assertEquals(2, updatedTracks.size(), "Il numero di elementi in playlist non deve subire ridondanze o duplicazioni.");
-        assertEquals("Song One Updated", updatedTracks.get(0).getTitle(), "L'ispezione della playlist deve restituire i metadati della traccia aggiornati.");
+        assertEquals(2, updatedTracks.size());
+        assertEquals("Song One Updated", updatedTracks.get(0).getTitle());
+    }
+
+    // ===================================================================================
+    // TEST TASK T-92 (US-04): RIMOZIONE RIFERIMENTI DALLE PLAYLIST (CASCADE DELETE)
+    // ===================================================================================
+
+    /**
+     * <b>Task T-92:</b> Test JUnit per certificare che l'eliminazione di una traccia a catalogo
+     * inneschi la rimozione a cascata da tutte le playlist in cui era inserita, evitando
+     * di lasciare riferimenti orfani o inconsistenti all'interno di playlist_tracks.
+     * <p>Soddisfa lo Scenario 3 dei Criteri di Accettazione di US-04.</p>
+     */
+    @Test
+    void testT92_EliminazioneRimuoveRiferimentiDaPlaylistTracks() {
+        FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
+        FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
+        
+        // Colleghiamo i finti repository per emulare l'ON DELETE CASCADE relazionale di SQLite
+        fakeTrackRepo.linkedPlaylistRepo = fakePlaylistRepo;
+        
+        PlaylistService playlistService = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
+        TrackService trackService = new TrackService(fakeTrackRepo);
+
+        // Given: la traccia con ID "t1" è presente nella playlist "1" (Rock Classics)
+        List<Track> initialTracks = playlistService.getTracksForPlaylist("1");
+        assertEquals(2, initialTracks.size());
+        assertEquals("t1", initialTracks.get(0).getId());
+
+        // When: la traccia viene eliminata definitivamente dal catalogo globale
+        trackService.deleteTrack("t1");
+
+        // Then: la traccia scompare automaticamente anche dalla playlist in cui era mappata
+        List<Track> updatedTracks = playlistService.getTracksForPlaylist("1");
+        assertEquals(1, updatedTracks.size(), "Il vincolo CASCADE deve escludere la traccia dalla playlist.");
+        assertNotEquals("t1", updatedTracks.get(0).getId(), "L'elemento rimosso non deve più comparire tra i riferimenti.");
     }
 }

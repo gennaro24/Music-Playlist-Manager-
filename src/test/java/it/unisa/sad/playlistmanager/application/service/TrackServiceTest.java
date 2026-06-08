@@ -1,5 +1,6 @@
 package it.unisa.sad.playlistmanager.application.service;
 
+import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
 import org.junit.jupiter.api.Test;
@@ -9,14 +10,12 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Classe di test d'unità focalizzata ad analizzare la correttezza della business logic
- * legata alle tracce del catalogo musicale. Estesa per verificare i flussi di modifica (US-03).
+ * Classe di test d'unità preesistente estesa per adempiere ai Task T-91 e T-93 dello Sprint 2.
  */
 class TrackServiceTest {
 
     /**
-     * Sostituto finto (Fake Object) del database reale delle tracce per isolare lo stato nei test d'unità.
-     * Implementa pienamente l'interfaccia contrattuale aggiornata TrackRepository.
+     * Sostituto finto (Fake Object) del database reale per isolare lo stato nei test d'unità.
      */
     class FakeTrackRepository implements TrackRepository {
         /** Interruttore booleano per verificare l'effettivo innesco del salvataggio. */
@@ -50,9 +49,17 @@ class TrackServiceTest {
             return this.simulatedDatabase;
         }
 
+        /**
+         * Simula l'operazione SQL DELETE rimuovendo fisicamente l'entità a parità di ID.
+         *
+         * @param id L'identificativo unico della traccia da cancellare.
+         * @return Un Optional contenente l'istanza eliminata se presente, altrimenti Optional.empty().
+         */
         @Override
         public Optional<Track> deleteById(String id) {
-            return Optional.empty();
+            Optional<Track> trackOpt = findById(id);
+            trackOpt.ifPresent(simulatedDatabase::remove);
+            return trackOpt;
         }
 
         /**
@@ -159,5 +166,48 @@ class TrackServiceTest {
         Track persistedTrack = fakeRepo.findById("t-81").orElse(null);
         assertNotNull(persistedTrack);
         assertEquals("Consistent Title", persistedTrack.getTitle());
+    }
+
+    /**
+     * <b>Task T-91:</b> Test JUnit per verificare che l'eliminazione confermata
+     * rimuova definitivamente ed in modo atomico l'oggetto dal catalogo delle tracce.
+     * <p>Soddisfa lo Scenario 1 dei Criteri di Accettazione di US-04.</p>
+     */
+    @Test
+    void testT91_EliminazioneConfermataRimuoveTracciaDalCatalogo() {
+        FakeTrackRepository fakeRepo = new FakeTrackRepository();
+        TrackService service = new TrackService(fakeRepo);
+
+        // Given: una traccia salvata all'interno del finto database
+        Track track = new Track("t-91", "Target Title", "Artist", 210, "Pop", 2018);
+        fakeRepo.simulatedDatabase.add(track);
+        assertEquals(1, service.getAllTracks().size());
+
+        // When: viene coordinato il caso d'uso di eliminazione traccia
+        Track deletedTrack = service.deleteTrack("t-91");
+
+        // Then: la traccia viene estratta correttamente e non compare più nelle query successive
+        assertNotNull(deletedTrack);
+        assertEquals("Target Title", deletedTrack.getTitle());
+        assertTrue(service.getAllTracks().isEmpty());
+        assertFalse(fakeRepo.findById("t-91").isPresent());
+    }
+
+    /**
+     * <b>Task T-93:</b> Test JUnit per certificare che il tentativo di eliminazione
+     * di una traccia recante un ID inesistente sollevi correttamente una TrackNotFoundException.
+     */
+    @Test
+    void testT93_EliminazioneIdInesistenteProduceErroreControllato() {
+        FakeTrackRepository fakeRepo = new FakeTrackRepository();
+        TrackService service = new TrackService(fakeRepo);
+
+        // Given: un catalogo privo della traccia cercata
+        assertTrue(service.getAllTracks().isEmpty());
+
+        // When & Then: l'invocazione di deleteTrack su un ID casuale produce l'eccezione applicativa controllata
+        assertThrows(TrackNotFoundException.class, () -> {
+            service.deleteTrack("id-fantasma-999");
+        });
     }
 }
