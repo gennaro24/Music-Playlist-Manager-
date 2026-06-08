@@ -4,6 +4,7 @@ import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.db.DatabaseConnectionManager;
 import it.unisa.sad.playlistmanager.persistence.exceptions.RepositoryException;
+import it.unisa.sad.playlistmanager.application.exceptions.PlaylistNotFoundException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -249,6 +250,30 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
         } catch (SQLException exception) {
              throw new RepositoryException("Errore nel trovare tutte le Track " + 
                                             "della Playlist con id: [" + playlistId + "]" ,exception);
+        }
+    }
+
+    /**
+     * Elimina una playlist nel sistema di persistenza in base al suo id.
+     * @param playlistId dell'oggetto Playlist da eliminare
+     */
+    @Override
+    public Optional<Playlist> deleteById(String playlistId) {
+        Optional<Playlist> playlistOpt = findById(playlistId);
+        String sql = """
+                DELETE FROM playlists
+                WHERE id = ?
+                """;
+        try (Connection connection = connectionManager.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, playlistId);
+            int affected = statement.executeUpdate();
+            if (affected == 0) {
+                return Optional.empty();
+            }
+            return playlistOpt;
+        } catch (SQLException exception) {
+            throw new RepositoryException("Errore nell'eliminazione della Playlist");
         }
     }
 }

@@ -58,4 +58,6 @@ public interface PlaylistRepository {
 
     List<Track> findTracksByPlaylistId(String playlistId);
     
+    Optional<Playlist> deleteById(String playlistId);
+    
 }
