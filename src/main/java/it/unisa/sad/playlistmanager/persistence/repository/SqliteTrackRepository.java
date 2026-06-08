@@ -157,7 +157,7 @@ public class SqliteTrackRepository implements TrackRepository {
                 throw new TrackNotFoundException("Track non trovata");
             }
         } catch (SQLException exception) {
-            throw new RepositoryException("Errore nell'eliminazione della Track con id: [" + id + "]", exception);
+            throw new RepositoryException("Errore nell'eliminazione della Track con id");
         }
     }
 
