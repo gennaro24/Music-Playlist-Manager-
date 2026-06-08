@@ -1,5 +1,8 @@
 package it.unisa.sad.playlistmanager.ui.controller;
 
+import it.unisa.sad.playlistmanager.application.exceptions.PlaylistNotFoundException;
+import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
+import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
@@ -293,6 +296,8 @@ public class TrackController {
             }
         } catch (NumberFormatException e) {
             labelFeedback("Durata e anno devono essere numeri validi.", "red");
+        } catch (ValidationException | it.unisa.sad.playlistmanager.domain.exceptions.ValidationException e) {
+            labelFeedback(e.getMessage(), "red");
         } catch (IllegalArgumentException e) {
             labelFeedback(e.getMessage(), "red");
         } catch (Exception e) {
@@ -323,7 +328,7 @@ public class TrackController {
             Playlist targetPlaylist = dropdownPlaylists.getSelectionModel().getSelectedItem();
             try {
                 facade.addTrackToPlaylist(targetPlaylist.getId(), selectedTrack.getId());
-            } catch (IllegalArgumentException e) {
+            } catch (ValidationException | PlaylistNotFoundException | TrackNotFoundException | IllegalArgumentException e) {
                 labelFeedback(e.getMessage(), "red");
                 return;
             }
@@ -356,7 +361,12 @@ public class TrackController {
             return;
         }
 
-        facade.removeTrackFromPlaylist(currentPlaylist.getId(), selectedTrack.getId());
+        try {
+            facade.removeTrackFromPlaylist(currentPlaylist.getId(), selectedTrack.getId());
+        } catch (ValidationException | PlaylistNotFoundException | TrackNotFoundException | IllegalArgumentException e) {
+            labelFeedback(e.getMessage(), "red");
+            return;
+        }
         loadPlaylistTracks(currentPlaylist);
         if (btnRemoveFromPlaylist != null) {
             btnRemoveFromPlaylist.setVisible(false);
@@ -473,7 +483,12 @@ public class TrackController {
      */
     public void loadPlaylistTracks(Playlist playlist) {
         if (tableTracks == null || playlist == null || facade == null) return;
-        currentPlaylistTracks = facade.getTracksForPlaylist(playlist.getId());
+        try {
+            currentPlaylistTracks = facade.getTracksForPlaylist(playlist.getId());
+        } catch (ValidationException | PlaylistNotFoundException | IllegalArgumentException e) {
+            labelFeedback(e.getMessage(), "red");
+            currentPlaylistTracks = new java.util.ArrayList<>();
+        }
         tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
         tableTracks.getSelectionModel().clearSelection();
         tableTracks.refresh();
