@@ -72,4 +72,16 @@ public class PlaybackService {
     public PlaybackSnapshot getSnapshot() {
         return new PlaybackSnapshot(getCurrentState(), getCurrentTrack());
     }
+
+    /**
+     * Gestisce il caso in cui la traccia eliminata sia attualmente in playback. Se la traccia eliminata è quella in questione
+     * il playback viene fermato.
+     * @param trackId l'identificativo della traccia eliminata 
+    */
+    public void handleDeletedTrack(String trackId) {
+        if (currentTrack != null && currentTrack.getId() == trackId) {
+            currentTrack = null;
+            currentState = PlaybackState.STOPPED;
+        }
+    }
 }
