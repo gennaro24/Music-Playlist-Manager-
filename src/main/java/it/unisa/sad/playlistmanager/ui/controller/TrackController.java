@@ -22,12 +22,9 @@ import java.util.function.Consumer;
 /**
  * Sotto-controllore delegato alla visualizzazione, manipolazione e immissione dati
  * concernenti il catalogo globale delle tracce e le canzoni interne a una specifica playlist.
- * <p><b>Revisione Sprint 2:</b> Implementa la Constructor Injection sanando l'accoppiamento
- * temporale. Sposta l'invocazione di {@code loadCatalog()} all'interno dell'inizializzazione
- * nativa, sfruttando in totale sicurezza l'istanza immutabile della Facade.</p>
- * <p><b>Integrazione US-03 (Sprint 2):</b> Introduce l'Inline Table Editing con salvataggio 
- * automatico alla perdita di focus (blur) e messaggistica d'errore standardizzata.</p>
- * * @version 3.0
+ * <p><b>Revisione Sprint 2 (US-04):</b> Integra la funzionalità di eliminazione di una traccia
+ * dal catalogo globale con annesso dialogo di conferma e sincronizzazione in tempo reale delle viste.</p>
+ * @version 4.0
  */
 public class TrackController {
 
@@ -175,7 +172,8 @@ public class TrackController {
     /**
      * Coordina ed esegue in differita l'aggiornamento dei dati tramite Facade, intercettando
      * le eccezioni di validazione per stampare a schermo l'errore standardizzato (Task T-79).
-     * * @param <T>          Il tipo di dato generico gestito dalla colonna.
+     *
+     * @param <T>          Il tipo di dato generico gestito dalla colonna.
      * @param oldTrack     L'istanza originale della traccia prima della modifica.
      * @param trackCreator Funzione lambda funzionale atta a istanziare la nuova traccia immutabile.
      * @param newValue     Il valore testuale o numerico appena inserito dall'utente.
@@ -200,7 +198,8 @@ public class TrackController {
     /**
      * Classe interna di supporto per incorporare un TextField reattivo all'interno delle celle.
      * Consolida le modifiche in modo sincrono non appena viene perso il focus (Blur).
-     * * @param <R> Tipo di riga del modello (Track).
+     *
+     * @param <R> Tipo di riga del modello (Track).
      * @param <T> Tipo di cella specifico.
      */
     private class EditableTableCell<R, T> extends TableCell<R, T> {
@@ -211,7 +210,8 @@ public class TrackController {
 
         /**
          * Costruttore della cella editabile inline.
-         * * @param converter Convertitore funzionale da String a T.
+         *
+         * @param converter Convertitore funzionale da String a T.
          */
         public EditableTableCell(java.util.function.Function<String, T> converter) {
             this.converter = converter;
@@ -285,8 +285,7 @@ public class TrackController {
     }
 
     /**
-     * Imposta il dimensionamento proporzionale e vincolato (Responsive) delle colonne 
-     * per preservare l'integrità geometrica del layout desktop.
+     * Imposta il dimensionamento proporzionale e vincolato (Responsive) delle colonne.
      */
     private void configureResponsiveColumnWidths() {
         if (tableTracks == null || colTitle == null || colAuthor == null
@@ -337,16 +336,16 @@ public class TrackController {
     }
 
     /**
-     * Configura la riga della tabella iniettando un menu contestuale per il comando "Play"
-     * e implementando il comando "Modifica" in modo dinamico sulla cella mirata (Task T-78),
-     * preservando la stabilità dei listener nativi delle sotto-celle.
+     * Configura la riga della tabella iniettando un menu contestuale per il comando "Play",
+     * "Modifica" e il nuovo comando di eliminazione dal catalogo globale (Task T-89).
      */
     private void configureTableToggleDeselection() {
         tableTracks.setRowFactory(tv -> {
             final TableRow<Track> row = new TableRow<>();
             MenuItem playItem = new MenuItem("play");
-            MenuItem editItem = new MenuItem("Modifica"); // Task T-78
-            ContextMenu contextMenu = new ContextMenu(playItem, editItem);
+            MenuItem editItem = new MenuItem("Modifica"); 
+            MenuItem deleteItem = new MenuItem("Elimina dal catalogo"); // Iniezione Task T-89
+            ContextMenu contextMenu = new ContextMenu(playItem, editItem, deleteItem);
             
             playItem.setOnAction(event -> {
                 Track track = row.getItem();
@@ -357,19 +356,49 @@ public class TrackController {
                     onTrackPlayRequestedHandler.accept(track);
             });
 
-            // TASK T-78: Attivazione programmatica dell'edit sulla colonna cliccata col tasto destro
             editItem.setOnAction(event -> {
                 Track track = row.getItem();
                 if (track == null) return;
                 tableTracks.getSelectionModel().select(track);
                 selectedTrack = track;
                 
-                // Rileva dinamicamente la colonna focalizzata dal FocusModel di JavaFX
                 TableColumn<Track, ?> focusedColumn = tableTracks.getFocusModel().getFocusedCell().getTableColumn();
                 if (focusedColumn != null && focusedColumn.isEditable()) {
                     tableTracks.edit(row.getIndex(), focusedColumn);
                 } else {
                     tableTracks.edit(row.getIndex(), colTitle);
+                }
+            });
+
+            // TASK T-89 e T-90: Finestra di dialogo di conferma ed eliminazione traccia
+            deleteItem.setOnAction(event -> {
+                Track track = row.getItem();
+                if (track == null) return;
+
+                // T-89: Configurazione e apertura del dialogo di conferma nativo
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("Conferma Eliminazione");
+                alert.setHeaderText("Eliminare la traccia dal catalogo?");
+                alert.setContentText("L'operazione rimuoverà definitivamente la traccia '" + track.getTitle() + "' anche da tutte le playlist.");
+
+                java.util.Optional<ButtonType> confirmationResult = alert.showAndWait();
+                if (confirmationResult.isPresent() && confirmationResult.get() == ButtonType.OK) {
+                    try {
+                        facade.deleteTrack(track.getId());
+                        labelFeedback("Traccia eliminata con successo.", "green");
+                        
+                        // T-90: Aggiornamento reattivo in tempo reale del catalogo e della playlist corrente
+                        loadCatalog();
+                        if (playlistViewMode && currentPlaylist != null) {
+                            loadPlaylistTracks(currentPlaylist);
+                        }
+                        tableTracks.getSelectionModel().clearSelection();
+                        selectedTrack = null;
+                    } catch (Exception e) {
+                        labelFeedback("Errore durante l'eliminazione della traccia.", "red");
+                    }
+                } else {
+                    labelFeedback("Eliminazione annullata.", "#0066cc"); // Scenario 2
                 }
             });
 
@@ -379,8 +408,6 @@ public class TrackController {
                         .otherwise(contextMenu)
             );
 
-            // Corretto: Rimosso addEventFilter aggressivo che consumava i click sulle celle.
-            // La deselezione sicura viene gestita controllando lo spazio vuoto o tramite click singolo non distruttivo.
             row.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                 if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 1 && row.isEmpty()) {
                     tableTracks.getSelectionModel().clearSelection();
