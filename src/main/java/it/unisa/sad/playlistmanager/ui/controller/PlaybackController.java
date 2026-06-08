@@ -1,5 +1,7 @@
 package it.unisa.sad.playlistmanager.ui.controller;
 
+import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
+import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -51,7 +53,7 @@ public class PlaybackController {
             this.currentTrack = track;
             PlaybackSnapshot snapshot = facade.playTrack(track.getId());
             updatePlaybackView(snapshot);
-        } catch (IllegalArgumentException e){ 
+        } catch (TrackNotFoundException | ValidationException | IllegalArgumentException e){ 
             showPlaybackError(e.getMessage()); 
         }
     }
@@ -81,7 +83,7 @@ public class PlaybackController {
             }
             PlaybackSnapshot snapshot = facade.playTrack(currentTrack.getId());
             updatePlaybackView(snapshot);
-        } catch (IllegalArgumentException e) { 
+        } catch (TrackNotFoundException | ValidationException | IllegalArgumentException e) { 
             showPlaybackError(e.getMessage()); 
         }
     }

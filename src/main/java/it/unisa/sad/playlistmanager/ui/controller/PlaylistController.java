@@ -1,5 +1,6 @@
 package it.unisa.sad.playlistmanager.ui.controller;
 
+import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import javafx.fxml.FXML;
@@ -178,7 +179,7 @@ public class PlaylistController {
                     lblPlaylistFeedback.setStyle("-fx-text-fill: green;");
                     lblPlaylistFeedback.setText("Playlist creata con successo.");
                 }
-            } catch (IllegalArgumentException e) {
+            } catch (ValidationException | IllegalArgumentException e) {
                 lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
                 lblPlaylistFeedback.setText(e.getMessage());
             } catch (Exception e) {
