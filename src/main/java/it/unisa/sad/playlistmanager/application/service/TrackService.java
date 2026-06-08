@@ -1,6 +1,7 @@
 package it.unisa.sad.playlistmanager.application.service;
 
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
+import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
 import java.util.List;
@@ -61,10 +62,38 @@ public class TrackService {
     /**
      * Ritorna la traccia cercata tramite il suo ID. 
      * Siccome il metodo findById del repository ritorna un Optional, è necessario gestire il caso in cui la traccia non esista.
-     * @return La traccia cercata, oppure {@code null} se non esiste.
+     * @return La traccia cercata.
+     * @throws TrackNotFoundException se la traccia non esiste.
      */
     public Track getTrackById(String trackId) {
 
         return trackRepository.findById(trackId).orElseThrow(() -> new TrackNotFoundException("Track non trovata."));
+    }
+
+
+    /**
+     * Coordina il caso d'uso di modifica di una traccia.
+     * Ritorna la traccia aggiornata se nel livello inferiore (Repository) viene effettivamente aggiornata.
+     * @throws ValidationException nel caso in cui la traccia da modificare abbia id nullo, vuoto o se la traccia nuova modificata sia nulla.
+     * @throws TrackNotFoundException nel caso in cui la traccia da modificare non esista all'interno del sistema di persistenza.
+     */
+    public Track updateTrack(String trackId, Track newTrack){
+        if (null == trackId || trackId.trim().isEmpty()) throw new ValidationException("L'id della Track da modificare è nullo o vuoto.");
+        if (null == newTrack ) throw new ValidationException("la Track modificata è nulla");
+        
+        Track existingTrack = getTrackById(trackId);
+
+            Track updatedTrack = new Track(
+                    existingTrack.getId(),
+                    newTrack.getTitle(),
+                    newTrack.getAuthor(),
+                    newTrack.getDuration(),
+                    newTrack.getGenre(),
+                    newTrack.getYear()
+            );
+
+            return trackRepository.update(updatedTrack).orElseThrow(() -> new TrackNotFoundException("La traccia da modificare non è stata trovata."));
+
+            
     }
 }

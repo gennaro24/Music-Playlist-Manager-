@@ -29,5 +29,7 @@ public interface TrackRepository {
      * @return una List di track trovate. La lista può essere vuota.
      */
     List<Track> findAll();
+
+    Optional<Track> update(Track track);
     
 }
