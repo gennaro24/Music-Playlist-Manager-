@@ -128,11 +128,14 @@ public class PlaybackController {
             labelTitle.setManaged(true);
             labelArtist.setVisible(true);
             labelArtist.setManaged(true);
+        } else {
+            // CORREZIONE: Se la traccia è null (es. cancellata), resetta i campi grafici del Player
+            currentTrack = null;
+            labelTitle.setText("Nessun brano in riproduzione");
+            labelArtist.setText("-");
+            durationTrack.setText("0:00");
         }
 
-        // T-110: Aggiornamento timer visivo (tempo congelato)
-        // Il backend non avanza l'elapsedSeconds se lo stato è PAUSED,
-        // quindi la UI rimarrà "congelata" sullo stesso secondo.
         if (timerTrack != null) {
             timerTrack.setText(formatDuration(snapshot.elapsedSeconds()));
         }
@@ -166,6 +169,16 @@ public class PlaybackController {
         }));
         playbackTimeline.setCycleCount(Timeline.INDEFINITE);
         playbackTimeline.play();
+    }
+
+    /**
+     * Consente al coordinatore centrale di forzare il rinfresco 
+     * della vista del lettore recuperando lo snapshot aggiornato dalla Facade.
+     */
+    public void refresh() {
+        if (facade != null) {
+            updatePlaybackView(facade.getPlaybackSnapshot());
+        }
     }
 
     /**
