@@ -5,6 +5,7 @@ import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
+import it.unisa.sad.playlistmanager.domain.model.Playlist;
 /**
  * Gestisce lo stato logico del playback. 
  */
@@ -12,6 +13,8 @@ public class PlaybackService {
     private PlaybackState currentState = PlaybackState.STOPPED;
     private PlaybackMode currentMode = PlaybackMode.SEQUENTIAL;
     private Track currentTrack = null;
+    private Playlist currentPlaylist = null;
+    //TODO: Modificare la gestione della playlist per gestire la cancellazione di una playlist.
 
     /**
      * Restituisce lo stato corrente del playback.
@@ -81,6 +84,13 @@ public class PlaybackService {
     public void handleDeletedTrack(String trackId) {
         if (currentTrack != null && currentTrack.getId() == trackId) {
             currentTrack = null;
+            currentState = PlaybackState.STOPPED;
+        }
+    }
+
+    public void handleDeletedPlaylist(String playlistId) {
+        if (currentPlaylist != null && currentPlaylist.getId() == playlistId) {
+            currentPlaylist = null;
             currentState = PlaybackState.STOPPED;
         }
     }

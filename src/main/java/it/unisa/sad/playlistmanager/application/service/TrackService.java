@@ -1,110 +1,148 @@
 package it.unisa.sad.playlistmanager.application.service;
 
+import java.util.List;
+
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
+import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
-import java.util.List;
 
 /**
  * Servizio applicativo responsabile del coordinamento dei casi d'uso legati alle tracce.
+ *
  * Funge da intermediario tra il Presentation Layer e il Domain/Persistence Layer.
- * * @version 1.1
+ * La validazione dei campi della traccia è delegata al modello di dominio {@link Track}.
+ *
+ * @version 1.2
  */
-
 public class TrackService {
 
-    /** Riferimento all'interfaccia di persistenza per il disaccoppiamento (DIP). */
     private final TrackRepository trackRepository;
 
     /**
-     * Costruttore del servizio. Inietta la dipendenza del repository.
+     * Costruttore del servizio con Dependency Injection del repository.
      *
-     * @param trackRepository L'astrazione del database da utilizzare per le operazioni CRUD.
+     * @param trackRepository repository astratto per la persistenza delle tracce
      */
     public TrackService(TrackRepository trackRepository) {
         this.trackRepository = trackRepository;
     }
 
     /**
-     * Coordina il caso d'uso di aggiunta di una nuova traccia nel catalogo.
-     * Crea l'oggetto di dominio attivando la validazione e ne richiede il salvataggio persistente.
+     * Crea e salva una nuova traccia nel catalogo.
      *
-     * @param title    Il titolo della canzone da aggiungere.
-     * @param author   L'artista della canzone.
-     * @param duration La durata complessiva in secondi.
-     * @param genre    Il genere della canzone.
-     * @param year     L'anno di pubblicazione.
-     * @return L'oggetto {@link Track} correttamente istanziato e salvato.
-     * @throws IllegalArgumentException Se i dati forniti violano le regole di validazione del dominio.
+     * @param title titolo della traccia
+     * @param author autore/artista della traccia
+     * @param duration durata in secondi
+     * @param genre genere musicale
+     * @param year anno di pubblicazione
+     * @return traccia creata e salvata
      */
     public Track addTrack(String title, String author, int duration, String genre, int year) {
-        // 1. Istanziazione e auto-validazione nel modello di dominio
         Track newTrack = new Track(null, title, author, duration, genre, year);
 
-        // 2. Persistenza tramite interfaccia astratta
         trackRepository.save(newTrack);
 
-        // 3. Ritorno dell'oggetto creato per l'aggiornamento della UI
         return newTrack;
     }
 
     /**
-     * Coordina il caso d'uso di recupero e visualizzazione dell'intero catalogo musicale.
-     * Risolve il Task T-10 della prima sprint.
+     * Recupera tutte le tracce presenti nel catalogo.
      *
-     * @return Una lista di tutti gli oggetti {@link Track} registrati nel sistema.
+     * @return lista completa delle tracce, eventualmente vuota
      */
     public List<Track> getAllTracks() {
-        // Delega l'estrazione totale al repository astratto
-        return this.trackRepository.findAll();
+        return trackRepository.findAll();
     }
+
     /**
-     * Ritorna la traccia cercata tramite il suo ID. 
-     * Siccome il metodo findById del repository ritorna un Optional, è necessario gestire il caso in cui la traccia non esista.
-     * @return La traccia cercata.
-     * @throws TrackNotFoundException se la traccia non esiste.
+     * Recupera una traccia tramite id.
+     *
+     * @param trackId id della traccia da cercare
+     * @return traccia trovata
+     * @throws ValidationException se l'id è nullo o vuoto
+     * @throws TrackNotFoundException se la traccia non esiste
      */
     public Track getTrackById(String trackId) {
-
-        return trackRepository.findById(trackId).orElseThrow(() -> new TrackNotFoundException("Track non trovata."));
+        return getExistingTrack(trackId);
     }
 
-
     /**
-     * Coordina il caso d'uso di modifica di una traccia.
-     * Ritorna la traccia aggiornata se nel livello inferiore (Repository) viene effettivamente aggiornata.
-     * @throws ValidationException nel caso in cui la traccia da modificare abbia id nullo, vuoto o se la traccia nuova modificata sia nulla.
-     * @throws TrackNotFoundException nel caso in cui la traccia da modificare non esista all'interno del sistema di persistenza.
+     * Modifica una traccia esistente mantenendo invariato il suo id.
+     *
+     * @param trackId id della traccia da modificare
+     * @param newTrack traccia contenente i nuovi valori
+     * @return traccia aggiornata
+     * @throws ValidationException se l'id è nullo/vuoto o se la nuova traccia è nulla
+     * @throws TrackNotFoundException se la traccia da modificare non esiste
      */
-    public Track updateTrack(String trackId, Track newTrack){
-        if (null == trackId || trackId.trim().isEmpty()) throw new ValidationException("L'id della Track da modificare è nullo o vuoto.");
-        if (null == newTrack ) throw new ValidationException("la Track modificata è nulla");
-        
-        Track existingTrack = getTrackById(trackId);
+    public Track updateTrack(String trackId, Track newTrack) {
+        validateTrackInput(newTrack);
 
-            Track updatedTrack = new Track(
-                    existingTrack.getId(),
-                    newTrack.getTitle(),
-                    newTrack.getAuthor(),
-                    newTrack.getDuration(),
-                    newTrack.getGenre(),
-                    newTrack.getYear()
-            );
+        Track existingTrack = getExistingTrack(trackId);
+        Track updatedTrack = buildUpdatedTrack(existingTrack, newTrack);
 
-            return trackRepository.update(updatedTrack).orElseThrow(() -> new TrackNotFoundException("La traccia da modificare non è stata trovata."));
-
-            
+        return trackRepository.update(updatedTrack)
+                .orElseThrow(() -> new TrackNotFoundException("La traccia da modificare non è stata trovata."));
     }
-    
+
     /**
-     * Coordina il caso d'uso di eliminazione di una traccia.
-     * Ritorna la traccia eliminata se nel livello inferiore (Repository) viene effettivamente eliminata.
-     * @throws ValidationException nel caso in cui l'id della traccia da eliminare sia nullo o vuoto.
-     * @throws TrackNotFoundException nel caso in cui la traccia da eliminare non esista all'interno del sistema di persistenza.
+     * Elimina una traccia dal catalogo.
+     *
+     * @param trackId id della traccia da eliminare
+     * @return traccia eliminata
+     * @throws ValidationException se l'id è nullo o vuoto
+     * @throws TrackNotFoundException se la traccia da eliminare non esiste
      */
-    public Track deleteTrack(String trackId){
-        if (null == trackId || trackId.trim().isEmpty()) throw new ValidationException("L'id della Track da eliminare è nullo o vuoto.");
-        return trackRepository.deleteById(trackId).orElseThrow(() -> new TrackNotFoundException("La traccia da eliminare non è stata trovata."));
+    public Track deleteTrack(String trackId) {
+        validateId(trackId, "L'id della Track da eliminare è nullo o vuoto.");
+
+        return trackRepository.deleteById(trackId)
+                .orElseThrow(() -> new TrackNotFoundException("La traccia da eliminare non è stata trovata."));
+    }
+
+    /**
+     * UTILITY: Valida un id obbligatorio.
+     */
+    private void validateId(String id, String errorMessage) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new ValidationException(errorMessage);
+        }
+    }
+
+    /**
+     * UTILITY: Valida che la traccia usata come input non sia nulla.
+     *
+     * I singoli campi della traccia sono già validati dal costruttore di {@link Track}.
+     */
+    private void validateTrackInput(Track track) {
+        if (track == null) {
+            throw new ValidationException("La Track modificata non può essere nulla.");
+        }
+    }
+
+    /**
+     * UTILITY: Recupera una traccia esistente o lancia un errore applicativo coerente.
+     */
+    private Track getExistingTrack(String trackId) {
+        validateId(trackId, "L'id della Track è nullo o vuoto.");
+
+        return trackRepository.findById(trackId)
+                .orElseThrow(() -> new TrackNotFoundException("Track non trovata."));
+    }
+
+    /**
+     * UTILITY: Costruisce una nuova istanza immutabile di Track mantenendo l'id originale.
+     */
+    private Track buildUpdatedTrack(Track existingTrack, Track newTrack) {
+        return new Track(
+                existingTrack.getId(),
+                newTrack.getTitle(),
+                newTrack.getAuthor(),
+                newTrack.getDuration(),
+                newTrack.getGenre(),
+                newTrack.getYear()
+        );
     }
 }
