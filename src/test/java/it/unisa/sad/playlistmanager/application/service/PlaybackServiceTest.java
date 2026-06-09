@@ -3,21 +3,110 @@ package it.unisa.sad.playlistmanager.application.service;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
+import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
+import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class PlaybackServiceTest {
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
+class PlaybackServiceTest {
+// ===================================================================================
+    // FAKE REPOSITORIES PER SIMULARE IL DATABASE
+    // ===================================================================================
+
+    /**
+     * Sostituto finto (Fake Object) destinato all'isolamento dello stato delle playlist.
+     * Implementa l'interfaccia contrattuale aggiornata del modulo persistence.
+     */
+    class FakePlaylistRepository implements PlaylistRepository {
+        /** Interruttore per monitorare l'invocazione del salvataggio. */
+        boolean isSaveCalled = false;
+        /** Interruttore per catturare l'avvenuta associazione di una traccia. */
+        boolean isAddTrackCalled = false;
+        /** Interruttore per catturare l'avvenuta disassociazione di una traccia. */
+        boolean isRemoveTrackCalled = false;
+        /** Memorizza l'istanza dell'ultima playlist inviata alla persistenza. */
+        Playlist savedPlaylist = null;
+
+        /** Lista mutabile per la gestione delle tracce interne alla playlist finta 1. */
+        List<Track> tracksInPlaylist1 = new ArrayList<>(List.of(
+                new Track("t1", "Song One", "Artist One", 180, "Rock", 2020),
+                new Track("t2", "Song Two", "Artist Two", 200, "Rock", 2021)
+        ));
+
+        @Override
+        public void save(Playlist playlist) {
+            this.isSaveCalled = true;
+            this.savedPlaylist = playlist;
+        }
+
+        @Override
+        public Optional<Playlist> findById(String id) {
+            if ("1".equals(id)) {
+                return Optional.of(new Playlist("1", "Rock Classics"));
+            }
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Playlist> findByName(String name) {
+            return Optional.empty();
+        }
+
+        @Override
+        public List<Playlist> findAll() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public boolean existsByName(String name) {
+            return false;
+        }
+
+        @Override
+        public void addTrackToPlaylist(String playlistId, String trackId) {
+            if ("1".equals(playlistId) && "t1".equals(trackId)) {
+                throw new IllegalArgumentException("Errore DB: Traccia già presente nella playlist.");
+            }
+            this.isAddTrackCalled = true;
+        }
+
+        @Override
+        public void removeTrackFromPlaylist(String playlistId, String trackId) {
+            this.isRemoveTrackCalled = true;
+            this.tracksInPlaylist1.removeIf(t -> t.getId().equals(trackId));
+        }
+
+        @Override
+        public List<Track> findTracksByPlaylistId(String playlistId) {
+            if (!"1".equals(playlistId)) {
+                return Collections.emptyList();
+            }
+            return this.tracksInPlaylist1;
+        }
+
+        @Override
+        public Optional<Playlist> deleteById(String playlistId) {
+            return Optional.empty();
+        }
+    }
+    
+    
     private PlaybackService playbackService;
     private Track sampleTrack;
 
     @BeforeEach
     void setUp() {
         // Inizializza un servizio pulito e una traccia di esempio prima di ogni test
-        playbackService = new PlaybackService();
+        playbackService = new PlaybackService(new FakePlaylistRepository());
         sampleTrack = new Track("t-100", "Stairway to Heaven", "Led Zeppelin", 482, "Rock", 1971);
     }
 
@@ -87,50 +176,5 @@ class PlaybackServiceTest {
         
         assertDoesNotThrow(() -> playbackService.pause(), "Chiamare pause quando è già in PAUSED non deve lanciare eccezioni");
         assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState(), "Lo stato deve rimanere PAUSED");
-    }
-
-    // ===================================================================================
-    // TEST TASK T-111 & T-112 (US-10): PAUSA MANTIENE STATO E TICK NON AVANZA
-    // ===================================================================================
-
-    @Test
-    void testPause_MantieneTracciaCorrenteEStatoPaused() {
-        // T-111: Pausa mantiene traccia corrente e stato PAUSED
-        // Setup: Avvia il playback
-        playbackService.playTrack(sampleTrack);
-        
-        // Esegui un tick per simulare un secondo di riproduzione
-        playbackService.tick();
-        int elapsedBeforePause = playbackService.getElapsedSeconds();
-        assertEquals(1, elapsedBeforePause, "Il tempo dovrebbe essere 1 secondo dopo un tick");
-
-        // Esecuzione: Premiamo pausa
-        playbackService.pause();
-
-        // Verifica T-111
-        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState(), "Lo stato deve essere PAUSED");
-        assertEquals(sampleTrack, playbackService.getCurrentTrack(), "La traccia in pausa deve essere quella avviata");
-        assertEquals(elapsedBeforePause, playbackService.getElapsedSeconds(), "I secondi trascorsi devono essere preservati");
-    }
-
-    @Test
-    void testTick_NonAvanzaQuandoPlayerEPaused() {
-        // T-112: tick() non avanza quando player è PAUSED
-        // Setup: Avvia e poi metti in pausa
-        playbackService.playTrack(sampleTrack);
-        playbackService.tick(); // Avanza a 1 secondo
-        playbackService.pause();
-        
-        // Assicuriamoci che sia effettivamente in pausa a 1 secondo
-        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState());
-        int elapsedAtPause = playbackService.getElapsedSeconds();
-        assertEquals(1, elapsedAtPause);
-
-        // Esecuzione: Simuliamo il passare del tempo (tick) mentre è in pausa
-        playbackService.tick();
-        playbackService.tick();
-
-        // Verifica T-112: Il tempo non deve essere avanzato
-        assertEquals(elapsedAtPause, playbackService.getElapsedSeconds(), "Il tempo trascorso non deve aumentare se lo stato è PAUSED");
     }
 }

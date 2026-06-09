@@ -187,4 +187,15 @@ public class MusicPlaylistManagerFacade {
         return trackService.deleteTrack(trackId);
     }
 
+    /**
+     * Espone al presentation layer la funzionalità di avvio del playback di una playlist specifica.
+     *
+     * @param playlistId identificativo della playlist da riprodurre
+     * @return snapshot aggiornato del playback
+     */
+    public PlaybackSnapshot playPlaylist(String playlistId) {
+        playbackService.playPlaylist(playlistId);
+        return playbackService.getSnapshot();
+    }
+
 }
