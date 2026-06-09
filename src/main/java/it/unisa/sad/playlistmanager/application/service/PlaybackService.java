@@ -1,5 +1,7 @@
 package it.unisa.sad.playlistmanager.application.service;
 
+import java.util.Objects;
+
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
@@ -14,6 +16,7 @@ public class PlaybackService {
     private PlaybackMode currentMode = PlaybackMode.SEQUENTIAL;
     private Track currentTrack = null;
     private Playlist currentPlaylist = null;
+    private int elapsedSeconds = 0;
     //TODO: Modificare la gestione della playlist per gestire la cancellazione di una playlist.
 
     /**
@@ -44,6 +47,43 @@ public class PlaybackService {
     }
 
     /**
+     * Restituisce la playlist corrente.
+     *
+     * @return playlist corrente, oppure {@code null} se assente
+     */
+    public Playlist getCurrentPlaylist() {
+        return currentPlaylist;
+    }
+
+    /**
+     * Imposta la modalità di playback.
+     *
+     * @param mode modalità da impostare
+     */
+    public void setPlaybackMode(PlaybackMode mode) {
+        this.currentMode = mode;
+    }
+
+    /**
+     * Restituisce i secondi trascorsi dall'inizio della traccia corrente.
+     * @return
+     */
+    public int getElapsedSeconds() {
+        return elapsedSeconds;
+    }
+
+    /**
+     * Aggiorna lo stato del playback.
+     */
+    public void tick() {
+        if (currentState == PlaybackState.PLAYING
+                && currentTrack != null
+                && elapsedSeconds < currentTrack.getDuration()) {
+            elapsedSeconds++;
+        }
+    }   
+
+    /**
      * Avvia il playback della traccia indicata.
      *
      * @param track traccia da riprodurre
@@ -56,6 +96,7 @@ public class PlaybackService {
 
         currentTrack = track;
         currentState = PlaybackState.PLAYING;
+        elapsedSeconds = 0;
     }
 
     /**
@@ -73,7 +114,7 @@ public class PlaybackService {
      * @return snapshot del playback
      */
     public PlaybackSnapshot getSnapshot() {
-        return new PlaybackSnapshot(getCurrentState(), getCurrentTrack());
+        return new PlaybackSnapshot(getCurrentState(), getCurrentTrack(), getCurrentMode(), getElapsedSeconds());
     }
 
     /**
@@ -82,16 +123,24 @@ public class PlaybackService {
      * @param trackId l'identificativo della traccia eliminata 
     */
     public void handleDeletedTrack(String trackId) {
-        if (currentTrack != null && currentTrack.getId() == trackId) {
+        if (currentTrack != null && Objects.equals(currentTrack.getId(), trackId)) {
             currentTrack = null;
             currentState = PlaybackState.STOPPED;
+            elapsedSeconds = 0;
         }
     }
 
-    public void handleDeletedPlaylist(String playlistId) {
-        if (currentPlaylist != null && currentPlaylist.getId() == playlistId) {
+    /**
+     * Gestisce il caso in cui la playlist eliminata sia quella attualmente in playback.
+     * In questo caso il playback viene fermato e la playlist corrente viene azzerata.
+     * @param playlistId l'identificativo della playlist eliminata
+     */
+public void handleDeletedPlaylist(String playlistId) {
+        if (currentPlaylist != null && Objects.equals(currentPlaylist.getId(), playlistId)) {
             currentPlaylist = null;
+            currentTrack = null;
             currentState = PlaybackState.STOPPED;
+            elapsedSeconds = 0;
         }
     }
 }

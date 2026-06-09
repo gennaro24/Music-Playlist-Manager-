@@ -237,7 +237,7 @@ class PlaylistServiceTest {
         FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(ValidationException.class, () -> {
             service.addTrackToPlaylist("1", "t1");
         });
     }
