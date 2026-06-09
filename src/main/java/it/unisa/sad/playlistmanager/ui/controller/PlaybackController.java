@@ -3,15 +3,11 @@ package it.unisa.sad.playlistmanager.ui.controller;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
 import javafx.scene.control.ToggleButton;
-import javafx.util.Duration;
-import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
@@ -38,7 +34,6 @@ public class PlaybackController {
     @FXML private ToggleButton tglSingleTrackLoop;
     
     private Track currentTrack;
-    private Timeline playbackTimeline;
 
     /**
      * Costruttore uniforme per l'attivazione della Constructor Injection (Task T-63).
@@ -52,9 +47,7 @@ public class PlaybackController {
     @FXML
     private void initialize() {
         updateLoopToggleVisual(false);
-        startPlaybackRefreshLoop();
     }
-
     /**
      * Comanda l'avvio immediato della riproduzione audio per una specifica traccia di dominio.
      *
@@ -87,11 +80,6 @@ public class PlaybackController {
             PlaybackSnapshot currentSnapshot = facade.getPlaybackSnapshot();
             if (currentSnapshot.state() == PlaybackState.PLAYING) {
                 PlaybackSnapshot snapshot = facade.pausePlayback();
-                updatePlaybackView(snapshot);
-                return;
-            }
-            if (currentSnapshot.state() == PlaybackState.PAUSED) {
-                PlaybackSnapshot snapshot = facade.resumePlayback();
                 updatePlaybackView(snapshot);
                 return;
             }
@@ -149,36 +137,22 @@ public class PlaybackController {
             labelTitle.setManaged(true);
             labelArtist.setVisible(true);
             labelArtist.setManaged(true);
-        } else {
-            // CORREZIONE: Se la traccia è null (es. cancellata), resetta i campi grafici del Player
-            currentTrack = null;
-            labelTitle.setText("Nessun brano in riproduzione");
-            labelArtist.setText("-");
-            durationTrack.setText("0:00");
-        }
-
-        if (timerTrack != null) {
-            timerTrack.setText(formatDuration(snapshot.elapsedSeconds()));
         }
 
         if (lblPlaybackStatus != null) {
-            // T-110: Aggiorna l'etichetta testuale con lo stato esatto (es. PAUSED)
-            lblPlaybackStatus.setText(snapshot.state().name()); 
+            lblPlaybackStatus.setText(snapshot.state().name());
         }
 
         if (btnPlayPauseTrack != null) {
             if (snapshot.state() == PlaybackState.PLAYING) {
                 btnPlayPauseTrack.setText("⏸");
             } else {
-                // T-110: Rimette l'icona Play (▶) se lo stato è PAUSED o STOPPED
                 btnPlayPauseTrack.setText("▶");
             }
         }
 
         if (tglSingleTrackLoop != null) {
-            boolean loopEnabled = snapshot.mode() == PlaybackMode.REPEAT_ONE;
-            tglSingleTrackLoop.setSelected(loopEnabled);
-            updateLoopToggleVisual(loopEnabled);
+            updateLoopToggleVisual(tglSingleTrackLoop.isSelected());
         }
     }
 
@@ -193,32 +167,6 @@ public class PlaybackController {
         } else {
             tglSingleTrackLoop.setText("Loop: OFF");
             tglSingleTrackLoop.setStyle("-fx-background-color: #e0e0e0; -fx-text-fill: #333333; -fx-font-weight: bold;");
-        }
-    }
-
-    /**
-     * Avvia il refresh periodico della vista playback.
-     */
-    private void startPlaybackRefreshLoop() {
-        if (playbackTimeline != null) {
-            playbackTimeline.stop();
-        }
-        playbackTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-            if (facade == null) return;
-            PlaybackSnapshot snapshot = facade.tickPlayback();
-            updatePlaybackView(snapshot);
-        }));
-        playbackTimeline.setCycleCount(Timeline.INDEFINITE);
-        playbackTimeline.play();
-    }
-
-    /**
-     * Consente al coordinatore centrale di forzare il rinfresco 
-     * della vista del lettore recuperando lo snapshot aggiornato dalla Facade.
-     */
-    public void refresh() {
-        if (facade != null) {
-            updatePlaybackView(facade.getPlaybackSnapshot());
         }
     }
 

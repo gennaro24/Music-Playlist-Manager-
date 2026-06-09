@@ -43,7 +43,7 @@ public class SqliteAppFactory implements AppFactory{
             //creazione del playlist service
             PlaylistService playlistService = new PlaylistService(playlistRepository, trackRepository);
             //creazione del playback service
-            PlaybackService playbackService = new PlaybackService(playlistRepository);
+            PlaybackService playbackService = new PlaybackService();
             //creazione della facade
             return new MusicPlaylistManagerFacade(trackService, playlistService, playbackService);
         } catch (Exception e) {

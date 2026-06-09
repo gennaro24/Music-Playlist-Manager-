@@ -6,8 +6,6 @@ import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
-import it.unisa.sad.playlistmanager.persistence.repository.FakePlaylistRepository;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,14 +47,18 @@ class PlaybackServiceTest {
         assertNull(playbackService.getCurrentTrack());
 
         playbackService.playTrack(sampleTrack1);
+        playbackService.playTrack(sampleTrack1);
 
         assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
         assertEquals(sampleTrack1, playbackService.getCurrentTrack());
     }
 
     @Test
     void testPlayTrack_TracciaInesistenteNulla() {
-        assertThrows(TrackNotFoundException.class, () -> playbackService.playTrack(null));
+        assertThrows(TrackNotFoundException.class, () -> {
+            playbackService.playTrack(null);
+        });
         assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());
     }
 
@@ -90,13 +92,20 @@ class PlaybackServiceTest {
         playbackService.playTrack(sampleTrack1);
         playbackService.tick();
         playbackService.pause();
-        
-        int elapsedAtPause = playbackService.getElapsedSeconds();
-        playbackService.tick();
-        playbackService.tick();
+        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState());
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
 
-        assertEquals(elapsedAtPause, playbackService.getElapsedSeconds());
+        // WHEN: Premo Skip mentre il player è in pausa
+        playbackService.skipToNext();
+
+        // THEN: La traccia corrente cambia, ma lo stato resta rigorosamente PAUSED
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack(), "La traccia deve cambiare anche se in pausa");
+        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState(), "Il player deve preservare lo stato PAUSED");
     }
+
+    // ===================================================================================
+    // TEST TASK (US-17): VERIFICA COERENZA DEGLI SNAPSHOT DTO
+    // ===================================================================================
 
     @Test
     void testPlayPlaylist_PopolataParteDallaPrimaTraccia() {

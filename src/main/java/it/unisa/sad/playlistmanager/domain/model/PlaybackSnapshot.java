@@ -5,14 +5,9 @@ package it.unisa.sad.playlistmanager.domain.model;
  *
  * @param state stato corrente
  * @param currentTrack traccia corrente, oppure {@code null} se assente
- * @param mode modalità di playback corrente
- * @param elapsedSeconds secondi trascorsi nella traccia corrente
  */
 
 public record PlaybackSnapshot(
         PlaybackState state,
-        Track currentTrack,
-        PlaybackMode mode,
-        int elapsedSeconds
-
+        Track currentTrack
 ) {}

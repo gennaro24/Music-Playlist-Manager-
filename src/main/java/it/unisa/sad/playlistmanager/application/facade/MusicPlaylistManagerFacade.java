@@ -164,16 +164,15 @@ public class MusicPlaylistManagerFacade {
         playbackService.pause();
         return getPlaybackSnapshot();
     }
-
     /**
-     * Espone al Presentation Layer la funzionalità di ripresa del playback.
-     * Delega l'operazione al PlaybackService.\
-     * @return Una fotografia dello stato corrente del playback dopo la ripresa (PlaybackSnapshot).
+     * Espone al Presentation Layer la funzionalità di skip alla traccia successiva.
+     * @return Una fotografia dello stato corrente del playback dopo lo skip (PlaybackSnapshot).
      */
-    public PlaybackSnapshot resumePlayback(){
-        playbackService.resume();
+    public PlaybackSnapshot skipToNext() {
+        playbackService.skipToNext();
         return getPlaybackSnapshot();
     }
+
     /**
      * Espone al Presentation Layer la funzionalità di skip alla traccia successiva.
      * @return Una fotografia dello stato corrente del playback dopo lo skip (PlaybackSnapshot).
@@ -239,15 +238,10 @@ public class MusicPlaylistManagerFacade {
         return trackService.deleteTrack(trackId);
     }
 
-    /**
-     * Espone al presentation layer la funzionalità di avvio del playback di una playlist specifica.
-     *
-     * @param playlistId identificativo della playlist da riprodurre
-     * @return snapshot aggiornato del playback
-     */
-    public PlaybackSnapshot playPlaylist(String playlistId) {
-        playbackService.playPlaylist(playlistId);
-        return playbackService.getSnapshot();
+
+    //il controller lo deve chiamare quando la traccia corrente termina.
+    public PlaybackSnapshot handleTrackCompleted() {
+        return playbackService.handleTrackCompleted();
     }
 
 }
