@@ -1,6 +1,7 @@
 package it.unisa.sad.playlistmanager.application.service;
 
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
+import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackQueue;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSource;
@@ -43,7 +44,20 @@ public class PlaybackService {
     public PlaybackMode getCurrentMode() {
         return currentMode;
     }
-    
+
+    /**
+     * Imposta la modalità di playback corrente.
+     * 
+     * @param mode La modalità di playback da impostare.
+     * @throws ValidationException se la modalità di playback è nulla.
+     */
+    public void setPlaybackMode(PlaybackMode mode) {
+        if (mode == null) {
+            throw new ValidationException("La modalità di playback non può essere nulla.");
+        }
+        this.currentMode = mode;
+    }
+
     /**
      * Imposta la modalità di playback corrente e aggiorna implicitamente lo snapshot.
      * Risolve parte del Task T-157 (aggiornamento dopo cambio modalità).
@@ -165,8 +179,11 @@ public class PlaybackService {
     }
 
     /**
-     * Gestisce il caso in cui la traccia eliminata sia attualmente in playback.
-     * * @param trackId l'identificativo della traccia eliminata 
+     * Gestisce il caso in cui la traccia eliminata sia attualmente in playback. Se
+     * la traccia eliminata è quella in questione
+     * il playback viene fermato.
+     * 
+     * @param trackId l'identificativo della traccia eliminata
      */
     public void handleDeletedTrack(String trackId) {
         if (currentTrack != null && currentTrack.getId().equals(trackId)) {
@@ -186,5 +203,36 @@ public class PlaybackService {
             currentTrack = null;
             currentState = PlaybackState.STOPPED;
         }
+    }
+
+    /**
+     * Da chiamare quando la traccia corrente termina.
+     * @return Lo snapshot corrente del playback.
+     */
+    public PlaybackSnapshot handleTrackCompleted() {
+        //se non ho una traccia corrente, stoppo il playback
+        if (currentTrack == null) {
+            //imposto lo stato di stop
+            currentState = PlaybackState.STOPPED;
+            //ritorno lo snapshot corrente
+            return getSnapshot();
+        }
+        //switch per la modalità di playback
+        switch (currentMode) {
+            //se la modalità è repeat one, riparte dalla traccia corrente
+            case REPEAT_ONE:
+                // stessa traccia, riparte da capo
+                currentState = PlaybackState.PLAYING;
+                //TODO: Se hai elapsedSeconds/lastTickMillis, qui fai reset a 0
+                break;
+            case REPEAT_ALL:
+            case SHUFFLE:
+            case SEQUENTIAL:
+            default:
+                // per ora fallback: stop (finché non implementi skip/playlist index)
+                currentState = PlaybackState.STOPPED;
+                break;
+        }
+        return getSnapshot();
     }
 }
