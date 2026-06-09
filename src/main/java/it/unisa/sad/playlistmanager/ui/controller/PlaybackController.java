@@ -3,10 +3,13 @@ package it.unisa.sad.playlistmanager.ui.controller;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
+import javafx.util.Duration;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
@@ -32,6 +35,7 @@ public class PlaybackController {
     @FXML private Button skipButton;
     
     private Track currentTrack;
+    private Timeline playbackTimeline;
 
     /**
      * Costruttore uniforme per l'attivazione della Constructor Injection (Task T-63).
@@ -40,6 +44,11 @@ public class PlaybackController {
      */
     public PlaybackController(MusicPlaylistManagerFacade facade) {
         this.facade = facade;
+    }
+
+    @FXML
+    private void initialize() {
+        startPlaybackRefreshLoop();
     }
 
     /**
@@ -74,6 +83,11 @@ public class PlaybackController {
             PlaybackSnapshot currentSnapshot = facade.getPlaybackSnapshot();
             if (currentSnapshot.state() == PlaybackState.PLAYING) {
                 PlaybackSnapshot snapshot = facade.pausePlayback();
+                updatePlaybackView(snapshot);
+                return;
+            }
+            if (currentSnapshot.state() == PlaybackState.PAUSED) {
+                PlaybackSnapshot snapshot = facade.resumePlayback();
                 updatePlaybackView(snapshot);
                 return;
             }
@@ -119,18 +133,56 @@ public class PlaybackController {
             labelTitle.setManaged(true);
             labelArtist.setVisible(true);
             labelArtist.setManaged(true);
+        } else {
+            // CORREZIONE: Se la traccia è null (es. cancellata), resetta i campi grafici del Player
+            currentTrack = null;
+            labelTitle.setText("Nessun brano in riproduzione");
+            labelArtist.setText("-");
+            durationTrack.setText("0:00");
+        }
+
+        if (timerTrack != null) {
+            timerTrack.setText(formatDuration(snapshot.elapsedSeconds()));
         }
 
         if (lblPlaybackStatus != null) {
-            lblPlaybackStatus.setText(snapshot.state().name());
+            // T-110: Aggiorna l'etichetta testuale con lo stato esatto (es. PAUSED)
+            lblPlaybackStatus.setText(snapshot.state().name()); 
         }
 
         if (btnPlayPauseTrack != null) {
             if (snapshot.state() == PlaybackState.PLAYING) {
                 btnPlayPauseTrack.setText("⏸");
             } else {
+                // T-110: Rimette l'icona Play (▶) se lo stato è PAUSED o STOPPED
                 btnPlayPauseTrack.setText("▶");
             }
+        }
+    }
+
+    /**
+     * Avvia il refresh periodico della vista playback.
+     */
+    private void startPlaybackRefreshLoop() {
+        if (playbackTimeline != null) {
+            playbackTimeline.stop();
+        }
+        playbackTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+            if (facade == null) return;
+            PlaybackSnapshot snapshot = facade.tickPlayback();
+            updatePlaybackView(snapshot);
+        }));
+        playbackTimeline.setCycleCount(Timeline.INDEFINITE);
+        playbackTimeline.play();
+    }
+
+    /**
+     * Consente al coordinatore centrale di forzare il rinfresco 
+     * della vista del lettore recuperando lo snapshot aggiornato dalla Facade.
+     */
+    public void refresh() {
+        if (facade != null) {
+            updatePlaybackView(facade.getPlaybackSnapshot());
         }
     }
 

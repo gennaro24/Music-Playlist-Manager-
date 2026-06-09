@@ -164,10 +164,31 @@ public class MusicPlaylistManagerFacade {
         playbackService.pause();
         return getPlaybackSnapshot();
     }
+
+    /**
+     * Espone al Presentation Layer la funzionalità di ripresa del playback.
+     * Delega l'operazione al PlaybackService.\
+     * @return Una fotografia dello stato corrente del playback dopo la ripresa (PlaybackSnapshot).
+     */
+    public PlaybackSnapshot resumePlayback(){
+        playbackService.resume();
+        return getPlaybackSnapshot();
+    }
     /**
      * @return Una fotografia dello stato corrente del playback (PlaybackSnapshot).
      */
     public PlaybackSnapshot getPlaybackSnapshot() {
+        return playbackService.getSnapshot();
+    }
+    
+
+    /**
+     * Avanza di un "tick" il playback e restituisce lo snapshot aggiornato.
+     *
+     * @return snapshot aggiornato del playback
+     */
+    public PlaybackSnapshot tickPlayback() {
+        playbackService.tick();
         return playbackService.getSnapshot();
     }
     /**
@@ -185,6 +206,17 @@ public class MusicPlaylistManagerFacade {
     public Track deleteTrack(String trackId) {
         playbackService.handleDeletedTrack(trackId);
         return trackService.deleteTrack(trackId);
+    }
+
+    /**
+     * Espone al presentation layer la funzionalità di avvio del playback di una playlist specifica.
+     *
+     * @param playlistId identificativo della playlist da riprodurre
+     * @return snapshot aggiornato del playback
+     */
+    public PlaybackSnapshot playPlaylist(String playlistId) {
+        playbackService.playPlaylist(playlistId);
+        return playbackService.getSnapshot();
     }
 
 }

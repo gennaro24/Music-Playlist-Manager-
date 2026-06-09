@@ -1,9 +1,12 @@
 package it.unisa.sad.playlistmanager.application.service;
 
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
+import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
+import it.unisa.sad.playlistmanager.persistence.repository.FakePlaylistRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -16,29 +19,20 @@ class PlaybackServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Inizializza un servizio pulito e una traccia di esempio prima di ogni test
-        playbackService = new PlaybackService();
+        playbackService = new PlaybackService(new FakePlaylistRepository());
         sampleTrack = new Track("t-100", "Stairway to Heaven", "Led Zeppelin", 482, "Rock", 1971);
     }
 
-    // ===================================================================================
-    // TEST TASK T-51 (US-09): AVVIO PLAYBACK
-    // ===================================================================================
-
     @Test
     void testPlayTrack_TracciaEsistenteEStatoPlaying() {
-        // Verifica stato iniziale
         assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());
         assertNull(playbackService.getCurrentTrack());
 
-        // Esecuzione
         playbackService.playTrack(sampleTrack);
 
-        // Verifica US-09: Stato aggiornato a PLAYING e traccia impostata
-        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState(), "Lo stato deve passare a PLAYING");
-        assertEquals(sampleTrack, playbackService.getCurrentTrack(), "La traccia corrente deve corrispondere a quella avviata");
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+        assertEquals(sampleTrack, playbackService.getCurrentTrack());
         
-        // Verifica del DTO Snapshot (opzionale ma ottima per la coverage)
         PlaybackSnapshot snapshot = playbackService.getSnapshot();
         assertEquals(PlaybackState.PLAYING, snapshot.state());
         assertEquals(sampleTrack, snapshot.currentTrack());
@@ -46,46 +40,89 @@ class PlaybackServiceTest {
 
     @Test
     void testPlayTrack_TracciaInesistenteNulla() {
-        // Esecuzione e Verifica US-09: Gestione eccezione per traccia nulla
-        assertThrows(TrackNotFoundException.class, () -> {
-            playbackService.playTrack(null);
-        });
-        
-        // Assicurati che lo stato del player non sia cambiato a causa dell'errore
+        assertThrows(TrackNotFoundException.class, () -> playbackService.playTrack(null));
         assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());
     }
 
-    // ===================================================================================
-    // TEST TASK T-57 (US-10): PAUSA PLAYBACK
-    // ===================================================================================
-
     @Test
     void testPause_DaStatoPlayingMantieneTraccia() {
-        // Setup: Avviamo una canzone per mettere il player in stato PLAYING
         playbackService.playTrack(sampleTrack);
-        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
-
-        // Esecuzione: Premiamo pausa
         playbackService.pause();
 
-        // Verifica US-10: Transizione a PAUSED e la traccia deve rimanere nel player
-        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState(), "Lo stato deve passare a PAUSED");
-        assertEquals(sampleTrack, playbackService.getCurrentTrack(), "La traccia corrente deve rimanere invariata in pausa");
+        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState());
+        assertEquals(sampleTrack, playbackService.getCurrentTrack());
     }
 
     @Test
     void testPause_DaStatoStoppedOPausedSenzaErrori() {
-        // Test 1: Pausa mentre la musica è già fermata (STOPPED)
         assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());
-        assertDoesNotThrow(() -> playbackService.pause(), "Chiamare pause da STOPPED non deve lanciare eccezioni o crashare il sistema");
-        assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState(), "Lo stato deve rimanere STOPPED");
+        assertDoesNotThrow(() -> playbackService.pause());
+        assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());
 
-        // Test 2: Pausa mentre la musica è già in pausa (PAUSED)
         playbackService.playTrack(sampleTrack);
-        playbackService.pause(); // Passa a PAUSED
+        playbackService.pause();
+        assertDoesNotThrow(() -> playbackService.pause());
         assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState());
+    }
+
+    @Test
+    void testPause_MantieneTracciaCorrenteEStatoPaused() {
+        playbackService.playTrack(sampleTrack);
+        playbackService.tick();
+        int elapsedBeforePause = playbackService.getElapsedSeconds();
+
+        playbackService.pause();
+
+        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState());
+        assertEquals(sampleTrack, playbackService.getCurrentTrack());
+        assertEquals(elapsedBeforePause, playbackService.getElapsedSeconds());
+    }
+
+    @Test
+    void testTick_NonAvanzaQuandoPlayerEPaused() {
+        playbackService.playTrack(sampleTrack);
+        playbackService.tick();
+        playbackService.pause();
         
-        assertDoesNotThrow(() -> playbackService.pause(), "Chiamare pause quando è già in PAUSED non deve lanciare eccezioni");
-        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState(), "Lo stato deve rimanere PAUSED");
+        int elapsedAtPause = playbackService.getElapsedSeconds();
+        playbackService.tick();
+        playbackService.tick();
+
+        assertEquals(elapsedAtPause, playbackService.getElapsedSeconds());
+    }
+
+    @Test
+    void testPlayPlaylist_PopolataParteDallaPrimaTraccia() {
+        playbackService.playPlaylist("1");
+
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+        assertNotNull(playbackService.getCurrentPlaylist());
+        assertEquals("1", playbackService.getCurrentPlaylist().getId());
+        assertNotNull(playbackService.getCurrentTrack());
+        assertEquals("t1", playbackService.getCurrentTrack().getId());
+        assertEquals(0, playbackService.getCurrentQueueIndex());
+    }
+
+    @Test
+    void testPlayPlaylist_VuotaNonAvviaIlPlayback() {
+        assertThrows(ValidationException.class, () -> playbackService.playPlaylist("2"));
+        assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());
+        assertNull(playbackService.getCurrentPlaylist());
+    }
+
+    @Test
+    void testPause_PausaPlaylistMantieneIndiceETraccia() {
+        playbackService.playPlaylist("1");
+        playbackService.tick();
+        playbackService.tick();
+        int elapsedBeforePause = playbackService.getElapsedSeconds();
+
+        playbackService.pause();
+
+        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState());
+        assertEquals("1", playbackService.getCurrentPlaylist().getId());
+        assertEquals("t1", playbackService.getCurrentTrack().getId());
+        assertEquals(0, playbackService.getCurrentQueueIndex());
+        assertEquals(elapsedBeforePause, playbackService.getElapsedSeconds());
     }
 }
