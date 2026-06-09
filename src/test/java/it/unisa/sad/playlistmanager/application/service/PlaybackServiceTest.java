@@ -89,7 +89,7 @@ class PlaybackServiceTest {
 
     @Test
     void testTick_NonAvanzaQuandoPlayerEPaused() {
-        playbackService.playTrack(sampleTrack1);
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
         playbackService.tick();
         playbackService.pause();
         assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState());
