@@ -62,6 +62,16 @@ public class MusicPlaylistManagerFacade {
     }
 
     /**
+     * Espone al Presentation Layer la funzionalità di eliminazione di una playlist.
+     * @param playlistId L'identificativo unico della playlist da eliminare.
+     * @return La playlist eliminata.
+     */
+    public Playlist deletePlaylist(String playlistId) {
+        playbackService.handleDeletedPlaylist(playlistId);
+        return this.playlistService.deletePlaylist(playlistId);
+    }
+
+    /**
      * Espone al Presentation Layer l'elenco completo di tutte le tracce presenti nel catalogo.
      * Risolve il Task T-11 della prima sprint.
      *
