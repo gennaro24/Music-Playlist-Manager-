@@ -1,5 +1,5 @@
 package it.unisa.sad.playlistmanager.application.service;
-
+import it.unisa.sad.playlistmanager.domain.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
@@ -158,7 +158,7 @@ class TrackServiceTest {
         fakeRepo.simulatedDatabase.add(originalTrack);
 
         // When & Then: il tentativo di configurare dati errati fallisce a livello di entità
-        assertThrows(it.unisa.sad.playlistmanager.domain.exceptions.ValidationException.class, () -> {
+        assertThrows(ValidationException.class, () -> {
             new Track("t-81", "   ", "Consistent Author", 180, "Pop", 2020);
         });
 
