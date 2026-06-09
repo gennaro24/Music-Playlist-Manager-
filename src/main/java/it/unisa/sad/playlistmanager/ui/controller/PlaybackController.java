@@ -119,6 +119,12 @@ public class PlaybackController {
             labelTitle.setManaged(true);
             labelArtist.setVisible(true);
             labelArtist.setManaged(true);
+        } else {
+            // CORREZIONE: Se la traccia è null (es. cancellata), resetta i campi grafici del Player
+            currentTrack = null;
+            labelTitle.setText("Nessun brano in riproduzione");
+            labelArtist.setText("-");
+            durationTrack.setText("0:00");
         }
 
         if (lblPlaybackStatus != null) {
@@ -131,6 +137,16 @@ public class PlaybackController {
             } else {
                 btnPlayPauseTrack.setText("▶");
             }
+        }
+    }
+
+    /**
+     * Consente al coordinatore centrale di forzare il rinfresco 
+     * della vista del lettore recuperando lo snapshot aggiornato dalla Facade.
+     */
+    public void refresh() {
+        if (facade != null) {
+            updatePlaybackView(facade.getPlaybackSnapshot());
         }
     }
 

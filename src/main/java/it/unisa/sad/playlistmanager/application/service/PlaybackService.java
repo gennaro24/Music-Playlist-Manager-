@@ -82,14 +82,14 @@ public class PlaybackService {
      * @param trackId l'identificativo della traccia eliminata 
     */
     public void handleDeletedTrack(String trackId) {
-        if (currentTrack != null && currentTrack.getId() == trackId) {
+        if (currentTrack != null && currentTrack.getId().equals(trackId)) {
             currentTrack = null;
             currentState = PlaybackState.STOPPED;
         }
     }
 
     public void handleDeletedPlaylist(String playlistId) {
-        if (currentPlaylist != null && currentPlaylist.getId() == playlistId) {
+        if (currentPlaylist != null && currentPlaylist.getId().equals(playlistId)) {
             currentPlaylist = null;
             currentState = PlaybackState.STOPPED;
         }
