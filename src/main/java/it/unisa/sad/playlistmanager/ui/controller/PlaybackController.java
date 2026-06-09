@@ -86,6 +86,11 @@ public class PlaybackController {
                 updatePlaybackView(snapshot);
                 return;
             }
+            if (currentSnapshot.state() == PlaybackState.PAUSED) {
+                PlaybackSnapshot snapshot = facade.resumePlayback();
+                updatePlaybackView(snapshot);
+                return;
+            }
             if (currentTrack == null) {
                 showPlaybackError("Seleziona una traccia da riprodurre.");
                 return;

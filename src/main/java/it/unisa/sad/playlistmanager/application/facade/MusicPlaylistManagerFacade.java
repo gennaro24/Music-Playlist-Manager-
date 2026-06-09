@@ -164,12 +164,23 @@ public class MusicPlaylistManagerFacade {
         playbackService.pause();
         return getPlaybackSnapshot();
     }
+
+    /**
+     * Espone al Presentation Layer la funzionalità di ripresa del playback.
+     * Delega l'operazione al PlaybackService.\
+     * @return Una fotografia dello stato corrente del playback dopo la ripresa (PlaybackSnapshot).
+     */
+    public PlaybackSnapshot resumePlayback(){
+        playbackService.resume();
+        return getPlaybackSnapshot();
+    }
     /**
      * @return Una fotografia dello stato corrente del playback (PlaybackSnapshot).
      */
     public PlaybackSnapshot getPlaybackSnapshot() {
         return playbackService.getSnapshot();
     }
+    
 
     /**
      * Avanza di un "tick" il playback e restituisce lo snapshot aggiornato.

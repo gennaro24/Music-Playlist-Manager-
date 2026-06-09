@@ -182,6 +182,15 @@ public class PlaybackService {
     }
 
     /**
+     * Riprende il playback se è in pausa.
+     */
+    public void resume() {
+        if (currentState == PlaybackState.PAUSED) {
+            currentState = PlaybackState.PLAYING;
+        }
+    }
+
+    /**
      * Restituisce una fotografia dello stato corrente.
      *
      * @return snapshot del playback
