@@ -57,7 +57,7 @@ public class PlaybackService {
     public PlaybackMode getCurrentMode() {
         return currentMode;
     }
-
+    
     /**
      * Imposta la modalità di playback corrente e aggiorna implicitamente lo snapshot.
      * Risolve parte del Task T-157 (aggiornamento dopo cambio modalità).
@@ -359,5 +359,4 @@ public class PlaybackService {
             elapsedSeconds = 0;
         }
     }
-
 }

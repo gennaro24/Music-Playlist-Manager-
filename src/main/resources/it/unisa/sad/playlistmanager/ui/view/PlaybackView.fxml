@@ -83,7 +83,8 @@
             <ToggleButton fx:id="tglSingleTrackLoop"
                           mnemonicParsing="false"
                           onAction="#handleSingleTrackLoopToggle"
-                          text="Loop" />
+                          prefWidth="92.0"
+                          text="Loop: OFF" />
             <Button fx:id="btnPlayPauseTrack"
                     mnemonicParsing="false"
                     onAction="#PlayPauseTrack"

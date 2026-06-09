@@ -51,6 +51,7 @@ public class PlaybackController {
 
     @FXML
     private void initialize() {
+        updateLoopToggleVisual(false);
         startPlaybackRefreshLoop();
     }
 
@@ -175,7 +176,23 @@ public class PlaybackController {
         }
 
         if (tglSingleTrackLoop != null) {
-            tglSingleTrackLoop.setSelected(snapshot.mode() == PlaybackMode.REPEAT_ONE);
+            boolean loopEnabled = snapshot.mode() == PlaybackMode.REPEAT_ONE;
+            tglSingleTrackLoop.setSelected(loopEnabled);
+            updateLoopToggleVisual(loopEnabled);
+        }
+    }
+
+    /**
+     * Aggiorna aspetto e testo del toggle loop per rendere immediato lo stato ON/OFF.
+     */
+    private void updateLoopToggleVisual(boolean loopEnabled) {
+        if (tglSingleTrackLoop == null) return;
+        if (loopEnabled) {
+            tglSingleTrackLoop.setText("Loop: ON");
+            tglSingleTrackLoop.setStyle("-fx-background-color: #2e7d32; -fx-text-fill: white; -fx-font-weight: bold;");
+        } else {
+            tglSingleTrackLoop.setText("Loop: OFF");
+            tglSingleTrackLoop.setStyle("-fx-background-color: #e0e0e0; -fx-text-fill: #333333; -fx-font-weight: bold;");
         }
     }
 
