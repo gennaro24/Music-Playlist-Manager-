@@ -2,19 +2,29 @@ package it.unisa.sad.playlistmanager.application.service;
 
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
+import it.unisa.sad.playlistmanager.domain.model.PlaybackQueue;
+import it.unisa.sad.playlistmanager.domain.model.PlaybackSource;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
+import it.unisa.sad.playlistmanager.domain.strategy.PlaybackStrategy;
+import it.unisa.sad.playlistmanager.domain.strategy.SequentialPlaybackStrategy;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Gestisce lo stato logico del playback. 
+ * Gestisce lo stato logico del playback e coordina le strategie di riproduzione.
+ * Agisce come Contesto per il pattern Strategy.
+ * * @version 1.1
  */
 public class PlaybackService {
     private PlaybackState currentState = PlaybackState.STOPPED;
     private PlaybackMode currentMode = PlaybackMode.SEQUENTIAL;
     private Track currentTrack = null;
     private Playlist currentPlaylist = null;
-    //TODO: Modificare la gestione della playlist per gestire la cancellazione di una playlist.
+    private PlaybackQueue currentQueue = null;
 
     /**
      * Restituisce lo stato corrente del playback.
@@ -35,6 +45,16 @@ public class PlaybackService {
     }
     
     /**
+     * Imposta la modalità di playback corrente e aggiorna implicitamente lo snapshot.
+     * Risolve parte del Task T-157 (aggiornamento dopo cambio modalità).
+     *
+     * @param mode la nuova modalità di playback da impostare
+     */
+    public void setCurrentMode(PlaybackMode mode) {
+        this.currentMode = mode;
+    }
+    
+    /**
      * Restituisce la traccia corrente.
      *
      * @return traccia corrente, oppure {@code null} se assente
@@ -44,7 +64,8 @@ public class PlaybackService {
     }
 
     /**
-     * Avvia il playback della traccia indicata.
+     * Avvia il playback della traccia indicata come traccia singola.
+     * Inizializza una coda a traccia singola.
      *
      * @param track traccia da riprodurre
      * @throws TrackNotFoundException se {@code track} è {@code null}
@@ -54,8 +75,30 @@ public class PlaybackService {
             throw new TrackNotFoundException("Track non trovata.");
         }
 
-        currentTrack = track;
-        currentState = PlaybackState.PLAYING;
+        List<Track> singleTrackList = new ArrayList<>();
+        singleTrackList.add(track);
+        this.currentQueue = new PlaybackQueue(singleTrackList, PlaybackSource.SINGLE);
+        
+        this.currentTrack = track;
+        this.currentState = PlaybackState.PLAYING;
+    }
+
+    /**
+     * Avvia il playback di una playlist completa, inizializzando la coda di riproduzione.
+     * Metodo essenziale per supportare lo skip multi-traccia e i relativi test.
+     *
+     * @param playlist La playlist da riprodurre
+     * @param tracks I brani ordinati che compongono la playlist al momento dell'avvio
+     * @throws IllegalArgumentException se la playlist o la lista tracce sono nulle/vuote
+     */
+    public void playPlaylist(Playlist playlist, List<Track> tracks) {
+        if (playlist == null || tracks == null || tracks.isEmpty()) {
+            throw new IllegalArgumentException("Playlist o tracce non valide.");
+        }
+        this.currentPlaylist = playlist;
+        this.currentQueue = new PlaybackQueue(tracks, PlaybackSource.PLAYLIST);
+        this.currentTrack = this.currentQueue.getCurrentTrack();
+        this.currentState = PlaybackState.PLAYING;
     }
 
     /**
@@ -68,29 +111,79 @@ public class PlaybackService {
     }
 
     /**
-     * Restituisce una fotografia dello stato corrente.
+     * Avanza alla traccia successiva nella coda delegando il calcolo alla strategia attiva.
+     */
+    public void skipToNext() {
+        // Se non c'è una coda attiva o è vuota, l'operazione di skip è un no-op
+        if (currentQueue == null || currentQueue.isEmpty()) {
+            return;
+        }
+
+        // Delega alla strategia attiva il calcolo della prossima traccia
+        PlaybackStrategy strategy = getStrategyForMode(currentMode);
+        Track nextTrack = strategy.getNextTrack(currentQueue);
+
+        if (nextTrack != null) {
+            // Esiste una traccia successiva. La impostiamo mantenendo lo stato corrente
+            int nextIndex = currentQueue.getTracks().indexOf(nextTrack);
+            currentQueue.setCurrentIndex(nextIndex);
+            this.currentTrack = nextTrack;
+            // Lo stato (PLAYING o PAUSED) viene volutamente mantenuto inalterato
+        } else {
+            // Gestisce lo skip dall'ultima traccia in modalità SEQUENTIAL portando lo stato a STOPPED
+            if (currentMode == PlaybackMode.SEQUENTIAL) {
+                this.currentState = PlaybackState.STOPPED;
+                this.currentTrack = null;
+            }
+            // (Nota: Altre modalità come REPEAT_ALL gestiranno il loop restituendo una traccia non nulla)
+        }
+    }
+
+    /**
+     * Risolve dinamicamente la strategia di riproduzione in base alla modalità corrente.
+     * * @param mode La modalità di riproduzione attiva
+     * @return L'istanza concreta di PlaybackStrategy
+     */
+    private PlaybackStrategy getStrategyForMode(PlaybackMode mode) {
+        switch (mode) {
+            case SEQUENTIAL:
+                return new SequentialPlaybackStrategy();
+            // Le altre strategie (Shuffle, RepeatOne, RepeatAll) verranno mappate qui dai rispettivi assegnatari
+            default:
+                return new SequentialPlaybackStrategy();
+        }
+    }
+
+    /**
+     * Restituisce una fotografia dello stato corrente del player.
+     * Risolve il Task T-156 e T-157 della US-17.
      *
-     * @return snapshot del playback
+     * @return snapshot immutabile del playback (DTO)
      */
     public PlaybackSnapshot getSnapshot() {
         return new PlaybackSnapshot(getCurrentState(), getCurrentTrack());
     }
 
     /**
-     * Gestisce il caso in cui la traccia eliminata sia attualmente in playback. Se la traccia eliminata è quella in questione
-     * il playback viene fermato.
-     * @param trackId l'identificativo della traccia eliminata 
-    */
+     * Gestisce il caso in cui la traccia eliminata sia attualmente in playback.
+     * * @param trackId l'identificativo della traccia eliminata 
+     */
     public void handleDeletedTrack(String trackId) {
-        if (currentTrack != null && currentTrack.getId() == trackId) {
+        if (currentTrack != null && currentTrack.getId().equals(trackId)) {
             currentTrack = null;
             currentState = PlaybackState.STOPPED;
         }
     }
 
+    /**
+     * Gestisce il caso in cui la playlist eliminata sia attualmente in riproduzione.
+     * * @param playlistId l'identificativo della playlist eliminata
+     */
     public void handleDeletedPlaylist(String playlistId) {
-        if (currentPlaylist != null && currentPlaylist.getId() == playlistId) {
+        if (currentPlaylist != null && currentPlaylist.getId().equals(playlistId)) {
             currentPlaylist = null;
+            currentQueue = null;
+            currentTrack = null;
             currentState = PlaybackState.STOPPED;
         }
     }

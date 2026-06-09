@@ -157,7 +157,7 @@ public class MusicPlaylistManagerFacade {
 
     /**
      * Espone al Presentation Layer la funzionalità di pausa del playback.
-     * Delega l'operazione al PlaybackService.\
+     * Delega l'operazione al PlaybackService.
      * @return Una fotografia dello stato corrente del playback dopo la pausa (PlaybackSnapshot).
      */
     public PlaybackSnapshot pausePlayback(){
@@ -165,7 +165,18 @@ public class MusicPlaylistManagerFacade {
         return getPlaybackSnapshot();
     }
     /**
-     * @return Una fotografia dello stato corrente del playback (PlaybackSnapshot).
+     * Espone al Presentation Layer la funzionalità di skip alla traccia successiva.
+     * @return Una fotografia dello stato corrente del playback dopo lo skip (PlaybackSnapshot).
+     */
+    public PlaybackSnapshot skipToNext() {
+        playbackService.skipToNext();
+        return getPlaybackSnapshot();
+    }
+    
+    
+    /**
+     * Restituisce l'unico DTO letto dalla UI per conoscere lo stato del player.
+     * * @return Una fotografia dello stato corrente del playback (PlaybackSnapshot).
      */
     public PlaybackSnapshot getPlaybackSnapshot() {
         return playbackService.getSnapshot();
