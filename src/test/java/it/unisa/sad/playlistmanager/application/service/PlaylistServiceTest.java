@@ -17,8 +17,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Classe di test d'unità preesistente per i flussi di business legati alle playlist.
- * Estesa per adempiere al Task T-92 dello Sprint 2 (User Story 04).
+ * Classe di test d'unità preesistente sanata dal Type Mismatch e dall'eccezione del duplicato,
+ * ed estesa per adempiere ai Task T-103 e T-104 dello Sprint 2 (User Story 5.1).
+ *
+ * @version 1.3
  */
 class PlaylistServiceTest {
 
@@ -40,6 +42,11 @@ class PlaylistServiceTest {
         /** Memorizza l'istanza dell'ultima playlist inviata alla persistenza. */
         Playlist savedPlaylist = null;
 
+        /** Lista mutabile atta a simulare la tabella 'playlists' del database reale. */
+        List<Playlist> simulatedPlaylists = new ArrayList<>(List.of(
+                new Playlist("1", "Rock Classics")
+        ));
+
         /** Lista mutabile per la gestione delle tracce interne alla playlist finta 1. */
         List<Track> tracksInPlaylist1 = new ArrayList<>(List.of(
                 new Track("t1", "Song One", "Artist One", 180, "Rock", 2020),
@@ -50,14 +57,14 @@ class PlaylistServiceTest {
         public void save(Playlist playlist) {
             this.isSaveCalled = true;
             this.savedPlaylist = playlist;
+            this.simulatedPlaylists.add(playlist);
         }
 
         @Override
         public Optional<Playlist> findById(String id) {
-            if ("1".equals(id)) {
-                return Optional.of(new Playlist("1", "Rock Classics"));
-            }
-            return Optional.empty();
+            return this.simulatedPlaylists.stream()
+                    .filter(p -> p.getId().equals(id))
+                    .findFirst();
         }
 
         @Override
@@ -67,7 +74,7 @@ class PlaylistServiceTest {
 
         @Override
         public List<Playlist> findAll() {
-            return Collections.emptyList();
+            return this.simulatedPlaylists;
         }
 
         @Override
@@ -77,9 +84,6 @@ class PlaylistServiceTest {
 
         @Override
         public void addTrackToPlaylist(String playlistId, String trackId) {
-            if ("1".equals(playlistId) && "t1".equals(trackId)) {
-                throw new IllegalArgumentException("Errore DB: Traccia già presente nella playlist.");
-            }
             this.isAddTrackCalled = true;
         }
 
@@ -97,8 +101,21 @@ class PlaylistServiceTest {
             return this.tracksInPlaylist1;
         }
 
+        /**
+         * Simula l'operazione SQL DELETE rimuovendo la playlist dalla memoria
+         * e troncando a cascata le associazioni delle tracce (Task T-103).
+         *
+         * @param playlistId L'identificativo unico della playlist da eliminare.
+         * @return Un Optional contenente l'istanza eliminata se presente, altrimenti Optional.empty().
+         */
         @Override
         public Optional<Playlist> deleteById(String playlistId) {
+            Optional<Playlist> playlistOpt = findById(playlistId);
+            if (playlistOpt.isPresent()) {
+                this.simulatedPlaylists.remove(playlistOpt.get());
+                this.tracksInPlaylist1.clear(); // Emula il tranciamento delle chiavi esterne associative
+                return playlistOpt;
+            }
             return Optional.empty();
         }
     }
@@ -107,14 +124,17 @@ class PlaylistServiceTest {
      * Sostituto finto (Fake Object) destinato all'isolamento dello stato delle tracce.
      */
     class FakeTrackRepository implements TrackRepository {
-        /** Lista finta delegata a simulare la tabella 'tracks' nel contesto del service delle playlist. */
-        List<Track> simulatedTracks = new ArrayList<>();
+        /** Lista finta delegata a simulare la tabella 'tracks' nel catalogo globale. */
+        List<Track> simulatedCatalog = new ArrayList<>(List.of(
+                new Track("t1", "Song One", "Artist One", 180, "Rock", 2020),
+                new Track("t2", "Song Two", "Artist Two", 200, "Rock", 2021)
+        ));
         /** Riferimento opzionale per emulare l'ON DELETE CASCADE dei database relazionali reali. */
         FakePlaylistRepository linkedPlaylistRepo;
 
         @Override
         public Optional<Track> findById(String id) {
-            Optional<Track> dynamicTrack = simulatedTracks.stream().filter(t -> t.getId().equals(id)).findFirst();
+            Optional<Track> dynamicTrack = simulatedCatalog.stream().filter(t -> t.getId().equals(id)).findFirst();
             if (dynamicTrack.isPresent()) return dynamicTrack;
 
             if ("t1".equals(id) || "t3-nuova".equals(id)) {
@@ -125,25 +145,18 @@ class PlaylistServiceTest {
 
         @Override
         public void save(Track track) {
-            this.simulatedTracks.add(track);
+            this.simulatedCatalog.add(track);
         }
 
         @Override
         public List<Track> findAll() {
-            return Collections.emptyList();
+            return this.simulatedCatalog;
         }
 
-        /**
-         * Emula l'eliminazione a cascata (ON DELETE CASCADE) cancellando la traccia
-         * sia dal catalogo, sia da tutte le playlist fittizie connesse (Task T-92).
-         *
-         * @param id L'identificativo della traccia da eliminare.
-         * @return Un Optional contenente l'istanza eliminata se presente.
-         */
         @Override
         public Optional<Track> deleteById(String id) {
             Optional<Track> trackOpt = findById(id);
-            trackOpt.ifPresent(simulatedTracks::remove);
+            trackOpt.ifPresent(simulatedCatalog::remove);
             if (linkedPlaylistRepo != null) {
                 linkedPlaylistRepo.removeTrackFromPlaylist("1", id);
             }
@@ -152,9 +165,9 @@ class PlaylistServiceTest {
 
         @Override
         public Optional<Track> update(Track track) {
-            for (int i = 0; i < simulatedTracks.size(); i++) {
-                if (simulatedTracks.get(i).getId().equals(track.getId())) {
-                    simulatedTracks.set(i, track);
+            for (int i = 0; i < simulatedCatalog.size(); i++) {
+                if (simulatedCatalog.get(i).getId().equals(track.getId())) {
+                    simulatedCatalog.set(i, track);
                     return Optional.of(track);
                 }
             }
@@ -163,7 +176,7 @@ class PlaylistServiceTest {
     }
 
     // ===================================================================================
-    // TEST US-05 e US-06
+    // TEST PREESISTENTI (US-05 e US-06) - SANATI DAL TYPE MISMATCH
     // ===================================================================================
 
     /**
@@ -229,7 +242,9 @@ class PlaylistServiceTest {
     }
 
     /**
-     * Verifica che il sistema inibisca l'inserimento di tracce duplicate nella medesima playlist.
+     * <b>Correzione Sprint 2:</b> Modificata l'intercettazione dell'eccezione attesa.
+     * In linea con le specifiche di PlaylistService, il tentativo di inserimento di una traccia
+     * duplicata all'interno della medesima playlist lancia una ValidationException di livello applicativo.
      */
     @Test
     void testAddTrackToPlaylist_Duplicato() {
@@ -237,9 +252,11 @@ class PlaylistServiceTest {
         FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
         PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        // Corretto da IllegalArgumentException.class a ValidationException.class
+        Exception exception = assertThrows(ValidationException.class, () -> {
             service.addTrackToPlaylist("1", "t1");
         });
+        assertNotNull(exception.getMessage());
     }
 
     /**
@@ -309,7 +326,6 @@ class PlaylistServiceTest {
         Track updatedData = new Track("t1", "Song One Updated", "Artist One", 180, "Rock", 2020);
         trackService.updateTrack("t1", updatedData);
 
-        // Sincronizzazione relazionale simulata all'interno dello Stub relazionale
         for (int i = 0; i < fakePlaylistRepo.tracksInPlaylist1.size(); i++) {
             if (fakePlaylistRepo.tracksInPlaylist1.get(i).getId().equals("t1")) {
                 fakePlaylistRepo.tracksInPlaylist1.set(i, updatedData);
@@ -352,7 +368,60 @@ class PlaylistServiceTest {
 
         // Then: la traccia scompare automaticamente anche dalla playlist in cui era mappata
         List<Track> updatedTracks = playlistService.getTracksForPlaylist("1");
-        assertEquals(1, updatedTracks.size(), "Il vincolo CASCADE deve escludere la traccia dalla playlist.");
-        assertNotEquals("t1", updatedTracks.get(0).getId(), "L'elemento rimosso non deve più comparire tra i riferimenti.");
+        assertEquals(1, updatedTracks.size());
+        assertNotEquals("t1", updatedTracks.get(0).getId());
+    }
+
+    // ===================================================================================
+    // TEST TASK T-103 e T-104 (US-5.1): ELIMINAZIONE PLAYLIST
+    // ===================================================================================
+
+    /**
+     * <b>Task T-103:</b> Test JUnit per verificare che il coordinamento di deletePlaylist
+     * espunga permanentemente la playlist dallo storage eliminando tutte le associazioni traccia.
+     * <p>Soddisfa lo Scenario 1 dei Criteri di Accettazione di US-5.1.</p>
+     */
+    @Test
+    void testT103_EliminazionePlaylistRimuovePlaylistEAssociazioni() {
+        FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
+        FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
+        PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
+
+        // Given: una playlist esistente identificata da ID "1" e popolata da tracce musicali
+        assertFalse(service.getTracksForPlaylist("1").isEmpty());
+
+        // When: viene richiesta la rimozione della risorsa playlist
+        Playlist deletedPlaylist = service.deletePlaylist("1");
+
+        // Then: la playlist viene estratta con successo e non compare più nelle interrogazioni future
+        assertNotNull(deletedPlaylist);
+        assertEquals("Rock Classics", deletedPlaylist.getName());
+        assertThrows(PlaylistNotFoundException.class, () -> service.getPlaylistById("1"));
+        assertTrue(fakePlaylistRepo.tracksInPlaylist1.isEmpty(), "Le relazioni dei brani devono essere troncate.");
+    }
+
+    /**
+     * <b>Task T-104:</b> Test JUnit per accertare che l'eliminazione atomica della playlist
+     * non vada a intaccare né a cancellare i brani musicali memorizzati nel catalogo globale.
+     * <p>Soddisfa lo Scenario 2 dei Criteri di Accettazione di US-5.1.</p>
+     */
+    @Test
+    void testT104_EliminazionePlaylistNonEliminaTracceDalCatalogo() {
+        FakePlaylistRepository fakePlaylistRepo = new FakePlaylistRepository();
+        FakeTrackRepository fakeTrackRepo = new FakeTrackRepository();
+        PlaylistService service = new PlaylistService(fakePlaylistRepo, fakeTrackRepo);
+
+        // Given: le tracce "t1" e "t2" preesistono regolarmente nel catalogo globale delle canzoni
+        assertNotNull(fakeTrackRepo.findById("t1").orElse(null));
+        assertNotNull(fakeTrackRepo.findById("t2").orElse(null));
+
+        // When: l'utente rimuove definitivamente la playlist "1" che le aggregava
+        service.deletePlaylist("1");
+
+        // Then: nessuna traccia originale viene rimossa dal database generale
+        Optional<Track> track1 = fakeTrackRepo.findById("t1");
+        Optional<Track> track2 = fakeTrackRepo.findById("t2");
+        assertTrue(track1.isPresent(), "La canzone 't1' deve persistere intatta all'interno del catalogo globale.");
+        assertTrue(track2.isPresent(), "La canzone 't2' deve persistere intatta all'interno del catalogo globale.");
     }
 }
