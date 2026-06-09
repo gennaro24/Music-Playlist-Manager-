@@ -172,6 +172,19 @@ public class MusicPlaylistManagerFacade {
         playbackService.skipToNext();
         return getPlaybackSnapshot();
     }
+
+    /**
+     * Espone al Presentation Layer il cambio modalità verso single-track-loop.
+     * Delega l'operazione al PlaybackService impostando REPEAT_ONE.
+     *
+     * @return fotografia aggiornata dello stato playback dopo il cambio modalità
+     */
+    public PlaybackSnapshot enableSingleTrackLoopMode() {
+        //imposto la modalità di playback a REPEAT_ONE
+        playbackService.enableSingleTrackLoopMode();
+        //ritorno lo snapshot corrente
+        return getPlaybackSnapshot();
+    }
     
     
     /**
@@ -196,6 +209,12 @@ public class MusicPlaylistManagerFacade {
     public Track deleteTrack(String trackId) {
         playbackService.handleDeletedTrack(trackId);
         return trackService.deleteTrack(trackId);
+    }
+
+
+    //il controller lo deve chiamare quando la traccia corrente termina.
+    public PlaybackSnapshot handleTrackCompleted() {
+        return playbackService.handleTrackCompleted();
     }
 
 }

@@ -59,6 +59,14 @@ public class PlaybackService {
     }
 
     /**
+     * Imposta la modalità single-track-loop (REPEAT_ONE).
+     * Espone un'API esplicita per la UI senza richiedere la conoscenza dell'enum.
+     */
+    public void enableSingleTrackLoopMode() {
+        setPlaybackMode(PlaybackMode.REPEAT_ONE);
+    }
+
+    /**
      * Imposta la modalità di playback corrente e aggiorna implicitamente lo snapshot.
      * Risolve parte del Task T-157 (aggiornamento dopo cambio modalità).
      *
