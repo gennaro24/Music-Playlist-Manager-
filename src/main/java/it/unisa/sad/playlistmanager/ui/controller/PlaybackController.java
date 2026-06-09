@@ -121,14 +121,23 @@ public class PlaybackController {
             labelArtist.setManaged(true);
         }
 
+        // T-110: Aggiornamento timer visivo (tempo congelato)
+        // Il backend non avanza l'elapsedSeconds se lo stato è PAUSED,
+        // quindi la UI rimarrà "congelata" sullo stesso secondo.
+        if (timerTrack != null) {
+            timerTrack.setText(formatDuration(snapshot.elapsedSeconds()));
+        }
+
         if (lblPlaybackStatus != null) {
-            lblPlaybackStatus.setText(snapshot.state().name());
+            // T-110: Aggiorna l'etichetta testuale con lo stato esatto (es. PAUSED)
+            lblPlaybackStatus.setText(snapshot.state().name()); 
         }
 
         if (btnPlayPauseTrack != null) {
             if (snapshot.state() == PlaybackState.PLAYING) {
                 btnPlayPauseTrack.setText("⏸");
             } else {
+                // T-110: Rimette l'icona Play (▶) se lo stato è PAUSED o STOPPED
                 btnPlayPauseTrack.setText("▶");
             }
         }

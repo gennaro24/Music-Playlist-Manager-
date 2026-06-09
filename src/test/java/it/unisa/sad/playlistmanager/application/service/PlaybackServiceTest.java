@@ -88,4 +88,49 @@ class PlaybackServiceTest {
         assertDoesNotThrow(() -> playbackService.pause(), "Chiamare pause quando è già in PAUSED non deve lanciare eccezioni");
         assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState(), "Lo stato deve rimanere PAUSED");
     }
+
+    // ===================================================================================
+    // TEST TASK T-111 & T-112 (US-10): PAUSA MANTIENE STATO E TICK NON AVANZA
+    // ===================================================================================
+
+    @Test
+    void testPause_MantieneTracciaCorrenteEStatoPaused() {
+        // T-111: Pausa mantiene traccia corrente e stato PAUSED
+        // Setup: Avvia il playback
+        playbackService.playTrack(sampleTrack);
+        
+        // Esegui un tick per simulare un secondo di riproduzione
+        playbackService.tick();
+        int elapsedBeforePause = playbackService.getElapsedSeconds();
+        assertEquals(1, elapsedBeforePause, "Il tempo dovrebbe essere 1 secondo dopo un tick");
+
+        // Esecuzione: Premiamo pausa
+        playbackService.pause();
+
+        // Verifica T-111
+        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState(), "Lo stato deve essere PAUSED");
+        assertEquals(sampleTrack, playbackService.getCurrentTrack(), "La traccia in pausa deve essere quella avviata");
+        assertEquals(elapsedBeforePause, playbackService.getElapsedSeconds(), "I secondi trascorsi devono essere preservati");
+    }
+
+    @Test
+    void testTick_NonAvanzaQuandoPlayerEPaused() {
+        // T-112: tick() non avanza quando player è PAUSED
+        // Setup: Avvia e poi metti in pausa
+        playbackService.playTrack(sampleTrack);
+        playbackService.tick(); // Avanza a 1 secondo
+        playbackService.pause();
+        
+        // Assicuriamoci che sia effettivamente in pausa a 1 secondo
+        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState());
+        int elapsedAtPause = playbackService.getElapsedSeconds();
+        assertEquals(1, elapsedAtPause);
+
+        // Esecuzione: Simuliamo il passare del tempo (tick) mentre è in pausa
+        playbackService.tick();
+        playbackService.tick();
+
+        // Verifica T-112: Il tempo non deve essere avanzato
+        assertEquals(elapsedAtPause, playbackService.getElapsedSeconds(), "Il tempo trascorso non deve aumentare se lo stato è PAUSED");
+    }
 }
