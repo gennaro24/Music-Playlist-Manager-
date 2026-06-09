@@ -3,11 +3,15 @@ package it.unisa.sad.playlistmanager.ui.controller;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
 import javafx.scene.control.ToggleButton;
+import javafx.util.Duration;
+import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
@@ -34,6 +38,7 @@ public class PlaybackController {
     @FXML private ToggleButton tglSingleTrackLoop;
     
     private Track currentTrack;
+    private Timeline playbackTimeline;
 
     /**
      * Costruttore uniforme per l'attivazione della Constructor Injection (Task T-63).
@@ -47,6 +52,7 @@ public class PlaybackController {
     @FXML
     private void initialize() {
         updateLoopToggleVisual(false);
+        startPlaybackRefreshLoop();
     }
     /**
      * Comanda l'avvio immediato della riproduzione audio per una specifica traccia di dominio.
@@ -137,6 +143,15 @@ public class PlaybackController {
             labelTitle.setManaged(true);
             labelArtist.setVisible(true);
             labelArtist.setManaged(true);
+        } else {
+            currentTrack = null;
+            labelTitle.setText("Nessun brano in riproduzione");
+            labelArtist.setText("-");
+            durationTrack.setText("0:00");
+        }
+
+        if (timerTrack != null) {
+            timerTrack.setText(formatDuration(snapshot.elapsedSeconds()));
         }
 
         if (lblPlaybackStatus != null) {
@@ -152,8 +167,26 @@ public class PlaybackController {
         }
 
         if (tglSingleTrackLoop != null) {
-            updateLoopToggleVisual(tglSingleTrackLoop.isSelected());
+            boolean loopEnabled = snapshot.mode() == PlaybackMode.REPEAT_ONE;
+            tglSingleTrackLoop.setSelected(loopEnabled);
+            updateLoopToggleVisual(loopEnabled);
         }
+    }
+
+    /**
+     * Avvia il refresh periodico della vista playback.
+     */
+    private void startPlaybackRefreshLoop() {
+        if (playbackTimeline != null) {
+            playbackTimeline.stop();
+        }
+        playbackTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+            if (facade == null) return;
+            PlaybackSnapshot snapshot = facade.tickPlayback();
+            updatePlaybackView(snapshot);
+        }));
+        playbackTimeline.setCycleCount(Timeline.INDEFINITE);
+        playbackTimeline.play();
     }
 
     /**

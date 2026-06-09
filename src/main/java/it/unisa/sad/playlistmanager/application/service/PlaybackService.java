@@ -269,7 +269,7 @@ public class PlaybackService {
      * @return snapshot immutabile del playback (DTO)
      */
     public PlaybackSnapshot getSnapshot() {
-        return new PlaybackSnapshot(getCurrentState(), getCurrentTrack());
+        return new PlaybackSnapshot(getCurrentState(), getCurrentTrack(), getCurrentMode(), getElapsedSeconds());
     }
 
     /**
