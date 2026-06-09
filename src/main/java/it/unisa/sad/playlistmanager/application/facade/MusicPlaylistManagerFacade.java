@@ -157,7 +157,7 @@ public class MusicPlaylistManagerFacade {
 
     /**
      * Espone al Presentation Layer la funzionalità di pausa del playback.
-     * Delega l'operazione al PlaybackService.\
+     * Delega l'operazione al PlaybackService.
      * @return Una fotografia dello stato corrente del playback dopo la pausa (PlaybackSnapshot).
      */
     public PlaybackSnapshot pausePlayback(){
@@ -175,7 +175,38 @@ public class MusicPlaylistManagerFacade {
         return getPlaybackSnapshot();
     }
     /**
-     * @return Una fotografia dello stato corrente del playback (PlaybackSnapshot).
+     * Espone al Presentation Layer la funzionalità di skip alla traccia successiva.
+     * @return Una fotografia dello stato corrente del playback dopo lo skip (PlaybackSnapshot).
+     */
+    public PlaybackSnapshot skipToNext() {
+        playbackService.skipToNext();
+        return getPlaybackSnapshot();
+    }
+
+    /**
+     * Espone al Presentation Layer il cambio modalità verso single-track-loop (REPEAT_ONE).
+     *
+     * @return snapshot aggiornato del playback
+     */
+    public PlaybackSnapshot enableSingleTrackLoopMode() {
+        playbackService.enableSingleTrackLoopMode();
+        return getPlaybackSnapshot();
+    }
+
+    /**
+     * Espone al Presentation Layer la disattivazione del single-track-loop.
+     *
+     * @return snapshot aggiornato del playback
+     */
+    public PlaybackSnapshot disableSingleTrackLoopMode() {
+        playbackService.disableSingleTrackLoopMode();
+        return getPlaybackSnapshot();
+    }
+    
+    
+    /**
+     * Restituisce l'unico DTO letto dalla UI per conoscere lo stato del player.
+     * * @return Una fotografia dello stato corrente del playback (PlaybackSnapshot).
      */
     public PlaybackSnapshot getPlaybackSnapshot() {
         return playbackService.getSnapshot();

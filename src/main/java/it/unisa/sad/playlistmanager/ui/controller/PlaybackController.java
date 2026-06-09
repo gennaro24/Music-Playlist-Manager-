@@ -9,7 +9,9 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
+import javafx.scene.control.ToggleButton;
 import javafx.util.Duration;
+import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
@@ -33,6 +35,7 @@ public class PlaybackController {
     @FXML private Button btnPlayPauseTrack;
     @FXML private Label labelArtist;
     @FXML private Button skipButton;
+    @FXML private ToggleButton tglSingleTrackLoop;
     
     private Track currentTrack;
     private Timeline playbackTimeline;
@@ -114,6 +117,18 @@ public class PlaybackController {
     }
 
     /**
+     * Attiva/disattiva il loop della traccia corrente dal controllo UI.
+     */
+    @FXML
+    private void handleSingleTrackLoopToggle(ActionEvent event) {
+        if (facade == null || tglSingleTrackLoop == null) return;
+        PlaybackSnapshot snapshot = tglSingleTrackLoop.isSelected()
+                ? facade.enableSingleTrackLoopMode()
+                : facade.disableSingleTrackLoopMode();
+        updatePlaybackView(snapshot);
+    }
+
+    /**
      * Scompone lo snapshot immutabile ricevuto dal core di business, sincronizzando
      * atomicamente i testi e le icone degli elementi FXML dello stage.
      *
@@ -157,6 +172,10 @@ public class PlaybackController {
                 // T-110: Rimette l'icona Play (▶) se lo stato è PAUSED o STOPPED
                 btnPlayPauseTrack.setText("▶");
             }
+        }
+
+        if (tglSingleTrackLoop != null) {
+            tglSingleTrackLoop.setSelected(snapshot.mode() == PlaybackMode.REPEAT_ONE);
         }
     }
 
