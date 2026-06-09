@@ -79,6 +79,13 @@
 
       <HBox alignment="CENTER_RIGHT" spacing="15.0" style="-fx-padding: 0 10 0 0;">
          <children>
+            
+            <Button fx:id="btnShuffle"
+                    mnemonicParsing="false"
+                    onAction="#toggleShuffle"
+                    prefWidth="75.0"
+                    text="🔀 OFF" />
+
             <Button fx:id="btnPlayPauseTrack"
                     mnemonicParsing="false"
                     onAction="#PlayPauseTrack"

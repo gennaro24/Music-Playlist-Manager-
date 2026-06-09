@@ -80,8 +80,21 @@ public class PlaybackService {
      */
     public void setPlaybackMode(PlaybackMode mode) {
         this.currentMode = Objects.requireNonNull(mode, "mode non può essere null");
+        
         if (mode == PlaybackMode.SEQUENTIAL) {
             this.playbackStrategy = new SequentialPlaybackStrategy();
+        } else if (mode == PlaybackMode.SHUFFLE) {
+            // Recuperiamo le tracce attuali per mescolarle "dietro le quinte"
+            List<Track> currentTracks = java.util.Collections.emptyList();
+            if (currentPlaylist != null) {
+                currentTracks = playlistRepository.findTracksByPlaylistId(currentPlaylist.getId());
+            } else if (currentTrack != null) {
+                currentTracks = List.of(currentTrack);
+            }
+            
+            // Inizializziamo la strategia Shuffle. 
+            // NOTA: Non azzeriamo elapsedSeconds né currentTrack, quindi il playback NON si interrompe!
+            this.playbackStrategy = new it.unisa.sad.playlistmanager.domain.model.ShufflePlaybackStrategy(currentTracks);
         }
     }
 

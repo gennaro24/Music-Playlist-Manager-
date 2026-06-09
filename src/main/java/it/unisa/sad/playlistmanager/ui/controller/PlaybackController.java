@@ -12,15 +12,16 @@ import javafx.scene.control.Button;
 import javafx.util.Duration;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
+import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 
 /**
  * Sotto-controllore della UI deputato alla gestione del pannello del lettore musicale
  * (Pulsanti Play, Pause, Skip ed aggiornamento real-time dei metadati grafici della traccia in riproduzione).
- * * <p><b>Revisione Sprint 2:</b> Riadattato per aderire alla Constructor Injection. Sfrutta 
+ * <p><b>Revisione Sprint 2:</b> Riadattato per aderire alla Constructor Injection. Sfrutta 
  * i modelli immutabili di snapshot provenienti dallo strato di dominio per aggiornare atomicamente 
  * la vista a seguito di un evento.</p>
- * @version 2.0
+ * @version 2.1
  */
 public class PlaybackController {
     
@@ -33,6 +34,9 @@ public class PlaybackController {
     @FXML private Button btnPlayPauseTrack;
     @FXML private Label labelArtist;
     @FXML private Button skipButton;
+    
+    // T-145: Riferimento FXML al bottone Shuffle
+    @FXML private Button btnShuffle;
     
     private Track currentTrack;
     private Timeline playbackTimeline;
@@ -103,6 +107,25 @@ public class PlaybackController {
     }
 
     /**
+     * T-145: Intercetta il click sul pulsante Shuffle, alternando la modalità di playback
+     * e aggiornando istantaneamente l'interfaccia.
+     */
+    @FXML
+    private void toggleShuffle(ActionEvent event) {
+        if (facade == null) return;
+        
+        PlaybackSnapshot currentSnapshot = facade.getPlaybackSnapshot();
+        
+        // Se è già in Shuffle, torna Sequenziale. Altrimenti attiva Shuffle.
+        PlaybackMode newMode = (currentSnapshot.mode() == PlaybackMode.SHUFFLE) 
+                                ? PlaybackMode.SEQUENTIAL 
+                                : PlaybackMode.SHUFFLE;
+                                
+        PlaybackSnapshot updatedSnapshot = facade.setPlaybackMode(newMode);
+        updatePlaybackView(updatedSnapshot);
+    }
+
+    /**
      * Intercetta la richiesta di skip della riproduzione in avanti.
      * La logica interna verrà espansa nello Sprint 2 in conformità con i pattern Strategy di riproduzione.
      *
@@ -156,6 +179,17 @@ public class PlaybackController {
             } else {
                 // T-110: Rimette l'icona Play (▶) se lo stato è PAUSED o STOPPED
                 btnPlayPauseTrack.setText("▶");
+            }
+        }
+        
+        // T-145: Aggiorna l'estetica del pulsante Shuffle
+        if (btnShuffle != null) {
+            if (snapshot.mode() == PlaybackMode.SHUFFLE) {
+                btnShuffle.setText("🔀 ON");
+                btnShuffle.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+            } else {
+                btnShuffle.setText("🔀 OFF");
+                btnShuffle.setStyle("-fx-text-fill: black; -fx-font-weight: normal;");
             }
         }
     }
