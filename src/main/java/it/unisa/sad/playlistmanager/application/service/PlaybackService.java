@@ -221,9 +221,9 @@ public class PlaybackService {
         switch (currentMode) {
             //se la modalità è repeat one, riparte dalla traccia corrente
             case REPEAT_ONE:
-                // stessa traccia, riparte da capo
+                // stessa traccia, riparte da capo, con lo stato di playing e timer resettato
                 currentState = PlaybackState.PLAYING;
-                //TODO: Se hai elapsedSeconds/lastTickMillis, qui fai reset a 0
+                elapsedSeconds = 0;
                 break;
             case REPEAT_ALL:
             case SHUFFLE:
