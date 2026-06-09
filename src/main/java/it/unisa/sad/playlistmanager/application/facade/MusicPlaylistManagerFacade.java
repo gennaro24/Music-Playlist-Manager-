@@ -174,15 +174,6 @@ public class MusicPlaylistManagerFacade {
     }
 
     /**
-     * Espone al Presentation Layer la funzionalità di skip alla traccia successiva.
-     * @return Una fotografia dello stato corrente del playback dopo lo skip (PlaybackSnapshot).
-     */
-    public PlaybackSnapshot skipToNext() {
-        playbackService.skipToNext();
-        return getPlaybackSnapshot();
-    }
-
-    /**
      * Espone al Presentation Layer il cambio modalità verso single-track-loop (REPEAT_ONE).
      *
      * @return snapshot aggiornato del playback

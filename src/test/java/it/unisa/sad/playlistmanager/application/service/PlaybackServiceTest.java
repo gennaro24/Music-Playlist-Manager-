@@ -24,7 +24,7 @@ class PlaybackServiceTest {
 
     @BeforeEach
     void setUp() {
-        playbackService = new PlaybackService(new FakePlaylistRepository());
+        playbackService = new PlaybackService();
         
         // Inizializzazione tracce di test
         sampleTrack1 = new Track("t-100", "Stairway to Heaven", "Led Zeppelin", 482, "Rock", 1971);
@@ -154,8 +154,8 @@ class PlaybackServiceTest {
         PlaybackSnapshot snapshot = playbackService.getSnapshot();
         assertEquals(PlaybackState.PLAYING, snapshot.state());
         assertEquals(sampleTrack1, snapshot.currentTrack());
-        assertEquals(0, snapshot.elapsedSeconds());
-        assertEquals(PlaybackMode.REPEAT_ONE, snapshot.mode());
+        assertEquals(0, playbackService.getElapsedSeconds());
+        assertEquals(PlaybackMode.REPEAT_ONE, playbackService.getCurrentMode());
     }
 
     @Test
@@ -166,7 +166,7 @@ class PlaybackServiceTest {
         playbackService.disableSingleTrackLoopMode();
 
         PlaybackSnapshot snapshot = playbackService.getSnapshot();
-        assertEquals(PlaybackMode.SEQUENTIAL, snapshot.mode());
+        assertEquals(PlaybackMode.SEQUENTIAL, playbackService.getCurrentMode());
         assertEquals(sampleTrack1, snapshot.currentTrack());
         assertEquals(PlaybackState.PLAYING, snapshot.state());
     }
