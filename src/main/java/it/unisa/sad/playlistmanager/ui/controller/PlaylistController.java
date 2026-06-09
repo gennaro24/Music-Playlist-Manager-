@@ -27,6 +27,7 @@ public class PlaylistController {
     @FXML private Button btnRemovePlaylist;
     @FXML private TextField txtPlaylistName;
     @FXML private Label lblPlaylistFeedback;
+    @FXML private Button btnPlayPlaylist;
 
     /**
      * Costruttore uniforme per Constructor Injection (Task T-63).
@@ -225,5 +226,39 @@ public class PlaylistController {
     private void loadPlaylists() {
         if (facade == null || listPlaylists == null) return;
         listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
+    }
+
+    /**
+     * T-118 (US-12): Intercetta la richiesta di avvio di una playlist.
+     * Recupera l'ID della playlist selezionata e invoca il PlaybackService tramite la Facade.
+     *
+     * @param event Evento di click associato al pulsante Play della Playlist.
+     */
+    @FXML
+    private void handlePlayPlaylist(ActionEvent event) {
+        if (listPlaylists == null || lblPlaylistFeedback == null || facade == null) return;
+        
+        Playlist selected = listPlaylists.getSelectionModel().getSelectedItem();
+        
+        if (selected != null) {
+            try {
+                // Invoca la facade per avviare la riproduzione della playlist
+                facade.playPlaylist(selected.getId());
+                
+                lblPlaylistFeedback.setStyle("-fx-text-fill: green;");
+                lblPlaylistFeedback.setText("In riproduzione: " + selected.getName());
+                
+            } catch (ValidationException e) {
+                // T-120: Cattura l'errore della playlist vuota
+                lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
+                lblPlaylistFeedback.setText(e.getMessage()); // "Impossibile avviare una playlist vuota."
+            } catch (Exception e) {
+                lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
+                lblPlaylistFeedback.setText("Errore durante l'avvio della playlist.");
+            }
+        } else {
+            lblPlaylistFeedback.setStyle("-fx-text-fill: #b0413e;");
+            lblPlaylistFeedback.setText("Seleziona una playlist per avviare la riproduzione.");
+        }
     }
 }

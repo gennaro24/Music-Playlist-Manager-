@@ -14,6 +14,9 @@
     
     <Button fx:id="btnCreatePlaylist" maxWidth="Infinity" onAction="#handleCreatePlaylist" text="Nuova Playlist" />
     <Button fx:id="btnRemovePlaylist" maxWidth="Infinity" onAction="#handleRemovePlaylist" text="Rimuovi Playlist" visible="false" />
+    
+    <Button fx:id="btnPlayPlaylist" maxWidth="Infinity" onAction="#handlePlayPlaylist" text="Avvia Playlist" />
+    
     <Label fx:id="lblPlaylistFeedback" style="-fx-text-fill: red;" text="" />
     
 </VBox>
