@@ -3,10 +3,13 @@ package it.unisa.sad.playlistmanager.ui.controller;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
+import javafx.util.Duration;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
@@ -32,6 +35,7 @@ public class PlaybackController {
     @FXML private Button skipButton;
     
     private Track currentTrack;
+    private Timeline playbackTimeline;
 
     /**
      * Costruttore uniforme per l'attivazione della Constructor Injection (Task T-63).
@@ -40,6 +44,11 @@ public class PlaybackController {
      */
     public PlaybackController(MusicPlaylistManagerFacade facade) {
         this.facade = facade;
+    }
+
+    @FXML
+    private void initialize() {
+        startPlaybackRefreshLoop();
     }
 
     /**
@@ -141,6 +150,22 @@ public class PlaybackController {
                 btnPlayPauseTrack.setText("▶");
             }
         }
+    }
+
+    /**
+     * Avvia il refresh periodico della vista playback.
+     */
+    private void startPlaybackRefreshLoop() {
+        if (playbackTimeline != null) {
+            playbackTimeline.stop();
+        }
+        playbackTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+            if (facade == null) return;
+            PlaybackSnapshot snapshot = facade.tickPlayback();
+            updatePlaybackView(snapshot);
+        }));
+        playbackTimeline.setCycleCount(Timeline.INDEFINITE);
+        playbackTimeline.play();
     }
 
     /**

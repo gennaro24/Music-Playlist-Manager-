@@ -105,12 +105,24 @@ public class PlaybackService {
 
     /**
      * Aggiorna lo stato del playback.
+     * 
      */
     public void tick() {
-        if (currentState == PlaybackState.PLAYING
-                && currentTrack != null
-                && elapsedSeconds < currentTrack.getDuration()) {
+        if (currentState != PlaybackState.PLAYING || currentTrack == null) {
+            return;
+        }
+
+        if (elapsedSeconds < currentTrack.getDuration()) {
             elapsedSeconds++;
+        }
+
+        if (elapsedSeconds >= currentTrack.getDuration()) {
+            if (currentMode == PlaybackMode.REPEAT_ONE) {
+                elapsedSeconds = 0;
+            } else {
+                elapsedSeconds = currentTrack.getDuration();
+                currentState = PlaybackState.STOPPED;
+            }
         }
     }   
 

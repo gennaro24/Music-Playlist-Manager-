@@ -170,6 +170,16 @@ public class MusicPlaylistManagerFacade {
     public PlaybackSnapshot getPlaybackSnapshot() {
         return playbackService.getSnapshot();
     }
+
+    /**
+     * Avanza di un "tick" il playback e restituisce lo snapshot aggiornato.
+     *
+     * @return snapshot aggiornato del playback
+     */
+    public PlaybackSnapshot tickPlayback() {
+        playbackService.tick();
+        return playbackService.getSnapshot();
+    }
     /**
      * Espone al presentation layer la funzionalità di modifica di una traccia.
      * @return la traccia modificata da ritornare alla UI.
