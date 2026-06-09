@@ -14,6 +14,11 @@ public class FakePlaylistRepository implements PlaylistRepository {
     public boolean isRemoveTrackCalled = false;
     public Playlist savedPlaylist = null;
 
+    public List<Playlist> simulatedPlaylists = new ArrayList<>(List.of(
+            new Playlist("1", "Rock Classics"),
+            new Playlist("2", "Empty Playlist")
+    ));
+
     public List<Track> tracksInPlaylist1 = new ArrayList<>(List.of(
             new Track("t1", "Song One", "Artist One", 180, "Rock", 2020),
             new Track("t2", "Song Two", "Artist Two", 200, "Rock", 2021)
@@ -24,20 +29,21 @@ public class FakePlaylistRepository implements PlaylistRepository {
     public void save(Playlist playlist) {
         this.isSaveCalled = true;
         this.savedPlaylist = playlist;
+        this.simulatedPlaylists.add(playlist);
     }
 
     @Override
     public Optional<Playlist> findById(String id) {
-        if ("1".equals(id)) return Optional.of(new Playlist("1", "Rock Classics"));
-        if ("2".equals(id)) return Optional.of(new Playlist("2", "Empty Playlist"));
-        return Optional.empty();
+        return this.simulatedPlaylists.stream()
+                .filter(p -> p.getId().equals(id))
+                .findFirst();
     }
 
     @Override
     public Optional<Playlist> findByName(String name) { return Optional.empty(); }
 
     @Override
-    public List<Playlist> findAll() { return Collections.emptyList(); }
+    public List<Playlist> findAll() { return this.simulatedPlaylists; }
 
     @Override
     public boolean existsByName(String name) { return false; }
@@ -64,5 +70,15 @@ public class FakePlaylistRepository implements PlaylistRepository {
     }
 
     @Override
-    public Optional<Playlist> deleteById(String playlistId) { return Optional.empty(); }
+    public Optional<Playlist> deleteById(String playlistId) {
+        Optional<Playlist> playlistOpt = findById(playlistId);
+        if (playlistOpt.isPresent()) {
+            this.simulatedPlaylists.remove(playlistOpt.get());
+            if ("1".equals(playlistId)) {
+                this.tracksInPlaylist1.clear();
+            }
+            return playlistOpt;
+        }
+        return Optional.empty();
+    }
 }
