@@ -120,6 +120,72 @@ class PlaybackServiceTest {
     }
 
     @Test
+    void testPlayPlaylist_PreservaRepeatAllSeSelezionatoPrimaDelPlay() {
+        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ALL);
+
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+
+        assertEquals(PlaybackMode.REPEAT_ALL, playbackService.getCurrentMode());
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+    }
+
+    @Test
+    void testPlayPlaylist_PreservaShuffleSeSelezionatoPrimaDelPlay() {
+        playbackService.setPlaybackMode(PlaybackMode.SHUFFLE);
+
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+
+        assertEquals(PlaybackMode.SHUFFLE, playbackService.getCurrentMode());
+        assertNotNull(playbackService.getCurrentTrack());
+        assertTrue(playlistTracks.contains(playbackService.getCurrentTrack()));
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+    }
+
+    @Test
+    void testPlayCatalog_PreservaRepeatAllSeSelezionatoPrimaDelPlay() {
+        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ALL);
+
+        playbackService.playCatalog(playlistTracks);
+
+        assertEquals(PlaybackMode.REPEAT_ALL, playbackService.getCurrentMode());
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+    }
+
+    @Test
+    void testPlayTrack_PreservaRepeatOneSeSelezionatoPrimaDelPlay() {
+        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ONE);
+
+        playbackService.playTrack(sampleTrack1);
+
+        assertEquals(PlaybackMode.REPEAT_ONE, playbackService.getCurrentMode());
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+    }
+
+    @Test
+    void testPlayTrack_DisattivaShufflePreselezionato() {
+        playbackService.setPlaybackMode(PlaybackMode.SHUFFLE);
+
+        playbackService.playTrack(sampleTrack1);
+
+        assertEquals(PlaybackMode.SEQUENTIAL, playbackService.getCurrentMode());
+        assertFalse(playbackService.isShuffleAvailable());
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
+    }
+
+    @Test
+    void testSetShuffle_DuranteRiproduzioneSingolaRestaSequential() {
+        playbackService.playTrack(sampleTrack1);
+
+        playbackService.setPlaybackMode(PlaybackMode.SHUFFLE);
+
+        assertEquals(PlaybackMode.SEQUENTIAL, playbackService.getCurrentMode());
+        assertFalse(playbackService.isShuffleAvailable());
+    }
+
+    @Test
     void testPlayPlaylist_VuotaNonAvviaIlPlayback() {
         assertThrows(IllegalArgumentException.class, () -> playbackService.playPlaylist(samplePlaylist, new ArrayList<>()));
         assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());
@@ -314,13 +380,15 @@ class PlaybackServiceTest {
      * né azzerare i secondi già trascorsi.
      */
     @Test
-    void testSetPlaybackModeShuffleNonInterrompeTracciaCorrente() {
+    void testSetPlaybackModeShuffleNonInterrompePlaylistCorrente() {
         // Setup base
         PlaybackService service = new PlaybackService(new it.unisa.sad.playlistmanager.persistence.repository.FakePlaylistRepository());
         Track track = new Track("t1", "Test Song", "Artist", 200, "Pop", 2020);
-        
-        // Avviamo la riproduzione
-        service.playTrack(track);
+        Track secondTrack = new Track("t2", "Second Song", "Artist", 180, "Pop", 2021);
+        Playlist playlist = new Playlist("p1", "Test Playlist");
+
+        // Avviamo la riproduzione di una coda che supporta lo shuffle
+        service.playPlaylist(playlist, List.of(track, secondTrack));
         
         // Facciamo avanzare la canzone di 3 secondi (3 tick)
         service.tick();

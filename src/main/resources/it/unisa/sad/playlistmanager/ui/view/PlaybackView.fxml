@@ -76,9 +76,11 @@
 
             <Button fx:id="btnShuffle" mnemonicParsing="false" onAction="#toggleShuffle" prefWidth="75.0" text="🔀 OFF" />
 
-            <Button fx:id="btnLoop" mnemonicParsing="false" onAction="#handleSingleTrackLoopToggle" prefWidth="75.0" text="🔂 OFF" />
+            <Button fx:id="btnLoop" mnemonicParsing="false" onAction="#handleQueueLoopToggle" prefWidth="75.0" text="🔂 OFF" />
 
             <Button fx:id="btnPlayPauseTrack" mnemonicParsing="false" onAction="#PlayPauseTrack" prefWidth="70.0" text="▶" />
+
+            <Button fx:id="skipButton" mnemonicParsing="false" onAction="#handleNext" prefWidth="70.0" text="⏭" />
          </children>
       </HBox>
 

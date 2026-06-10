@@ -130,7 +130,7 @@ public class PlaybackController {
     }
 
     @FXML
-    private void handleSingleTrackLoopToggle(ActionEvent event) {
+    private void handleQueueLoopToggle(ActionEvent event) {
         if (facade == null || btnLoop == null) return;
 
         PlaybackMode currentMode = facade.getPlaybackSnapshot().mode();
