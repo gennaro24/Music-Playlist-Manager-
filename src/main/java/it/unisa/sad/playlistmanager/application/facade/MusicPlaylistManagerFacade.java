@@ -201,6 +201,16 @@ public class MusicPlaylistManagerFacade {
     }
 
     /**
+     * Avvia il playback di tutto il catalogo musicale.
+     * Risolve la richiesta di riproduzione globale e abilita lo shuffle sul catalogo.
+     */
+    public PlaybackSnapshot playCatalog() {
+        List<Track> allTracks = this.trackService.getAllTracks();
+        this.playbackService.playCatalog(allTracks);
+        return getPlaybackSnapshot();
+    }
+
+    /**
      * Espone al Presentation Layer la funzionalità di skip alla traccia successiva.
      * 
      * @return Una fotografia dello stato corrente del playback dopo lo skip

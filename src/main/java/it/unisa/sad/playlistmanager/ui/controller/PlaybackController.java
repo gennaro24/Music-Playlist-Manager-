@@ -115,21 +115,17 @@ public class PlaybackController {
     @FXML
     private void handleNext(ActionEvent event) {
         if (facade == null) return;
-        
-        // 1. Diciamo al motore di passare alla prossima traccia
-        facade.skipToNext();
-        
-        // 2. Chiediamo il nuovo stato aggiornato dopo lo skip
-        PlaybackSnapshot snapshot = facade.getPlaybackSnapshot();
-        
-        // 3. Forziamo il play istantaneo della nuova canzone se il player era attivo
-        if (snapshot.currentTrack() != null && snapshot.state() == PlaybackState.PLAYING) {
-            // Questo assicura che il timer riparta da 0 per il nuovo brano
-            facade.playTrack(snapshot.currentTrack().getId());
+        try {
+            // 1. Diciamo al modulo Application di avanzare (penserà lui ad azzerare il tempo)
+            facade.skipToNext();
+            
+            // 2. Prendiamo lo snapshot aggiornato e aggiorniamo atomicamente la UI
+            PlaybackSnapshot snapshot = facade.getPlaybackSnapshot();
+            updatePlaybackView(snapshot);
+            
+        } catch (Exception e) {
+            showPlaybackError(e.getMessage());
         }
-        
-        // 4. Aggiorniamo i testi e i titoli sulla schermata
-        updatePlaybackView(facade.getPlaybackSnapshot());
     }
 
     @FXML

@@ -128,4 +128,18 @@ public class Track {
                 ", year=" + year +
                 '}';
     }
+
+    // Aggiungi in fondo a Track.java
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Track track = (Track) o;
+        return id != null ? id.equals(track.id) : track.id == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
 }

@@ -64,18 +64,30 @@ public class PlaybackService {
         if (mode == PlaybackMode.SEQUENTIAL) {
             this.playbackStrategy = new SequentialPlaybackStrategy();
         } else if (mode == PlaybackMode.SHUFFLE) {
-            // Recuperiamo le tracce attuali per mescolarle "dietro le quinte"
             List<Track> currentTracks = java.util.Collections.emptyList();
-            if (currentPlaylist != null && playlistRepository != null) {
-                currentTracks = playlistRepository.findTracksByPlaylistId(currentPlaylist.getId());
+            
+            // SOLUZIONE ARCHITETTURALE: Leggiamo dalla coda di riproduzione correntemente attiva!
+            if (currentQueue != null && !currentQueue.isEmpty()) {
+                currentTracks = currentQueue.getTracks(); // Prende le tracce già in memoria (niente DB!)
             } else if (currentTrack != null) {
                 currentTracks = List.of(currentTrack);
             }
             
-            // Inizializziamo la strategia Shuffle. 
-            // NOTA: Non azzeriamo elapsedSeconds né currentTrack, quindi il playback NON si interrompe!
             this.playbackStrategy = new it.unisa.sad.playlistmanager.domain.strategy.ShufflePlaybackStrategy(currentTracks);
         }
+    }
+
+    public void playCatalog(List<Track> tracks) {
+        if (tracks == null || tracks.isEmpty()) {
+            throw new ValidationException("Impossibile avviare un catalogo vuoto.");
+        }
+        this.currentPlaylist = null; // Nessuna playlist associata
+        this.currentQueue = new PlaybackQueue(tracks, PlaybackSource.CATALOG);
+        this.currentTrack = currentQueue.getCurrentTrack();
+        this.currentMode = PlaybackMode.SEQUENTIAL;
+        this.playbackStrategy = new SequentialPlaybackStrategy();
+        this.currentState = PlaybackState.PLAYING;
+        this.elapsedSeconds = 0;
     }
 
     public void enableSingleTrackLoopMode() {
@@ -167,14 +179,18 @@ public class PlaybackService {
         PlaybackStrategy strategy = getStrategyForMode(currentMode);
         Track nextTrack = strategy.getNextTrack(currentQueue);
 
+        // In PlaybackService.java, dentro skipToNext()
         if (nextTrack != null) {
             int nextIndex = currentQueue.getTracks().indexOf(nextTrack);
             currentQueue.setCurrentIndex(nextIndex);
             this.currentTrack = nextTrack;
+            this.elapsedSeconds = 0;
         } else {
-            if (currentMode == PlaybackMode.SEQUENTIAL) {
+            // CORREZIONE: Gestiamo il fermo sia per la riproduzione sequenziale che per lo shuffle
+            if (currentMode == PlaybackMode.SEQUENTIAL || currentMode == PlaybackMode.SHUFFLE) {
                 this.currentState = PlaybackState.STOPPED;
                 this.currentTrack = null;
+                this.elapsedSeconds = 0;
             }
         }
     }
