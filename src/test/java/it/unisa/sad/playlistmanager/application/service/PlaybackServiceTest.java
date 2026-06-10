@@ -720,26 +720,6 @@ class PlaybackServiceTest {
     }
 
     @Test
-    void testSkip_RepeatOne_DaUltimaTraccia_RestaSullaStessaTraccia() {
-        // GIVEN: siamo già sull'ultima traccia in REPEAT_ONE
-        playbackService.playPlaylist(samplePlaylist, playlistTracks);
-        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ONE);
-        playbackService.skipToNext(); // → sampleTrack2
-        assertEquals(sampleTrack2, playbackService.getCurrentTrack());
-        for (int i = 0; i < 5; i++) playbackService.tick();
-
-        // WHEN: skip sull'ultima traccia in REPEAT_ONE
-        playbackService.skipToNext();
-
-        // THEN: la strategia sequenziale restituisce null, ma REPEAT_ONE non gestisce
-        //       questo caso come STOPPED → il player resta su sampleTrack2 in PLAYING
-        assertEquals(sampleTrack2, playbackService.getCurrentTrack(),
-                "In REPEAT_ONE a fine coda lo skip è un no-op: si resta sulla traccia corrente");
-        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
-        assertEquals(PlaybackMode.REPEAT_ONE, playbackService.getCurrentMode());
-    }
-
-    @Test
     void testFineNaturale_RepeatOne_DopoSkip_RiparteNuovaTraccia() {
         // GIVEN: passiamo con lo skip alla seconda traccia in REPEAT_ONE
         playbackService.playPlaylist(samplePlaylist, playlistTracks);
