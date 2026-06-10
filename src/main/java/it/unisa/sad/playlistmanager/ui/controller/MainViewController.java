@@ -98,23 +98,14 @@ public class MainViewController {
 
     /**
      * Configura il canale di comunicazione asincrono tra il catalogo brani e il player.
-     * All'atto della richiesta di riproduzione o eliminazione, delega le operazioni ai rispettivi controller.
+     * All'atto della richiesta di riproduzione, delega l'operazione al PlaybackController.
      */
     private void configureTrackPlaybackBehavior(){
         if (trackContainerController == null || playbackViewController == null) return;
-        
-        // Gestione Play
         trackContainerController.setOnTrackPlayRequested(track -> {
             playbackViewController.playTrack(track);
         });
-
-        // DIRETTO COINVOLGIMENTO DEL MEDIATOR: 
-        // Quando viene eliminata una traccia, ordina al player di rinfrescarsi
-        trackContainerController.setOnTrackDeleted(() -> {
-            playbackViewController.refresh();
-        });
     }
-
 
     /**
      * Coordina l'aggiornamento visivo della dashboard all'atto della selezione di una playlist.
