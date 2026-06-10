@@ -87,9 +87,9 @@
                     prefWidth="75.0"
                     text="🔀 OFF" />
 
-            <ToggleButton fx:id="tglSingleTrackLoop"
+            <ToggleButton fx:id="tglQueueLoop"
                           mnemonicParsing="false"
-                          onAction="#handleSingleTrackLoopToggle"
+                          onAction="#handleQueueLoopToggle"
                           prefWidth="92.0"
                           text="Loop: OFF" />
 

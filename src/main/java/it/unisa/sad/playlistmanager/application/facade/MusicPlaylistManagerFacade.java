@@ -252,6 +252,13 @@ public class MusicPlaylistManagerFacade {
     }
 
     /**
+     * Indica se la sorgente corrente supporta la modalità shuffle.
+     */
+    public boolean isShuffleAvailable() {
+        return playbackService.isShuffleAvailable();
+    }
+
+    /**
      * Avanza di un "tick" il playback e restituisce lo snapshot aggiornato.
      *
      * @return snapshot aggiornato del playback

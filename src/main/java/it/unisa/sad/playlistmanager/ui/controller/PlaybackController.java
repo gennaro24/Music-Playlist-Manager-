@@ -30,7 +30,7 @@ public class PlaybackController {
     @FXML private Button btnPlayPauseTrack;
     @FXML private Label labelArtist;
     @FXML private Button skipButton;
-    @FXML private ToggleButton tglSingleTrackLoop;
+    @FXML private ToggleButton tglQueueLoop;
     @FXML private Button btnShuffle;
     
     private Track currentTrack;
@@ -129,11 +129,12 @@ public class PlaybackController {
     }
 
     @FXML
-    private void handleSingleTrackLoopToggle(ActionEvent event) {
-        if (facade == null || tglSingleTrackLoop == null) return;
-        PlaybackSnapshot snapshot = tglSingleTrackLoop.isSelected()
-                ? facade.enableSingleTrackLoopMode()
-                : facade.disableSingleTrackLoopMode();
+    private void handleQueueLoopToggle(ActionEvent event) {
+        if (facade == null || tglQueueLoop == null) return;
+        PlaybackMode mode = tglQueueLoop.isSelected()
+                ? PlaybackMode.REPEAT_ALL
+                : PlaybackMode.SEQUENTIAL;
+        PlaybackSnapshot snapshot = facade.setPlaybackMode(mode);
         updatePlaybackView(snapshot);
     }
 
@@ -174,6 +175,7 @@ public class PlaybackController {
         }
         
         if (btnShuffle != null) {
+            btnShuffle.setDisable(facade != null && !facade.isShuffleAvailable());
             if (snapshot.mode() == PlaybackMode.SHUFFLE) {
                 btnShuffle.setText("🔀 ON");
                 btnShuffle.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
@@ -183,9 +185,9 @@ public class PlaybackController {
             }
         }
 
-        if (tglSingleTrackLoop != null) {
-            boolean loopEnabled = snapshot.mode() == PlaybackMode.REPEAT_ONE;
-            tglSingleTrackLoop.setSelected(loopEnabled);
+        if (tglQueueLoop != null) {
+            boolean loopEnabled = snapshot.mode() == PlaybackMode.REPEAT_ALL;
+            tglQueueLoop.setSelected(loopEnabled);
             updateLoopToggleVisual(loopEnabled);
         }
     }
@@ -204,13 +206,13 @@ public class PlaybackController {
     }
 
     private void updateLoopToggleVisual(boolean loopEnabled) {
-        if (tglSingleTrackLoop == null) return;
+        if (tglQueueLoop == null) return;
         if (loopEnabled) {
-            tglSingleTrackLoop.setText("Loop: ON");
-            tglSingleTrackLoop.setStyle("-fx-background-color: #2e7d32; -fx-text-fill: white; -fx-font-weight: bold;");
+            tglQueueLoop.setText("Loop: ON");
+            tglQueueLoop.setStyle("-fx-background-color: #2e7d32; -fx-text-fill: white; -fx-font-weight: bold;");
         } else {
-            tglSingleTrackLoop.setText("Loop: OFF");
-            tglSingleTrackLoop.setStyle("-fx-background-color: #e0e0e0; -fx-text-fill: #333333; -fx-font-weight: bold;");
+            tglQueueLoop.setText("Loop: OFF");
+            tglQueueLoop.setStyle("-fx-background-color: #e0e0e0; -fx-text-fill: #333333; -fx-font-weight: bold;");
         }
     }
 
