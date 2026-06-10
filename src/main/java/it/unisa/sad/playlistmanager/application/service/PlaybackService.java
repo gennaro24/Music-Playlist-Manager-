@@ -21,7 +21,7 @@ import java.util.Objects;
 /**
  * Gestisce lo stato logico del playback e coordina le strategie di riproduzione.
  * Agisce come Contesto per il pattern Strategy.
- * @version 1.2
+ * @version 1.3
  */
 public class PlaybackService {
     private PlaybackState currentState = PlaybackState.STOPPED;
@@ -32,7 +32,7 @@ public class PlaybackService {
     private final PlaylistRepository playlistRepository;
     private int elapsedSeconds = 0;
 
-    // Ripristinato per mantenere lo stato della coda rimescolata (US-15)
+    // Mantiene il riferimento di stato della strategia corrente (US-15)
     private PlaybackStrategy playbackStrategy = new SequentialPlaybackStrategy();
 
     public PlaybackService(PlaylistRepository playlistRepository) {
@@ -56,7 +56,7 @@ public class PlaybackService {
 
     /**
      * Imposta la modalità di playback corrente.
-     * Fonde la logica di Loop (main) con l'inizializzazione dello Shuffle.
+     * Fonde la logica di Loop con l'inizializzazione dello Shuffle senza interrompere il brano.
      */
     public void setPlaybackMode(PlaybackMode mode) {
         this.currentMode = Objects.requireNonNull(mode, "mode non può essere null");
@@ -66,9 +66,9 @@ public class PlaybackService {
         } else if (mode == PlaybackMode.SHUFFLE) {
             List<Track> currentTracks = java.util.Collections.emptyList();
             
-            // SOLUZIONE ARCHITETTURALE: Leggiamo dalla coda di riproduzione correntemente attiva!
+            // SOLUZIONE ARCHITETTURALE: Leggiamo dalla coda di riproduzione correntemente attiva
             if (currentQueue != null && !currentQueue.isEmpty()) {
-                currentTracks = currentQueue.getTracks(); // Prende le tracce già in memoria (niente DB!)
+                currentTracks = currentQueue.getTracks();
             } else if (currentTrack != null) {
                 currentTracks = List.of(currentTrack);
             }
@@ -77,15 +77,33 @@ public class PlaybackService {
         }
     }
 
+    /**
+     * Avvia il playback dell'intero catalogo musicale, preservando l'eventuale stato pre-esistente dello Shuffle.
+     */
     public void playCatalog(List<Track> tracks) {
         if (tracks == null || tracks.isEmpty()) {
             throw new ValidationException("Impossibile avviare un catalogo vuoto.");
         }
         this.currentPlaylist = null; // Nessuna playlist associata
         this.currentQueue = new PlaybackQueue(tracks, PlaybackSource.CATALOG);
-        this.currentTrack = currentQueue.getCurrentTrack();
-        this.currentMode = PlaybackMode.SEQUENTIAL;
-        this.playbackStrategy = new SequentialPlaybackStrategy();
+        
+        // FIX: Preserviamo la modalità Shuffle se già attiva nella UI
+        if (this.currentMode == PlaybackMode.SHUFFLE) {
+            this.playbackStrategy = new it.unisa.sad.playlistmanager.domain.strategy.ShufflePlaybackStrategy(tracks);
+            Track firstTrack = this.playbackStrategy.getNextTrack(currentQueue);
+            if (firstTrack != null) {
+                int nextIndex = currentQueue.getTracks().indexOf(firstTrack);
+                currentQueue.setCurrentIndex(nextIndex);
+                this.currentTrack = firstTrack;
+            } else {
+                this.currentTrack = currentQueue.getCurrentTrack();
+            }
+        } else {
+            this.currentMode = PlaybackMode.SEQUENTIAL;
+            this.playbackStrategy = new SequentialPlaybackStrategy();
+            this.currentTrack = currentQueue.getCurrentTrack();
+        }
+        
         this.currentState = PlaybackState.PLAYING;
         this.elapsedSeconds = 0;
     }
@@ -128,6 +146,9 @@ public class PlaybackService {
         }
     }   
 
+    /**
+     * Avvia una playlist tramite identificativo ID, preservando l'eventuale stato pre-esistente dello Shuffle.
+     */
     public void playPlaylist(String playlistId) {
         if (playlistRepository == null) {
             throw new ValidationException("PlaylistRepository non inizializzato.");
@@ -142,27 +163,60 @@ public class PlaybackService {
             throw new ValidationException("Impossibile avviare una playlist vuota.");
         }
 
-        currentPlaylist = playlist;
-        currentQueue = new PlaybackQueue(tracks, PlaybackSource.PLAYLIST);
-        currentTrack = currentQueue.getCurrentTrack();
-        currentMode = PlaybackMode.SEQUENTIAL;
-        playbackStrategy = new SequentialPlaybackStrategy();
-        currentState = PlaybackState.PLAYING;
-        elapsedSeconds = 0;
+        this.currentPlaylist = playlist;
+        this.currentQueue = new PlaybackQueue(tracks, PlaybackSource.PLAYLIST);
+        
+        // FIX: Preserviamo la modalità Shuffle se già attiva nella UI
+        if (this.currentMode == PlaybackMode.SHUFFLE) {
+            this.playbackStrategy = new it.unisa.sad.playlistmanager.domain.strategy.ShufflePlaybackStrategy(tracks);
+            Track firstTrack = this.playbackStrategy.getNextTrack(currentQueue);
+            if (firstTrack != null) {
+                int nextIndex = currentQueue.getTracks().indexOf(firstTrack);
+                currentQueue.setCurrentIndex(nextIndex);
+                this.currentTrack = firstTrack;
+            } else {
+                this.currentTrack = currentQueue.getCurrentTrack();
+            }
+        } else {
+            this.currentMode = PlaybackMode.SEQUENTIAL;
+            this.playbackStrategy = new SequentialPlaybackStrategy();
+            this.currentTrack = currentQueue.getCurrentTrack();
+        }
+
+        this.currentState = PlaybackState.PLAYING;
+        this.elapsedSeconds = 0;
     }
 
+    /**
+     * Avvia una playlist passando l'entità di dominio, preservando lo stato pre-esistente dello Shuffle (usato nei test).
+     */
     public void playPlaylist(Playlist playlist, List<Track> tracks) {
         if (playlist == null || tracks == null || tracks.isEmpty()) {
             throw new IllegalArgumentException("Playlist o tracce non valide.");
         }
 
-        currentPlaylist = playlist;
-        currentQueue = new PlaybackQueue(tracks, PlaybackSource.PLAYLIST);
-        currentTrack = currentQueue.getCurrentTrack();
-        currentMode = PlaybackMode.SEQUENTIAL;
-        playbackStrategy = new SequentialPlaybackStrategy();
-        currentState = PlaybackState.PLAYING;
-        elapsedSeconds = 0;
+        this.currentPlaylist = playlist;
+        this.currentQueue = new PlaybackQueue(tracks, PlaybackSource.PLAYLIST);
+        
+        // FIX: Preserviamo la modalità Shuffle se già attiva nella UI
+        if (this.currentMode == PlaybackMode.SHUFFLE) {
+            this.playbackStrategy = new it.unisa.sad.playlistmanager.domain.strategy.ShufflePlaybackStrategy(tracks);
+            Track firstTrack = this.playbackStrategy.getNextTrack(currentQueue);
+            if (firstTrack != null) {
+                int nextIndex = currentQueue.getTracks().indexOf(firstTrack);
+                currentQueue.setCurrentIndex(nextIndex);
+                this.currentTrack = firstTrack;
+            } else {
+                this.currentTrack = currentQueue.getCurrentTrack();
+            }
+        } else {
+            this.currentMode = PlaybackMode.SEQUENTIAL;
+            this.playbackStrategy = new SequentialPlaybackStrategy();
+            this.currentTrack = currentQueue.getCurrentTrack();
+        }
+
+        this.currentState = PlaybackState.PLAYING;
+        this.elapsedSeconds = 0;
     }
 
     public void pause() {
@@ -179,14 +233,13 @@ public class PlaybackService {
         PlaybackStrategy strategy = getStrategyForMode(currentMode);
         Track nextTrack = strategy.getNextTrack(currentQueue);
 
-        // In PlaybackService.java, dentro skipToNext()
         if (nextTrack != null) {
             int nextIndex = currentQueue.getTracks().indexOf(nextTrack);
             currentQueue.setCurrentIndex(nextIndex);
             this.currentTrack = nextTrack;
-            this.elapsedSeconds = 0;
+            this.elapsedSeconds = 0; // Il timer si azzera correttamente nel core di business
         } else {
-            // CORREZIONE: Gestiamo il fermo sia per la riproduzione sequenziale che per lo shuffle
+            // Gestiamo la transizione pulita di fermo sia in modalità sequenziale che in shuffle
             if (currentMode == PlaybackMode.SEQUENTIAL || currentMode == PlaybackMode.SHUFFLE) {
                 this.currentState = PlaybackState.STOPPED;
                 this.currentTrack = null;
@@ -200,7 +253,7 @@ public class PlaybackService {
             throw new TrackNotFoundException("Track non trovata.");
         }
 
-        // Se la traccia è la stessa ed è in riproduzione o in pausa, non azzerare nulla!
+        // Se la traccia è la stessa ed è in riproduzione o in pausa, gestisce la ripresa
         if (currentTrack != null && currentTrack.getId().equals(track.getId())) {
             if (currentState == PlaybackState.PAUSED || currentState == PlaybackState.STOPPED) {
                 currentState = PlaybackState.PLAYING;
@@ -208,7 +261,7 @@ public class PlaybackService {
             return;
         }
 
-        // Configurazione per una traccia completamente nuova
+        // Configurazione per una traccia singola completamente nuova
         currentTrack = track;
         currentPlaylist = null;
         currentQueue = new PlaybackQueue(List.of(track), PlaybackSource.SINGLE);
@@ -224,7 +277,6 @@ public class PlaybackService {
 
     /**
      * Risolve dinamicamente la strategia di riproduzione in base alla modalità corrente.
-     * Integrato con la stateful strategy dello Shuffle.
      */
     private PlaybackStrategy getStrategyForMode(PlaybackMode mode) {
         if (mode == PlaybackMode.SHUFFLE) {
@@ -235,7 +287,6 @@ public class PlaybackService {
                 return new SequentialPlaybackStrategy();
             case REPEAT_ALL:
                 return new RepeatAllPlaybackStrategy();
-            // Le altre strategie (Shuffle, RepeatOne) verranno mappate qui dai rispettivi assegnatari
             default:
                 return new SequentialPlaybackStrategy();
         }
@@ -279,17 +330,12 @@ public class PlaybackService {
             case REPEAT_ALL:
             case SEQUENTIAL:
             default:
-                // 1. Reset dei secondi per il brano che sta per entrare
                 elapsedSeconds = 0;
-                
-                // 2. Chiediamo alla strategia (Shuffle o Sequential) la prossima traccia
                 skipToNext();
                 
-                // 3. Se c'è una nuova traccia (es. la playlist non è finita), la mettiamo in PLAYING
                 if (currentTrack != null) {
                     currentState = PlaybackState.PLAYING;
                 } else {
-                    // Se le canzoni sono finite e non c'è REPEAT_ALL attivo, ci fermiamo
                     currentState = PlaybackState.STOPPED;
                 }
                 break;
