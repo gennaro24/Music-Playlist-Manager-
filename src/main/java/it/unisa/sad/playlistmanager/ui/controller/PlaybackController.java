@@ -111,19 +111,36 @@ public class PlaybackController {
 
     /**
      * Intercetta la richiesta di skip della riproduzione in avanti.
-     * Richiama la strategia corrente (Sequential o Shuffle) tramite la Facade.
+     * Delega al service la logica di avanzamento (che rispetta la modalità attiva),
+     * poi applica le correzioni UX necessarie:
+     * - SEQUENTIAL / SHUFFLE : avanza; si ferma a fine coda
+     * - REPEAT_ALL           : avanza e torna al primo brano a fine coda
+     * - REPEAT_ONE           : avanza al brano successivo (override del loop); il loop
+     *                          riparte sul nuovo brano al prossimo completamento
+     * - PAUSED + skip        : lo skip manuale riprende la riproduzione sulla nuova traccia
      */
     @FXML
     private void handleNext(ActionEvent event) {
         if (facade == null) return;
         try {
-            // 1. Diciamo al modulo Application di avanzare (penserà lui ad azzerare il tempo)
+            PlaybackSnapshot before = facade.getPlaybackSnapshot();
+
+            // Nessuna traccia attiva: lo skip non ha senso
+            if (before.currentTrack() == null) {
+                showPlaybackError("Nessuna traccia in riproduzione.");
+                return;
+            }
+
             facade.skipToNext();
-            
-            // 2. Prendiamo lo snapshot aggiornato e aggiorniamo atomicamente la UI
-            PlaybackSnapshot snapshot = facade.getPlaybackSnapshot();
-            updatePlaybackView(snapshot);
-            
+            PlaybackSnapshot after = facade.getPlaybackSnapshot();
+
+            // Skip manuale mentre in pausa: riprendi la nuova traccia
+            if (after.currentTrack() != null && before.state() == PlaybackState.PAUSED) {
+                after = facade.playTrack(after.currentTrack().getId());
+            }
+
+            updatePlaybackView(after);
+
         } catch (Exception e) {
             showPlaybackError(e.getMessage());
         }

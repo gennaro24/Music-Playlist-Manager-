@@ -510,4 +510,254 @@ class PlaybackServiceTest {
         assertEquals(10, playbackService.getElapsedSeconds(), "Il timer NON deve azzerarsi");
     }
 
+    // ===================================================================================
+    // TEST SKIP – MODALITÀ SEQUENTIAL
+    // ===================================================================================
+
+    @Test
+    void testSkip_Sequential_AvanzaAllaTracciaSuccessiva() {
+        // GIVEN: playlist con 2 tracce in modalità SEQUENTIAL
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
+
+        // WHEN
+        playbackService.skipToNext();
+
+        // THEN: si è avanzati alla seconda traccia, stato rimasto PLAYING
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack());
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+        assertEquals(PlaybackMode.SEQUENTIAL, playbackService.getCurrentMode());
+    }
+
+    @Test
+    void testSkip_Sequential_ResetTimer() {
+        // GIVEN: playlist avviata, tick di 5 secondi
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        for (int i = 0; i < 5; i++) playbackService.tick();
+        assertEquals(5, playbackService.getElapsedSeconds());
+
+        // WHEN
+        playbackService.skipToNext();
+
+        // THEN: il timer si azzera sulla nuova traccia
+        assertEquals(0, playbackService.getElapsedSeconds(), "Il timer deve azzerarsi dopo lo skip");
+    }
+
+    @Test
+    void testSkip_Sequential_DaUltimaTraccia_SiFerma() {
+        // GIVEN: playlist con 2 tracce, avanziamo già alla seconda (ultima)
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        playbackService.skipToNext();
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack());
+
+        // WHEN: skip sull'ultima traccia
+        playbackService.skipToNext();
+
+        // THEN: player fermo, nessuna traccia corrente, timer azzerato
+        assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());
+        assertNull(playbackService.getCurrentTrack());
+        assertEquals(0, playbackService.getElapsedSeconds());
+    }
+
+    @Test
+    void testSkip_SenzaCoda_NoOp() {
+        // GIVEN: nessuna riproduzione attiva
+        assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());
+
+        // WHEN: skip invocato senza coda
+        assertDoesNotThrow(() -> playbackService.skipToNext());
+
+        // THEN: lo stato non cambia
+        assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());
+        assertNull(playbackService.getCurrentTrack());
+    }
+
+    @Test
+    void testSkip_DaStatoPaused_TracciaAvanzaStatoRestaPaused() {
+        // GIVEN: playlist avviata, player messo in pausa
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        playbackService.pause();
+        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState());
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
+
+        // WHEN: skip mentre in pausa
+        playbackService.skipToNext();
+
+        // THEN: la traccia avanza ma lo stato resta PAUSED (comportamento a livello service;
+        //       è il controller che decide se riprendere la riproduzione)
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack(), "La traccia deve cambiare");
+        assertEquals(PlaybackState.PAUSED, playbackService.getCurrentState(), "Lo stato deve restare PAUSED");
+        assertEquals(0, playbackService.getElapsedSeconds(), "Il timer deve azzerarsi");
+    }
+
+    // ===================================================================================
+    // TEST SKIP – MODALITÀ SHUFFLE
+    // ===================================================================================
+
+    @Test
+    void testSkip_Shuffle_TracciaSuccessivaAppartieneAllaPlaylist() {
+        // GIVEN: modalità SHUFFLE attivata prima della playlist
+        playbackService.setPlaybackMode(PlaybackMode.SHUFFLE);
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        Track primaTraccia = playbackService.getCurrentTrack();
+        assertNotNull(primaTraccia);
+
+        // WHEN
+        playbackService.skipToNext();
+
+        // THEN: la traccia cambia ed è comunque nella playlist
+        Track dopoSkip = playbackService.getCurrentTrack();
+        assertNotNull(dopoSkip, "Ci deve essere una traccia dopo lo skip");
+        assertNotEquals(primaTraccia, dopoSkip, "La traccia deve essere diversa da quella precedente");
+        assertTrue(playlistTracks.contains(dopoSkip), "La nuova traccia deve far parte della playlist");
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+        assertEquals(0, playbackService.getElapsedSeconds(), "Il timer deve azzerarsi");
+    }
+
+    @Test
+    void testSkip_Shuffle_EsauritaCoda_SiFerma() {
+        // GIVEN: playlist con 2 tracce in SHUFFLE
+        // startQueue consuma index=0 della coda mescolata → ne rimangono 1
+        playbackService.setPlaybackMode(PlaybackMode.SHUFFLE);
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+
+        // WHEN: skip esaurisce la coda mescolata
+        playbackService.skipToNext(); // consuma index=1 → ok
+        playbackService.skipToNext(); // index=2 >= size=2 → null → STOPPED
+
+        // THEN
+        assertEquals(PlaybackState.STOPPED, playbackService.getCurrentState());
+        assertNull(playbackService.getCurrentTrack());
+        assertEquals(0, playbackService.getElapsedSeconds());
+    }
+
+    @Test
+    void testSkip_Shuffle_ResetTimer() {
+        // GIVEN: SHUFFLE attivo, 7 tick trascorsi
+        playbackService.setPlaybackMode(PlaybackMode.SHUFFLE);
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        for (int i = 0; i < 7; i++) playbackService.tick();
+        assertEquals(7, playbackService.getElapsedSeconds());
+
+        // WHEN
+        playbackService.skipToNext();
+
+        // THEN
+        assertEquals(0, playbackService.getElapsedSeconds(), "Il timer deve azzerarsi dopo lo skip in SHUFFLE");
+    }
+
+    // ===================================================================================
+    // TEST SKIP – MODALITÀ REPEAT_ALL
+    // ===================================================================================
+
+    @Test
+    void testSkip_RepeatAll_AvanzaAllaTracciaSuccessiva() {
+        // GIVEN: playlist con REPEAT_ALL, sulla prima traccia
+        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ALL);
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
+
+        // WHEN
+        playbackService.skipToNext();
+
+        // THEN
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack());
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+        assertEquals(PlaybackMode.REPEAT_ALL, playbackService.getCurrentMode());
+        assertEquals(0, playbackService.getElapsedSeconds());
+    }
+
+    @Test
+    void testSkip_RepeatAll_DaUltimaTraccia_TornaAllaPrima() {
+        // GIVEN: playlist con REPEAT_ALL, già sull'ultima traccia
+        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ALL);
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        playbackService.skipToNext(); // → sampleTrack2 (ultima)
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack());
+
+        // WHEN
+        playbackService.skipToNext();
+
+        // THEN: torna alla prima traccia, rimane PLAYING
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack(), "Deve tornare alla prima traccia");
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+        assertEquals(PlaybackMode.REPEAT_ALL, playbackService.getCurrentMode());
+    }
+
+    @Test
+    void testSkip_RepeatAll_ResetTimer() {
+        // GIVEN
+        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ALL);
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        for (int i = 0; i < 10; i++) playbackService.tick();
+
+        // WHEN
+        playbackService.skipToNext();
+
+        // THEN
+        assertEquals(0, playbackService.getElapsedSeconds(), "Il timer deve azzerarsi dopo lo skip in REPEAT_ALL");
+    }
+
+    // ===================================================================================
+    // TEST SKIP – MODALITÀ REPEAT_ONE
+    // ===================================================================================
+
+    @Test
+    void testSkip_RepeatOne_AvanzaAllaTracciaSuccessiva() {
+        // GIVEN: playlist con REPEAT_ONE attivo sulla prima traccia
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ONE);
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
+
+        // WHEN: lo skip manuale deve forzare l'avanzamento ignorando il loop
+        playbackService.skipToNext();
+
+        // THEN: si è passati alla seconda traccia; la modalità resta REPEAT_ONE
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack(), "Lo skip deve superare il loop e andare al brano successivo");
+        assertEquals(PlaybackMode.REPEAT_ONE, playbackService.getCurrentMode(), "La modalità non deve cambiare");
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+        assertEquals(0, playbackService.getElapsedSeconds());
+    }
+
+    @Test
+    void testSkip_RepeatOne_DaUltimaTraccia_RestaSullaStessaTraccia() {
+        // GIVEN: siamo già sull'ultima traccia in REPEAT_ONE
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ONE);
+        playbackService.skipToNext(); // → sampleTrack2
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack());
+        for (int i = 0; i < 5; i++) playbackService.tick();
+
+        // WHEN: skip sull'ultima traccia in REPEAT_ONE
+        playbackService.skipToNext();
+
+        // THEN: la strategia sequenziale restituisce null, ma REPEAT_ONE non gestisce
+        //       questo caso come STOPPED → il player resta su sampleTrack2 in PLAYING
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack(),
+                "In REPEAT_ONE a fine coda lo skip è un no-op: si resta sulla traccia corrente");
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+        assertEquals(PlaybackMode.REPEAT_ONE, playbackService.getCurrentMode());
+    }
+
+    @Test
+    void testFineNaturale_RepeatOne_DopoSkip_RiparteNuovaTraccia() {
+        // GIVEN: passiamo con lo skip alla seconda traccia in REPEAT_ONE
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ONE);
+        playbackService.skipToNext(); // → sampleTrack2
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack());
+
+        // WHEN: la seconda traccia termina naturalmente
+        for (int i = 0; i < sampleTrack2.getDuration(); i++) {
+            playbackService.tick();
+        }
+
+        // THEN: il loop si attiva sulla nuova traccia (sampleTrack2) e riparte da 0
+        PlaybackSnapshot snapshot = playbackService.getSnapshot();
+        assertEquals(sampleTrack2, snapshot.currentTrack(), "Il loop deve ripetersi sulla nuova traccia");
+        assertEquals(PlaybackState.PLAYING, snapshot.state());
+        assertEquals(PlaybackMode.REPEAT_ONE, snapshot.mode());
+        assertEquals(0, playbackService.getElapsedSeconds());
+    }
+
 }
