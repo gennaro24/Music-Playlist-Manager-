@@ -201,6 +201,16 @@ public class MusicPlaylistManagerFacade {
     }
 
     /**
+     * Avvia il playback di tutto il catalogo musicale.
+     * Risolve la richiesta di riproduzione globale e abilita lo shuffle sul catalogo.
+     */
+    public PlaybackSnapshot playCatalog() {
+        List<Track> allTracks = this.trackService.getAllTracks();
+        this.playbackService.playCatalog(allTracks);
+        return getPlaybackSnapshot();
+    }
+
+    /**
      * Espone al Presentation Layer la funzionalità di skip alla traccia successiva.
      * 
      * @return Una fotografia dello stato corrente del playback dopo lo skip
@@ -232,6 +242,16 @@ public class MusicPlaylistManagerFacade {
         return getPlaybackSnapshot();
     }
 
+    public PlaybackSnapshot enableRepeatAllMode() {
+        playbackService.enableRepeatAllMode();
+        return getPlaybackSnapshot();
+    }
+
+    public PlaybackSnapshot disableRepeatAllMode() {
+        playbackService.disableRepeatAllMode();
+        return getPlaybackSnapshot();
+    }
+
     /**
      * Restituisce l'unico DTO letto dalla UI per conoscere lo stato del player.
      * * @return Una fotografia dello stato corrente del playback
@@ -239,6 +259,13 @@ public class MusicPlaylistManagerFacade {
      */
     public PlaybackSnapshot getPlaybackSnapshot() {
         return playbackService.getSnapshot();
+    }
+
+    /**
+     * Indica se la sorgente corrente supporta la modalità shuffle.
+     */
+    public boolean isShuffleAvailable() {
+        return playbackService.isShuffleAvailable();
     }
 
     /**
@@ -276,4 +303,15 @@ public class MusicPlaylistManagerFacade {
         return playbackService.handleTrackCompleted();
     }
 
+    /**
+     * T-144: Espone al Presentation Layer la funzionalità di cambio modalità di riproduzione.
+     * Consente alla UI di attivare lo Shuffle o di tornare alla riproduzione sequenziale.
+     *
+     * @param mode La modalità di playback da impostare (es. PlaybackMode.SHUFFLE)
+     * @return Lo snapshot aggiornato del playback.
+     */
+    public PlaybackSnapshot setPlaybackMode(it.unisa.sad.playlistmanager.domain.model.PlaybackMode mode) {
+        this.playbackService.setPlaybackMode(mode);
+        return this.playbackService.getSnapshot();
+    }
 }

@@ -2,21 +2,14 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<HBox alignment="CENTER_LEFT"
-      maxWidth="Infinity"
-      prefHeight="64.0"
-      prefWidth="1280.0"
-      spacing="15.0"
-      style="-fx-padding: 10; -fx-background-color: #f4f4f4; -fx-border-color: #cccccc; -fx-border-width: 1 0 0 0;"
-      xmlns="http://javafx.com/javafx/17"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="it.unisa.sad.playlistmanager.ui.controller.PlaybackController">
+<HBox alignment="CENTER_LEFT" maxWidth="Infinity" prefHeight="64.0" prefWidth="1280.0" spacing="15.0" style="-fx-padding: 10; -fx-background-color: #f4f4f4; -fx-border-color: #cccccc; -fx-border-width: 1 0 0 0;"
+   xmlns="http://javafx.com/javafx/17"
+   xmlns:fx="http://javafx.com/fxml/1" fx:controller="it.unisa.sad.playlistmanager.ui.controller.PlaybackController">
 
    <children>
 
@@ -80,16 +73,14 @@
 
       <HBox alignment="CENTER_RIGHT" spacing="15.0" style="-fx-padding: 0 10 0 0;">
          <children>
-            <ToggleButton fx:id="tglSingleTrackLoop"
-                          mnemonicParsing="false"
-                          onAction="#handleSingleTrackLoopToggle"
-                          prefWidth="92.0"
-                          text="Loop: OFF" />
-            <Button fx:id="btnPlayPauseTrack"
-                    mnemonicParsing="false"
-                    onAction="#PlayPauseTrack"
-                    prefWidth="70.0"
-                    text="▶" />
+
+            <Button fx:id="btnShuffle" mnemonicParsing="false" onAction="#toggleShuffle" prefWidth="75.0" text="🔀 OFF" />
+
+            <Button fx:id="btnLoop" mnemonicParsing="false" onAction="#handleQueueLoopToggle" prefWidth="75.0" text="🔂 OFF" />
+
+            <Button fx:id="btnPlayPauseTrack" mnemonicParsing="false" onAction="#PlayPauseTrack" prefWidth="70.0" text="▶" />
+
+            <Button fx:id="skipButton" mnemonicParsing="false" onAction="#handleNext" prefWidth="70.0" text="⏭" />
          </children>
       </HBox>
 

@@ -13,6 +13,9 @@
     <TextField fx:id="txtPlaylistName" promptText="Nome playlist" visible="false" />
     
     <Button fx:id="btnCreatePlaylist" maxWidth="Infinity" onAction="#handleCreatePlaylist" text="Nuova Playlist" />
+    
+    <Button fx:id="btnPlayPlaylist" maxWidth="Infinity" onAction="#handlePlayPlaylist" text="▶ Riproduci Playlist" visible="false" />
+    
     <Button fx:id="btnRemovePlaylist" maxWidth="Infinity" onAction="#handleRemovePlaylist" text="Rimuovi Playlist" visible="false" />
     <Label fx:id="lblPlaylistFeedback" style="-fx-text-fill: red;" text="" />
     
