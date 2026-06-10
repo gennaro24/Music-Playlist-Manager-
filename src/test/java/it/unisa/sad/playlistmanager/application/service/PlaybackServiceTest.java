@@ -175,6 +175,37 @@ class PlaybackServiceTest {
         assertEquals(PlaybackState.PLAYING, snapshot.state());
     }
 
+    @Test
+    void testSkipToNext_InRepeatAllDaUltimaTracciaRiparteDallaPrima() {
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        playbackService.skipToNext();
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack());
+
+        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ALL);
+        playbackService.skipToNext();
+
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+    }
+
+    @Test
+    void testFineTraccia_InRepeatAllRiparteDallaPrimaTraccia() {
+        playbackService.playPlaylist(samplePlaylist, playlistTracks);
+        playbackService.skipToNext();
+        assertEquals(sampleTrack2, playbackService.getCurrentTrack());
+
+        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ALL);
+        for (int i = 0; i < sampleTrack2.getDuration(); i++) {
+            playbackService.tick();
+        }
+
+        PlaybackSnapshot snapshot = playbackService.getSnapshot();
+        assertEquals(PlaybackState.PLAYING, snapshot.state());
+        assertEquals(sampleTrack1, snapshot.currentTrack());
+        assertEquals(0, playbackService.getElapsedSeconds());
+        assertEquals(PlaybackMode.REPEAT_ALL, playbackService.getCurrentMode());
+    }
+
     /**
      * Verifica il requisito T-143: Il passaggio alla modalità SHUFFLE a caldo
      * non deve interrompere lo stato PLAYING, né cambiare la traccia corrente,

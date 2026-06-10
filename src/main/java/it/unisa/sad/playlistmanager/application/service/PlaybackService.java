@@ -11,6 +11,7 @@ import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.domain.strategy.PlaybackStrategy;
+import it.unisa.sad.playlistmanager.domain.strategy.RepeatAllPlaybackStrategy;
 import it.unisa.sad.playlistmanager.domain.strategy.SequentialPlaybackStrategy;
 import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
 
@@ -203,6 +204,9 @@ public class PlaybackService {
         switch (mode) {
             case SEQUENTIAL:
                 return new SequentialPlaybackStrategy();
+            case REPEAT_ALL:
+                return new RepeatAllPlaybackStrategy();
+            // Le altre strategie (Shuffle, RepeatOne) verranno mappate qui dai rispettivi assegnatari
             default:
                 return new SequentialPlaybackStrategy();
         }
@@ -242,11 +246,16 @@ public class PlaybackService {
                 elapsedSeconds = 0;
                 break;
             case REPEAT_ALL:
-            case SHUFFLE:
             case SEQUENTIAL:
+            case SHUFFLE:
             default:
-                currentState = PlaybackState.STOPPED;
-                currentTrack = null;
+                elapsedSeconds = 0;
+                skipToNext();
+                if (currentTrack != null) {
+                    currentState = PlaybackState.PLAYING;
+                } else {
+                    currentState = PlaybackState.STOPPED;
+                }
                 break;
         }
         return getSnapshot();

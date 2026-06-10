@@ -13,6 +13,7 @@ import it.unisa.sad.playlistmanager.domain.model.Track;
  * Facciata principale dell'applicazione (Facade Pattern).
  * Fornisce un'interfaccia unificata e semplificata per il Presentation Layer,
  * centralizzando l'accesso a tutti i servizi del modulo Application.
+ * 
  * @version 1.0
  */
 public class MusicPlaylistManagerFacade {
@@ -25,19 +26,25 @@ public class MusicPlaylistManagerFacade {
     /**
      * Costruttore della Facade. Inietta le dipendenze dei servizi necessari.
      *
-     * @param trackService Il servizio incaricato della logica di business delle tracce.
-     * @param playlistService Il servizio incaricato della logica di business delle playlist.
-     * @param playbackService Il servizio incaricato della logica di business del playback.
+     * @param trackService    Il servizio incaricato della logica di business delle
+     *                        tracce.
+     * @param playlistService Il servizio incaricato della logica di business delle
+     *                        playlist.
+     * @param playbackService Il servizio incaricato della logica di business del
+     *                        playback.
      */
-    public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService, PlaybackService playbackService) {
+    public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService,
+            PlaybackService playbackService) {
         this.playbackService = playbackService;
         this.trackService = trackService;
         this.playlistService = playlistService;
     }
 
     /**
-     * Espone al Presentation Layer la funzionalità di aggiunta di una nuova traccia nel catalogo.
-     * Svolge il ruolo di pass-through verso il servizio specializzato {@link TrackService}.
+     * Espone al Presentation Layer la funzionalità di aggiunta di una nuova traccia
+     * nel catalogo.
+     * Svolge il ruolo di pass-through verso il servizio specializzato
+     * {@link TrackService}.
      *
      * @param title    Il titolo della canzone da aggiungere.
      * @param author   L'artista della canzone.
@@ -45,7 +52,8 @@ public class MusicPlaylistManagerFacade {
      * @param genre    Il genere della canzone.
      * @param year     L'anno di pubblicazione.
      * @return L'oggetto {@link Track} creato, validato e salvato.
-     * @throws IllegalArgumentException Se i parametri violano le regole di validazione del dominio.
+     * @throws IllegalArgumentException Se i parametri violano le regole di
+     *                                  validazione del dominio.
      */
     public Track addTrack(String title, String author, int duration, String genre, int year) {
         // Il pattern Facade si limita a delegare l'operazione al servizio competente
@@ -54,6 +62,7 @@ public class MusicPlaylistManagerFacade {
 
     /**
      * Centralizza l'accesso al caso d'uso di creazione di una playlist.
+     * 
      * @param name Il nome della playlist.
      * @return La playlist creata.
      */
@@ -63,6 +72,7 @@ public class MusicPlaylistManagerFacade {
 
     /**
      * Espone al Presentation Layer la funzionalità di eliminazione di una playlist.
+     * 
      * @param playlistId L'identificativo unico della playlist da eliminare.
      * @return La playlist eliminata.
      */
@@ -72,7 +82,8 @@ public class MusicPlaylistManagerFacade {
     }
 
     /**
-     * Espone al Presentation Layer l'elenco completo di tutte le tracce presenti nel catalogo.
+     * Espone al Presentation Layer l'elenco completo di tutte le tracce presenti
+     * nel catalogo.
      * Risolve il Task T-11 della prima sprint.
      *
      * @return Una lista contenente tutte le tracce musicali disponibili.
@@ -83,10 +94,12 @@ public class MusicPlaylistManagerFacade {
     }
 
     /**
-     * Espone al Presentation Layer l'elenco completo di tutte le playlist configurate.
+     * Espone al Presentation Layer l'elenco completo di tutte le playlist
+     * configurate.
      * Risolve il Task T-25 della prima sprint.
      *
-     * @return Una lista contenente tutte le playlist caricate dal modulo persistence.
+     * @return Una lista contenente tutte le playlist caricate dal modulo
+     *         persistence.
      */
     public List<Playlist> getAllPlaylists() {
         // Delega del pass-through verso il servizio di competenza
@@ -95,7 +108,8 @@ public class MusicPlaylistManagerFacade {
 
     /**
      * Fornisce l'accesso al dettaglio di una specifica playlist identificata da ID.
-     * Consente alla UI di verificare la presenza di elementi e l'ordine delle tracce.
+     * Consente alla UI di verificare la presenza di elementi e l'ordine delle
+     * tracce.
      * Risolve il Task T-25 della prima sprint.
      *
      * @param id L'identificativo univoco della risorsa.
@@ -106,9 +120,9 @@ public class MusicPlaylistManagerFacade {
         return this.playlistService.getPlaylistById(id);
     }
 
-
     /**
-     * Centralizza ed espone alla UI il caso d'uso di aggiunta traccia a una playlist.
+     * Centralizza ed espone alla UI il caso d'uso di aggiunta traccia a una
+     * playlist.
      *
      * @param playlistId Identificativo della playlist di destinazione.
      * @param trackId    Identificativo della traccia da aggiungere.
@@ -118,20 +132,24 @@ public class MusicPlaylistManagerFacade {
     }
 
     /**
-     * Espone al Presentation Layer la funzionalità di rimozione di una traccia da una playlist.
+     * Espone al Presentation Layer la funzionalità di rimozione di una traccia da
+     * una playlist.
      * Agisce da puro pass-through verso il servizio applicativo competente.
      *
      * @param playlistId L'identificativo unico della playlist di riferimento.
-     * @param trackId    L'identificativo unico della traccia da cancellare dalla playlist.
-     * @throws IllegalArgumentException Se i parametri o le regole di business vengono violate.
+     * @param trackId    L'identificativo unico della traccia da cancellare dalla
+     *                   playlist.
+     * @throws IllegalArgumentException Se i parametri o le regole di business
+     *                                  vengono violate.
      */
     public void removeTrackFromPlaylist(String playlistId, String trackId) {
         this.playlistService.removeTrackFromPlaylist(playlistId, trackId);
     }
 
-
     /**
-     * Espone al Presentation Layer la funzionalità di recupero delle tracce associate a una playlist.
+     * Espone al Presentation Layer la funzionalità di recupero delle tracce
+     * associate a una playlist.
+     * 
      * @param playlistId L'identificativo unico della playlist di riferimento.
      * @return Una lista di tracce associate alla playlist.
      */
@@ -139,15 +157,18 @@ public class MusicPlaylistManagerFacade {
         return playlistService.getTracksForPlaylist(playlistId);
     }
     // =====================METODI PER IL PLAYBACK=====================:
-    
 
-    
-     /**
-     * Espone al Presentation Layer la funzionalità di avvio del playback di una traccia specifica.
-     * Recupera la traccia tramite il servizio TrackService e delega l'operazione al PlaybackService.
-     * @return Una fotografia dello stato corrente del playback dopo l'avvio (PlaybackSnapshot).
+    /**
+     * Espone al Presentation Layer la funzionalità di avvio del playback di una
+     * traccia specifica.
+     * Recupera la traccia tramite il servizio TrackService e delega l'operazione al
+     * PlaybackService.
+     * 
+     * @return Una fotografia dello stato corrente del playback dopo l'avvio
+     *         (PlaybackSnapshot).
      * @param trackId L'identificativo della traccia da riprodurre.
-     * @throws TrackNotFoundException Se la traccia non esiste (propagata dal Service).
+     * @throws TrackNotFoundException Se la traccia non esiste (propagata dal
+     *                                Service).
      */
     public PlaybackSnapshot playTrack(String trackId) {
         Track track = trackService.getTrackById(trackId);
@@ -158,15 +179,32 @@ public class MusicPlaylistManagerFacade {
     /**
      * Espone al Presentation Layer la funzionalità di pausa del playback.
      * Delega l'operazione al PlaybackService.
-     * @return Una fotografia dello stato corrente del playback dopo la pausa (PlaybackSnapshot).
+     * 
+     * @return Una fotografia dello stato corrente del playback dopo la pausa
+     *         (PlaybackSnapshot).
      */
-    public PlaybackSnapshot pausePlayback(){
+    public PlaybackSnapshot pausePlayback() {
         playbackService.pause();
         return getPlaybackSnapshot();
     }
+
+    /**
+     * Espone al presentation layer la funzionalità di avvio del playback di una
+     * playlist specifica.
+     *
+     * @param playlistId identificativo della playlist da riprodurre
+     * @return snapshot aggiornato del playback
+     */
+    public PlaybackSnapshot playPlaylist(String playlistId) {
+        playbackService.playPlaylist(playlistId);
+        return playbackService.getSnapshot();
+    }
+
     /**
      * Espone al Presentation Layer la funzionalità di skip alla traccia successiva.
-     * @return Una fotografia dello stato corrente del playback dopo lo skip (PlaybackSnapshot).
+     * 
+     * @return Una fotografia dello stato corrente del playback dopo lo skip
+     *         (PlaybackSnapshot).
      */
     public PlaybackSnapshot skipToNext() {
         playbackService.skipToNext();
@@ -174,7 +212,8 @@ public class MusicPlaylistManagerFacade {
     }
 
     /**
-     * Espone al Presentation Layer il cambio modalità verso single-track-loop (REPEAT_ONE).
+     * Espone al Presentation Layer il cambio modalità verso single-track-loop
+     * (REPEAT_ONE).
      *
      * @return snapshot aggiornato del playback
      */
@@ -192,16 +231,15 @@ public class MusicPlaylistManagerFacade {
         playbackService.disableSingleTrackLoopMode();
         return getPlaybackSnapshot();
     }
-    
-    
+
     /**
      * Restituisce l'unico DTO letto dalla UI per conoscere lo stato del player.
-     * * @return Una fotografia dello stato corrente del playback (PlaybackSnapshot).
+     * * @return Una fotografia dello stato corrente del playback
+     * (PlaybackSnapshot).
      */
     public PlaybackSnapshot getPlaybackSnapshot() {
         return playbackService.getSnapshot();
     }
-    
 
     /**
      * Avanza di un "tick" il playback e restituisce lo snapshot aggiornato.
@@ -212,25 +250,28 @@ public class MusicPlaylistManagerFacade {
         playbackService.tick();
         return playbackService.getSnapshot();
     }
+
     /**
      * Espone al presentation layer la funzionalità di modifica di una traccia.
+     * 
      * @return la traccia modificata da ritornare alla UI.
      */
     public Track updateTrack(String trackId, Track updatedTrack) {
         return trackService.updateTrack(trackId, updatedTrack);
     }
+
     /**
      * Espone al presentation layer la funzionalità di eliminazione di una traccia.
      * Notifica il PlayBackService se la traccia corrente è in playback.
+     * 
      * @return la traccia eliminata da ritornare alla UI.
-     */    
+     */
     public Track deleteTrack(String trackId) {
         playbackService.handleDeletedTrack(trackId);
         return trackService.deleteTrack(trackId);
     }
 
-
-    //il controller lo deve chiamare quando la traccia corrente termina.
+    // il controller lo deve chiamare quando la traccia corrente termina.
     public PlaybackSnapshot handleTrackCompleted() {
         return playbackService.handleTrackCompleted();
     }
