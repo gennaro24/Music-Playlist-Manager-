@@ -3,6 +3,8 @@ package it.unisa.sad.playlistmanager.domain.model;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import it.unisa.sad.playlistmanager.domain.strategy.ShufflePlaybackStrategy;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

@@ -1,11 +1,12 @@
-package it.unisa.sad.playlistmanager.domain.model;
+package it.unisa.sad.playlistmanager.domain.strategy;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import it.unisa.sad.playlistmanager.domain.strategy.PlaybackStrategy;
+import it.unisa.sad.playlistmanager.domain.model.PlaybackQueue;
+import it.unisa.sad.playlistmanager.domain.model.Track;
 
 /**
  * Gestisce la riproduzione in modalità Shuffle.

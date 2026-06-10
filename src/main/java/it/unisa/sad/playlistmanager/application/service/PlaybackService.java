@@ -74,7 +74,7 @@ public class PlaybackService {
             
             // Inizializziamo la strategia Shuffle. 
             // NOTA: Non azzeriamo elapsedSeconds né currentTrack, quindi il playback NON si interrompe!
-            this.playbackStrategy = new it.unisa.sad.playlistmanager.domain.model.ShufflePlaybackStrategy(currentTracks);
+            this.playbackStrategy = new it.unisa.sad.playlistmanager.domain.strategy.ShufflePlaybackStrategy(currentTracks);
         }
     }
 
@@ -184,11 +184,24 @@ public class PlaybackService {
             throw new TrackNotFoundException("Track non trovata.");
         }
 
+        // Se la traccia è la stessa ed è in riproduzione o in pausa, non azzerare nulla!
+        if (currentTrack != null && currentTrack.getId().equals(track.getId())) {
+            if (currentState == PlaybackState.PAUSED || currentState == PlaybackState.STOPPED) {
+                currentState = PlaybackState.PLAYING;
+            }
+            return;
+        }
+
+        // Configurazione per una traccia completamente nuova
         currentTrack = track;
         currentPlaylist = null;
         currentQueue = new PlaybackQueue(List.of(track), PlaybackSource.SINGLE);
-        currentMode = PlaybackMode.SEQUENTIAL;
-        playbackStrategy = new SequentialPlaybackStrategy();
+        
+        // Mantieni lo shuffle se l'utente lo ha attivato prima di lanciare la traccia
+        if (currentMode != PlaybackMode.SHUFFLE) {
+            currentMode = PlaybackMode.SEQUENTIAL;
+            playbackStrategy = new SequentialPlaybackStrategy();
+        }
         currentState = PlaybackState.PLAYING;
         elapsedSeconds = 0;
     }
@@ -245,15 +258,22 @@ public class PlaybackService {
                 currentState = PlaybackState.PLAYING;
                 elapsedSeconds = 0;
                 break;
+                
+            case SHUFFLE:
             case REPEAT_ALL:
             case SEQUENTIAL:
-            case SHUFFLE:
             default:
+                // 1. Reset dei secondi per il brano che sta per entrare
                 elapsedSeconds = 0;
+                
+                // 2. Chiediamo alla strategia (Shuffle o Sequential) la prossima traccia
                 skipToNext();
+                
+                // 3. Se c'è una nuova traccia (es. la playlist non è finita), la mettiamo in PLAYING
                 if (currentTrack != null) {
                     currentState = PlaybackState.PLAYING;
                 } else {
+                    // Se le canzoni sono finite e non c'è REPEAT_ALL attivo, ci fermiamo
                     currentState = PlaybackState.STOPPED;
                 }
                 break;

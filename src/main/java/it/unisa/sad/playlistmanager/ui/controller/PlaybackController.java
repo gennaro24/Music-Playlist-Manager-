@@ -17,12 +17,7 @@ import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 
 /**
- * Sotto-controllore della UI deputato alla gestione del pannello del lettore musicale
- * (Pulsanti Play, Pause, Skip ed aggiornamento real-time dei metadati grafici della traccia in riproduzione).
- * <p><b>Revisione Sprint 2:</b> Riadattato per aderire alla Constructor Injection. Sfrutta 
- * i modelli immutabili di snapshot provenienti dallo strato di dominio per aggiornare atomicamente 
- * la vista a seguito di un evento.</p>
- * @version 2.2
+ * Sotto-controllore della UI deputato alla gestione del pannello del lettore musicale.
  */
 public class PlaybackController {
     
@@ -36,18 +31,11 @@ public class PlaybackController {
     @FXML private Label labelArtist;
     @FXML private Button skipButton;
     @FXML private ToggleButton tglSingleTrackLoop;
-    
-    // T-145: Riferimento FXML al bottone Shuffle
     @FXML private Button btnShuffle;
     
     private Track currentTrack;
     private Timeline playbackTimeline;
 
-    /**
-     * Costruttore uniforme per l'attivazione della Constructor Injection (Task T-63).
-     *
-     * @param facade L'istanza dell'Application Facade ad alto livello.
-     */
     public PlaybackController(MusicPlaylistManagerFacade facade) {
         this.facade = facade;
     }
@@ -58,11 +46,6 @@ public class PlaybackController {
         startPlaybackRefreshLoop();
     }
     
-    /**
-     * Comanda l'avvio immediato della riproduzione audio per una specifica traccia di dominio.
-     *
-     * @param track L'oggetto Track da riprodurre.
-     */
     public void playTrack(Track track){
         if (facade == null || track == null) return;
         try {
@@ -75,11 +58,7 @@ public class PlaybackController {
     }
 
     /**
-     * Intercetta le richieste di Play/Pause provenienti dalla UI, esaminando
-     * lo stato dello snapshot corrente per determinare la transizione applicativa corretta.
-     * Allineato con la logica del main dei colleghi.
-     *
-     * @param event Evento di click sul pulsante grafico di riproduzione.
+     * Gestione Play/Pause robusta che discrimina lo stato PAUSED senza invocare playTrack da zero.
      */
     @FXML
     private void PlayPauseTrack(ActionEvent event) {
@@ -89,11 +68,22 @@ public class PlaybackController {
         }
         try {
             PlaybackSnapshot currentSnapshot = facade.getPlaybackSnapshot();
+            
+            // Caso 1: Sta suonando -> Metti in Pausa
             if (currentSnapshot.state() == PlaybackState.PLAYING) {
                 PlaybackSnapshot snapshot = facade.pausePlayback();
                 updatePlaybackView(snapshot);
                 return;
             }
+            
+            // Caso 2: È in pausa -> Riprendi (Invochiamo il resume se presente, o usiamo playTrack)
+            if (currentSnapshot.state() == PlaybackState.PAUSED) {
+                PlaybackSnapshot snapshot = facade.playTrack(currentSnapshot.currentTrack().getId());
+                updatePlaybackView(snapshot);
+                return;
+            }
+            
+            // Caso 3: È fermo (STOPPED) -> Avvia la traccia selezionata
             if (currentTrack == null) {
                 showPlaybackError("Seleziona una traccia da riprodurre.");
                 return;
@@ -105,17 +95,11 @@ public class PlaybackController {
         }
     }
 
-    /**
-     * T-145: Intercetta il click sul pulsante Shuffle, alternando la modalità di playback
-     * e aggiornando istantaneamente l'interfaccia.
-     */
     @FXML
     private void toggleShuffle(ActionEvent event) {
         if (facade == null) return;
         
         PlaybackSnapshot currentSnapshot = facade.getPlaybackSnapshot();
-        
-        // Se è già in Shuffle, torna Sequenziale. Altrimenti attiva Shuffle.
         PlaybackMode newMode = (currentSnapshot.mode() == PlaybackMode.SHUFFLE) 
                                 ? PlaybackMode.SEQUENTIAL 
                                 : PlaybackMode.SHUFFLE;
@@ -126,18 +110,28 @@ public class PlaybackController {
 
     /**
      * Intercetta la richiesta di skip della riproduzione in avanti.
-     * La logica interna verrà espansa nello Sprint 2 in conformità con i pattern Strategy di riproduzione.
-     *
-     * @param event Evento d'azione sul pulsante Skip.
+     * Richiama la strategia corrente (Sequential o Shuffle) tramite la Facade.
      */
     @FXML
     private void handleNext(ActionEvent event) {
-        // Sarà oggetto di espansione con le logiche di Shuffle/Loop dello Sprint 2
+        if (facade == null) return;
+        
+        // 1. Diciamo al motore di passare alla prossima traccia
+        facade.skipToNext();
+        
+        // 2. Chiediamo il nuovo stato aggiornato dopo lo skip
+        PlaybackSnapshot snapshot = facade.getPlaybackSnapshot();
+        
+        // 3. Forziamo il play istantaneo della nuova canzone se il player era attivo
+        if (snapshot.currentTrack() != null && snapshot.state() == PlaybackState.PLAYING) {
+            // Questo assicura che il timer riparta da 0 per il nuovo brano
+            facade.playTrack(snapshot.currentTrack().getId());
+        }
+        
+        // 4. Aggiorniamo i testi e i titoli sulla schermata
+        updatePlaybackView(facade.getPlaybackSnapshot());
     }
 
-    /**
-     * Attiva/disattiva il loop della traccia corrente dal controllo UI.
-     */
     @FXML
     private void handleSingleTrackLoopToggle(ActionEvent event) {
         if (facade == null || tglSingleTrackLoop == null) return;
@@ -147,12 +141,6 @@ public class PlaybackController {
         updatePlaybackView(snapshot);
     }
 
-    /**
-     * Scompone lo snapshot immutabile ricevuto dal core di business, sincronizzando
-     * atomicamente i testi e le icone degli elementi FXML dello stage.
-     *
-     * @param snapshot Il DTO strutturato contenente lo stato istantaneo del motore di riproduzione.
-     */
     private void updatePlaybackView(PlaybackSnapshot snapshot) {
         if (snapshot == null) return;
         Track track = snapshot.currentTrack();
@@ -162,7 +150,6 @@ public class PlaybackController {
             labelTitle.setText(track.getTitle());
             labelArtist.setText(track.getAuthor());
             durationTrack.setText(formatDuration(track.getDuration()));
-
             labelTitle.setVisible(true);
             labelTitle.setManaged(true);
             labelArtist.setVisible(true);
@@ -190,7 +177,6 @@ public class PlaybackController {
             }
         }
         
-        // T-145: Aggiorna l'estetica del pulsante Shuffle (Dal tuo branch)
         if (btnShuffle != null) {
             if (snapshot.mode() == PlaybackMode.SHUFFLE) {
                 btnShuffle.setText("🔀 ON");
@@ -201,7 +187,6 @@ public class PlaybackController {
             }
         }
 
-        // Aggiorna l'estetica del pulsante Loop (Dal branch del main)
         if (tglSingleTrackLoop != null) {
             boolean loopEnabled = snapshot.mode() == PlaybackMode.REPEAT_ONE;
             tglSingleTrackLoop.setSelected(loopEnabled);
@@ -209,9 +194,6 @@ public class PlaybackController {
         }
     }
 
-    /**
-     * Avvia il refresh periodico della vista playback.
-     */
     private void startPlaybackRefreshLoop() {
         if (playbackTimeline != null) {
             playbackTimeline.stop();
@@ -225,9 +207,6 @@ public class PlaybackController {
         playbackTimeline.play();
     }
 
-    /**
-     * Aggiorna aspetto e testo del toggle loop per rendere immediato lo stato ON/OFF.
-     */
     private void updateLoopToggleVisual(boolean loopEnabled) {
         if (tglSingleTrackLoop == null) return;
         if (loopEnabled) {
@@ -239,18 +218,12 @@ public class PlaybackController {
         }
     }
 
-    /**
-     * Propaga la notifica testuale di un errore di riproduzione sul pannello.
-     */
     private void showPlaybackError(String message) {
         if (lblPlaybackStatus != null) {
             lblPlaybackStatus.setText(message);
         }
     }
 
-    /**
-     * Formatta un valore espresso in secondi nel classico formato MM:SS per scopi di visualizzazione.
-     */
     private String formatDuration(int totalSeconds) {
         int minutes = totalSeconds / 60;
         int seconds = totalSeconds % 60;

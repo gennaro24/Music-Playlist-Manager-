@@ -17,7 +17,7 @@ import java.util.function.Consumer;
  * alle specifiche DoD sul disaccoppiamento ed eliminazione dell'accoppiamento temporale.</p>
  * <p><b>Integrazione US-5.1 (Sprint 2):</b> Sfrutta l'esposizione diretta del metodo di 
  * rimozione della Facade aggiornata, vincolandolo a un dialogo di conferma nativo e rinfresco immediato.</p>
- * @version 2.6
+ * @version 2.7
  */
 public class PlaylistController {
 
@@ -38,6 +38,9 @@ public class PlaylistController {
     
     /** Pulsante per l'eliminazione permanente della playlist selezionata (US-5.1). */
     @FXML private Button btnRemovePlaylist;
+    
+    /** T-118: Pulsante per avviare la riproduzione dell'intera playlist selezionata. */
+    @FXML private Button btnPlayPlaylist;
     
     /** Campo di testo a comparsa per digitare il nome della nuova playlist. */
     @FXML private TextField txtPlaylistName;
@@ -86,6 +89,11 @@ public class PlaylistController {
             btnRemovePlaylist.setVisible(false);
             btnRemovePlaylist.setManaged(false);
         }
+        // T-118: Il pulsante di riproduzione parte nascosto finché non selezioni una playlist
+        if (btnPlayPlaylist != null) {
+            btnPlayPlaylist.setVisible(false);
+            btnPlayPlaylist.setManaged(false);
+        }
     }
     
     /**
@@ -120,15 +128,19 @@ public class PlaylistController {
     
     /**
      * Sintonizza i listener reattivi sulla selezione delle celle, aggiornando dinamicamente
-     * la visibilità del comando di rimozione ed allineando i dettagli della vista (Task T-100 e T-102).
+     * la visibilità dei comandi di rimozione e riproduzione (Task T-100, T-102 e T-118).
      */
     private void configurePlaylistSelectionListener() {
         listPlaylists.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
             if (newSel != null) {
-                // TASK T-100: Mostra il pulsante di eliminazione quando una riga è attiva
+                // TASK T-100 & T-118: Mostra i pulsanti quando una riga è attiva
                 if (btnRemovePlaylist != null) {
                     btnRemovePlaylist.setVisible(true);
                     btnRemovePlaylist.setManaged(true);
+                }
+                if (btnPlayPlaylist != null) {
+                    btnPlayPlaylist.setVisible(true);
+                    btnPlayPlaylist.setManaged(true);
                 }
                 
                 if (facade != null) {
@@ -147,10 +159,14 @@ public class PlaylistController {
                     onPlaylistSelectedHandler.accept(newSel);
                 }
             } else {
-                // TASK T-102: Nasconde il pulsante e svuota il pannello dettagli se non vi è selezione
+                // TASK T-102 & T-118: Nasconde i pulsanti se non vi è selezione
                 if (btnRemovePlaylist != null) {
                     btnRemovePlaylist.setVisible(false);
                     btnRemovePlaylist.setManaged(false);
+                }
+                if (btnPlayPlaylist != null) {
+                    btnPlayPlaylist.setVisible(false);
+                    btnPlayPlaylist.setManaged(false);
                 }
                 if (onPlaylistSelectedHandler != null) {
                     onPlaylistSelectedHandler.accept(null);
@@ -294,6 +310,37 @@ public class PlaylistController {
         } else {
             lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
             lblPlaylistFeedback.setText("Seleziona una playlist da rimuovere.");
+        }
+    }
+
+    /**
+     * US-12 / T-118: Comanda l'avvio della riproduzione dell'intera playlist selezionata
+     * sfruttando il metodo esposto dalla Facade centralizzata.
+     *
+     * @param event Evento di click del mouse sul bottone Play Playlist.
+     */
+    @FXML
+    private void handlePlayPlaylist(ActionEvent event) {
+        if (listPlaylists == null || lblPlaylistFeedback == null) return;
+        Playlist selected = listPlaylists.getSelectionModel().getSelectedItem();
+        
+        if (selected != null) {
+            try {
+                if (facade != null) {
+                    facade.playPlaylist(selected.getId());
+                    lblPlaylistFeedback.setStyle("-fx-text-fill: green;");
+                    lblPlaylistFeedback.setText("Riproduzione playlist avviata.");
+                }
+            } catch (PlaylistNotFoundException | ValidationException | IllegalArgumentException e) {
+                lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
+                lblPlaylistFeedback.setText(e.getMessage());
+            } catch (Exception e) {
+                lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
+                lblPlaylistFeedback.setText("Errore imprevisto durante l'avvio della playlist.");
+            }
+        } else {
+            lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
+            lblPlaylistFeedback.setText("Seleziona una playlist per avviarla.");
         }
     }
 
