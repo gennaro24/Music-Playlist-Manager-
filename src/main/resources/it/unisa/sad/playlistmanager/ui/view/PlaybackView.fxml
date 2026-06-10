@@ -76,7 +76,7 @@
 
             <Button fx:id="btnShuffle" mnemonicParsing="false" onAction="#toggleShuffle" prefWidth="75.0" text="🔀 OFF" />
 
-            <Button fx:id="btnSingleTrackLoop" mnemonicParsing="false" onAction="#handleSingleTrackLoopToggle" prefWidth="75.0" text="🔁 OFF" />
+            <Button fx:id="btnLoop" mnemonicParsing="false" onAction="#handleSingleTrackLoopToggle" prefWidth="75.0" text="🔂 OFF" />
 
             <Button fx:id="btnPlayPauseTrack" mnemonicParsing="false" onAction="#PlayPauseTrack" prefWidth="70.0" text="▶" />
          </children>
