@@ -157,25 +157,46 @@ public class MusicPlaylistManagerFacade {
 
     /**
      * Espone al Presentation Layer la funzionalità di pausa del playback.
-     * Delega l'operazione al PlaybackService.\
+     * Delega l'operazione al PlaybackService.
      * @return Una fotografia dello stato corrente del playback dopo la pausa (PlaybackSnapshot).
      */
     public PlaybackSnapshot pausePlayback(){
         playbackService.pause();
         return getPlaybackSnapshot();
     }
-
     /**
-     * Espone al Presentation Layer la funzionalità di ripresa del playback.
-     * Delega l'operazione al PlaybackService.\
-     * @return Una fotografia dello stato corrente del playback dopo la ripresa (PlaybackSnapshot).
+     * Espone al Presentation Layer la funzionalità di skip alla traccia successiva.
+     * @return Una fotografia dello stato corrente del playback dopo lo skip (PlaybackSnapshot).
      */
-    public PlaybackSnapshot resumePlayback(){
-        playbackService.resume();
+    public PlaybackSnapshot skipToNext() {
+        playbackService.skipToNext();
         return getPlaybackSnapshot();
     }
+
     /**
-     * @return Una fotografia dello stato corrente del playback (PlaybackSnapshot).
+     * Espone al Presentation Layer il cambio modalità verso single-track-loop (REPEAT_ONE).
+     *
+     * @return snapshot aggiornato del playback
+     */
+    public PlaybackSnapshot enableSingleTrackLoopMode() {
+        playbackService.enableSingleTrackLoopMode();
+        return getPlaybackSnapshot();
+    }
+
+    /**
+     * Espone al Presentation Layer la disattivazione del single-track-loop.
+     *
+     * @return snapshot aggiornato del playback
+     */
+    public PlaybackSnapshot disableSingleTrackLoopMode() {
+        playbackService.disableSingleTrackLoopMode();
+        return getPlaybackSnapshot();
+    }
+    
+    
+    /**
+     * Restituisce l'unico DTO letto dalla UI per conoscere lo stato del player.
+     * * @return Una fotografia dello stato corrente del playback (PlaybackSnapshot).
      */
     public PlaybackSnapshot getPlaybackSnapshot() {
         return playbackService.getSnapshot();
@@ -208,15 +229,10 @@ public class MusicPlaylistManagerFacade {
         return trackService.deleteTrack(trackId);
     }
 
-    /**
-     * Espone al presentation layer la funzionalità di avvio del playback di una playlist specifica.
-     *
-     * @param playlistId identificativo della playlist da riprodurre
-     * @return snapshot aggiornato del playback
-     */
-    public PlaybackSnapshot playPlaylist(String playlistId) {
-        playbackService.playPlaylist(playlistId);
-        return playbackService.getSnapshot();
+
+    //il controller lo deve chiamare quando la traccia corrente termina.
+    public PlaybackSnapshot handleTrackCompleted() {
+        return playbackService.handleTrackCompleted();
     }
 
 }

@@ -14,5 +14,4 @@ public record PlaybackSnapshot(
         Track currentTrack,
         PlaybackMode mode,
         int elapsedSeconds
-
 ) {}

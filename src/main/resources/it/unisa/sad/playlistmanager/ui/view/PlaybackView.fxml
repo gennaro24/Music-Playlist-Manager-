@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -79,6 +80,11 @@
 
       <HBox alignment="CENTER_RIGHT" spacing="15.0" style="-fx-padding: 0 10 0 0;">
          <children>
+            <ToggleButton fx:id="tglSingleTrackLoop"
+                          mnemonicParsing="false"
+                          onAction="#handleSingleTrackLoopToggle"
+                          prefWidth="92.0"
+                          text="Loop: OFF" />
             <Button fx:id="btnPlayPauseTrack"
                     mnemonicParsing="false"
                     onAction="#PlayPauseTrack"

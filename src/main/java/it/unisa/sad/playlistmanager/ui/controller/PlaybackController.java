@@ -9,7 +9,9 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
+import javafx.scene.control.ToggleButton;
 import javafx.util.Duration;
+import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
@@ -33,6 +35,7 @@ public class PlaybackController {
     @FXML private Button btnPlayPauseTrack;
     @FXML private Label labelArtist;
     @FXML private Button skipButton;
+    @FXML private ToggleButton tglSingleTrackLoop;
     
     private Track currentTrack;
     private Timeline playbackTimeline;
@@ -48,9 +51,9 @@ public class PlaybackController {
 
     @FXML
     private void initialize() {
+        updateLoopToggleVisual(false);
         startPlaybackRefreshLoop();
     }
-
     /**
      * Comanda l'avvio immediato della riproduzione audio per una specifica traccia di dominio.
      *
@@ -86,11 +89,6 @@ public class PlaybackController {
                 updatePlaybackView(snapshot);
                 return;
             }
-            if (currentSnapshot.state() == PlaybackState.PAUSED) {
-                PlaybackSnapshot snapshot = facade.resumePlayback();
-                updatePlaybackView(snapshot);
-                return;
-            }
             if (currentTrack == null) {
                 showPlaybackError("Seleziona una traccia da riprodurre.");
                 return;
@@ -114,6 +112,18 @@ public class PlaybackController {
     }
 
     /**
+     * Attiva/disattiva il loop della traccia corrente dal controllo UI.
+     */
+    @FXML
+    private void handleSingleTrackLoopToggle(ActionEvent event) {
+        if (facade == null || tglSingleTrackLoop == null) return;
+        PlaybackSnapshot snapshot = tglSingleTrackLoop.isSelected()
+                ? facade.enableSingleTrackLoopMode()
+                : facade.disableSingleTrackLoopMode();
+        updatePlaybackView(snapshot);
+    }
+
+    /**
      * Scompone lo snapshot immutabile ricevuto dal core di business, sincronizzando
      * atomicamente i testi e le icone degli elementi FXML dello stage.
      *
@@ -134,7 +144,6 @@ public class PlaybackController {
             labelArtist.setVisible(true);
             labelArtist.setManaged(true);
         } else {
-            // CORREZIONE: Se la traccia è null (es. cancellata), resetta i campi grafici del Player
             currentTrack = null;
             labelTitle.setText("Nessun brano in riproduzione");
             labelArtist.setText("-");
@@ -146,17 +155,21 @@ public class PlaybackController {
         }
 
         if (lblPlaybackStatus != null) {
-            // T-110: Aggiorna l'etichetta testuale con lo stato esatto (es. PAUSED)
-            lblPlaybackStatus.setText(snapshot.state().name()); 
+            lblPlaybackStatus.setText(snapshot.state().name());
         }
 
         if (btnPlayPauseTrack != null) {
             if (snapshot.state() == PlaybackState.PLAYING) {
                 btnPlayPauseTrack.setText("⏸");
             } else {
-                // T-110: Rimette l'icona Play (▶) se lo stato è PAUSED o STOPPED
                 btnPlayPauseTrack.setText("▶");
             }
+        }
+
+        if (tglSingleTrackLoop != null) {
+            boolean loopEnabled = snapshot.mode() == PlaybackMode.REPEAT_ONE;
+            tglSingleTrackLoop.setSelected(loopEnabled);
+            updateLoopToggleVisual(loopEnabled);
         }
     }
 
@@ -177,12 +190,16 @@ public class PlaybackController {
     }
 
     /**
-     * Consente al coordinatore centrale di forzare il rinfresco 
-     * della vista del lettore recuperando lo snapshot aggiornato dalla Facade.
+     * Aggiorna aspetto e testo del toggle loop per rendere immediato lo stato ON/OFF.
      */
-    public void refresh() {
-        if (facade != null) {
-            updatePlaybackView(facade.getPlaybackSnapshot());
+    private void updateLoopToggleVisual(boolean loopEnabled) {
+        if (tglSingleTrackLoop == null) return;
+        if (loopEnabled) {
+            tglSingleTrackLoop.setText("Loop: ON");
+            tglSingleTrackLoop.setStyle("-fx-background-color: #2e7d32; -fx-text-fill: white; -fx-font-weight: bold;");
+        } else {
+            tglSingleTrackLoop.setText("Loop: OFF");
+            tglSingleTrackLoop.setStyle("-fx-background-color: #e0e0e0; -fx-text-fill: #333333; -fx-font-weight: bold;");
         }
     }
 

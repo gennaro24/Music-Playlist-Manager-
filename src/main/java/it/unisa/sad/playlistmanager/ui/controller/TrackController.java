@@ -40,9 +40,6 @@ public class TrackController {
     /** Routine di callback per intercettare le richieste di riproduzione forzata. */
     private Consumer<Track> onTrackPlayRequestedHandler;
 
-    /** Routine di callback per notificare l'eliminazione di una traccia al coordinatore. */
-    private Runnable onTrackDeletedHandler;
-
     /** Campo di testo per l'immissione del titolo della traccia. */
     @FXML private TextField txtTitle;
     
@@ -378,6 +375,7 @@ public class TrackController {
                 Track track = row.getItem();
                 if (track == null) return;
 
+                // T-89: Configurazione e apertura del dialogo di conferma nativo
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
                 alert.setTitle("Conferma Eliminazione");
                 alert.setHeaderText("Eliminare la traccia dal catalogo?");
@@ -389,22 +387,18 @@ public class TrackController {
                         facade.deleteTrack(track.getId());
                         labelFeedback("Traccia eliminata con successo.", "green");
                         
+                        // T-90: Aggiornamento reattivo in tempo reale del catalogo e della playlist corrente
                         loadCatalog();
                         if (playlistViewMode && currentPlaylist != null) {
                             loadPlaylistTracks(currentPlaylist);
                         }
                         tableTracks.getSelectionModel().clearSelection();
                         selectedTrack = null;
-
-                        // 🌟 NOTIFICA AL MEDIATOR: Avvisa che una traccia è stata eliminata
-                        if (onTrackDeletedHandler != null) {
-                            onTrackDeletedHandler.run();
-                        }
                     } catch (Exception e) {
                         labelFeedback("Errore durante l'eliminazione della traccia.", "red");
                     }
                 } else {
-                    labelFeedback("Eliminazione annullata.", "#0066cc");
+                    labelFeedback("Eliminazione annullata.", "#0066cc"); // Scenario 2
                 }
             });
 
@@ -496,14 +490,6 @@ public class TrackController {
      */
     public void setOnTrackPlayRequested(Consumer<Track> handler){
         this.onTrackPlayRequestedHandler = handler;
-    }
-
-    /**
-     * Registra il consumatore delegato a catturare gli eventi di eliminazione traccia.
-     * @param handler Routine di callback esposta dal coordinatore principale.
-     */
-    public void setOnTrackDeleted(Runnable handler) {
-        this.onTrackDeletedHandler = handler;
     }
 
     /**
