@@ -88,6 +88,9 @@ public class TrackController {
     /** Pulsante contestuale per escludere una traccia dalla playlist visualizzata. */
     @FXML private Button btnRemoveFromPlaylist;
 
+    /** Pulsante contestuale per riprodurre tutto il catalogo. */
+    @FXML private Button btnPlayCatalog;
+
     /** Flag discriminante per comprendere se la UI mostra il catalogo o una playlist. */
     private boolean playlistViewMode = false;
     
@@ -492,6 +495,20 @@ public class TrackController {
         this.onTrackPlayRequestedHandler = handler;
     }
 
+    @FXML
+    private void handlePlayCatalog(ActionEvent event) {
+        if (facade == null) {
+            labelFeedback("Errore: Facade non inizializzata.", "red");
+            return;
+        }
+        try {
+            facade.playCatalog();
+            labelFeedback("Riproduzione del catalogo globale avviata.", "green");
+        } catch (Exception e) {
+            labelFeedback("Errore durante l'avvio del catalogo: " + e.getMessage(), "red");
+        }
+    }
+
     /**
      * Intercetta la richiesta di inserimento di una nuova traccia nel sistema.
      * Valida sintatticamente i campi e delega la persistenza all'Application Facade.
@@ -628,6 +645,11 @@ public class TrackController {
         playlistViewMode = false;
         currentPlaylist = null;
         currentPlaylistTracks.clear();
+        
+        if (btnPlayCatalog != null) {
+            btnPlayCatalog.setVisible(true);
+            btnPlayCatalog.setManaged(true);
+        }
         if (formAddTrack != null) {
             formAddTrack.setVisible(true);
             formAddTrack.setManaged(true);
@@ -655,6 +677,10 @@ public class TrackController {
         currentPlaylist = null;
         currentPlaylistTracks.clear();
 
+        if (btnPlayCatalog != null) {
+            btnPlayCatalog.setVisible(false);
+            btnPlayCatalog.setManaged(false);
+        }
         if (tableTracks != null) {
             tableTracks.getSelectionModel().clearSelection();
             tableTracks.setItems(FXCollections.observableArrayList());
@@ -683,6 +709,11 @@ public class TrackController {
         currentPlaylistTracks = new java.util.ArrayList<>(facade != null ? facade.getTracksForPlaylist(playlist.getId()) : playlist.getTracks());
         tableTracks.setPlaceholder(new Label("Questa playlist non contiene tracce."));
         
+        
+        if (btnPlayCatalog != null) {
+            btnPlayCatalog.setVisible(false);
+            btnPlayCatalog.setManaged(false);
+        }
         if (formAddTrack != null) {
             formAddTrack.setVisible(false);
             formAddTrack.setManaged(false);
