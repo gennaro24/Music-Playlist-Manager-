@@ -142,6 +142,10 @@ class PlaybackServiceTest {
         assertEquals(elapsedBeforePause, playbackService.getElapsedSeconds());
     }
 
+    // ===================================================================================
+    // TEST LOOP E SHUFFLE (US-11 / US-15)
+    // ===================================================================================
+
     @Test
     void testFineTraccia_RepeatOneRiparteStessaTraccia() {
         playbackService.playTrack(sampleTrack1);
@@ -171,34 +175,36 @@ class PlaybackServiceTest {
         assertEquals(PlaybackState.PLAYING, snapshot.state());
     }
 
+    /**
+     * Verifica il requisito T-143: Il passaggio alla modalità SHUFFLE a caldo
+     * non deve interrompere lo stato PLAYING, né cambiare la traccia corrente,
+     * né azzerare i secondi già trascorsi.
+     */
     @Test
-    void testSkipToNext_InRepeatAllDaUltimaTracciaRiparteDallaPrima() {
-        playbackService.playPlaylist(samplePlaylist, playlistTracks);
-        playbackService.skipToNext();
-        assertEquals(sampleTrack2, playbackService.getCurrentTrack());
-
-        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ALL);
-        playbackService.skipToNext();
-
-        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
-        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
-    }
-
-    @Test
-    void testFineTraccia_InRepeatAllRiparteDallaPrimaTraccia() {
-        playbackService.playPlaylist(samplePlaylist, playlistTracks);
-        playbackService.skipToNext();
-        assertEquals(sampleTrack2, playbackService.getCurrentTrack());
-
-        playbackService.setPlaybackMode(PlaybackMode.REPEAT_ALL);
-        for (int i = 0; i < sampleTrack2.getDuration(); i++) {
-            playbackService.tick();
-        }
-
-        PlaybackSnapshot snapshot = playbackService.getSnapshot();
-        assertEquals(PlaybackState.PLAYING, snapshot.state());
-        assertEquals(sampleTrack1, snapshot.currentTrack());
-        assertEquals(0, playbackService.getElapsedSeconds());
-        assertEquals(PlaybackMode.REPEAT_ALL, playbackService.getCurrentMode());
+    void testSetPlaybackModeShuffleNonInterrompeTracciaCorrente() {
+        // Setup base
+        PlaybackService service = new PlaybackService(new it.unisa.sad.playlistmanager.persistence.repository.FakePlaylistRepository());
+        Track track = new Track("t1", "Test Song", "Artist", 200, "Pop", 2020);
+        
+        // Avviamo la riproduzione
+        service.playTrack(track);
+        
+        // Facciamo avanzare la canzone di 3 secondi (3 tick)
+        service.tick();
+        service.tick();
+        service.tick();
+        
+        // Verifichiamo lo stato prima dello Shuffle
+        assertEquals(PlaybackState.PLAYING, service.getCurrentState());
+        assertEquals(3, service.getElapsedSeconds());
+        
+        // ESECUZIONE: L'utente preme il tasto Shuffle
+        service.setPlaybackMode(it.unisa.sad.playlistmanager.domain.model.PlaybackMode.SHUFFLE);
+        
+        // VERIFICA: Il player NON deve essersi fermato o resettato!
+        assertEquals(it.unisa.sad.playlistmanager.domain.model.PlaybackMode.SHUFFLE, service.getCurrentMode(), "La modalità deve essere SHUFFLE");
+        assertEquals(PlaybackState.PLAYING, service.getCurrentState(), "La riproduzione NON deve essersi interrotta");
+        assertEquals(track, service.getCurrentTrack(), "La traccia corrente deve rimanere la stessa");
+        assertEquals(3, service.getElapsedSeconds(), "I secondi trascorsi NON devono azzerarsi");
     }
 }

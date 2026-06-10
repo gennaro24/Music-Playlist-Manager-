@@ -9,7 +9,6 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
-import javafx.scene.control.ToggleButton;
 import javafx.util.Duration;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
@@ -19,10 +18,10 @@ import it.unisa.sad.playlistmanager.domain.model.Track;
 /**
  * Sotto-controllore della UI deputato alla gestione del pannello del lettore musicale
  * (Pulsanti Play, Pause, Skip ed aggiornamento real-time dei metadati grafici della traccia in riproduzione).
- * * <p><b>Revisione Sprint 2:</b> Riadattato per aderire alla Constructor Injection. Sfrutta 
+ * <p><b>Revisione Sprint 2:</b> Riadattato per aderire alla Constructor Injection. Sfrutta 
  * i modelli immutabili di snapshot provenienti dallo strato di dominio per aggiornare atomicamente 
  * la vista a seguito di un evento.</p>
- * @version 2.0
+ * @version 2.2
  */
 public class PlaybackController {
     
@@ -35,7 +34,10 @@ public class PlaybackController {
     @FXML private Button btnPlayPauseTrack;
     @FXML private Label labelArtist;
     @FXML private Button skipButton;
-    @FXML private ToggleButton tglSingleTrackLoop;
+    @FXML private Button btnSingleTrackLoop;
+    
+    // T-145: Riferimento FXML al bottone Shuffle
+    @FXML private Button btnShuffle;
     
     private Track currentTrack;
     private Timeline playbackTimeline;
@@ -51,9 +53,10 @@ public class PlaybackController {
 
     @FXML
     private void initialize() {
-        updateLoopToggleVisual(false);
+        updateLoopToggleVisual(PlaybackMode.SEQUENTIAL);
         startPlaybackRefreshLoop();
     }
+    
     /**
      * Comanda l'avvio immediato della riproduzione audio per una specifica traccia di dominio.
      *
@@ -73,6 +76,7 @@ public class PlaybackController {
     /**
      * Intercetta le richieste di Play/Pause provenienti dalla UI, esaminando
      * lo stato dello snapshot corrente per determinare la transizione applicativa corretta.
+     * Allineato con la logica del main dei colleghi.
      *
      * @param event Evento di click sul pulsante grafico di riproduzione.
      */
@@ -101,6 +105,25 @@ public class PlaybackController {
     }
 
     /**
+     * T-145: Intercetta il click sul pulsante Shuffle, alternando la modalità di playback
+     * e aggiornando istantaneamente l'interfaccia.
+     */
+    @FXML
+    private void toggleShuffle(ActionEvent event) {
+        if (facade == null) return;
+        
+        PlaybackSnapshot currentSnapshot = facade.getPlaybackSnapshot();
+        
+        // Se è già in Shuffle, torna Sequenziale. Altrimenti attiva Shuffle.
+        PlaybackMode newMode = (currentSnapshot.mode() == PlaybackMode.SHUFFLE) 
+                                ? PlaybackMode.SEQUENTIAL 
+                                : PlaybackMode.SHUFFLE;
+                                
+        PlaybackSnapshot updatedSnapshot = facade.setPlaybackMode(newMode);
+        updatePlaybackView(updatedSnapshot);
+    }
+
+    /**
      * Intercetta la richiesta di skip della riproduzione in avanti.
      * La logica interna verrà espansa nello Sprint 2 in conformità con i pattern Strategy di riproduzione.
      *
@@ -116,11 +139,11 @@ public class PlaybackController {
      */
     @FXML
     private void handleSingleTrackLoopToggle(ActionEvent event) {
-        if (facade == null || tglSingleTrackLoop == null) return;
-        PlaybackSnapshot snapshot = tglSingleTrackLoop.isSelected()
-                ? facade.enableSingleTrackLoopMode()
-                : facade.disableSingleTrackLoopMode();
-        updatePlaybackView(snapshot);
+        if (facade == null || btnSingleTrackLoop == null) return;
+        PlaybackSnapshot snapshot = facade.getPlaybackSnapshot().mode() == PlaybackMode.REPEAT_ONE
+                ? facade.disableSingleTrackLoopMode()
+                : facade.enableSingleTrackLoopMode();
+        updatePlaybackView(snapshot); 
     }
 
     /**
@@ -165,11 +188,24 @@ public class PlaybackController {
                 btnPlayPauseTrack.setText("▶");
             }
         }
+        
+        // T-145: Aggiorna l'estetica del pulsante Shuffle (Dal tuo branch)
+        if (btnShuffle != null) {
+            if (snapshot.mode() == PlaybackMode.SHUFFLE) {
+                btnShuffle.setText("🔀 ON");
+                btnShuffle.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+            } else {
+                btnShuffle.setText("🔀 OFF");
+                btnShuffle.setStyle("-fx-text-fill: black; -fx-font-weight: normal;");
+            }
+        }
 
-        if (tglSingleTrackLoop != null) {
+        // Aggiorna l'estetica del pulsante Loop (Dal branch del main)
+        if (btnSingleTrackLoop != null) {
             boolean loopEnabled = snapshot.mode() == PlaybackMode.REPEAT_ONE;
-            tglSingleTrackLoop.setSelected(loopEnabled);
-            updateLoopToggleVisual(loopEnabled);
+            btnSingleTrackLoop.setText(loopEnabled ? "🔁 ON" : "🔁 OFF");
+            btnSingleTrackLoop.setStyle(loopEnabled ? "-fx-text-fill: green; -fx-font-weight: bold;" : "-fx-text-fill: black; -fx-font-weight: normal;");
+            updateLoopToggleVisual(snapshot.mode());
         }
     }
 
@@ -192,14 +228,14 @@ public class PlaybackController {
     /**
      * Aggiorna aspetto e testo del toggle loop per rendere immediato lo stato ON/OFF.
      */
-    private void updateLoopToggleVisual(boolean loopEnabled) {
-        if (tglSingleTrackLoop == null) return;
-        if (loopEnabled) {
-            tglSingleTrackLoop.setText("Loop: ON");
-            tglSingleTrackLoop.setStyle("-fx-background-color: #2e7d32; -fx-text-fill: white; -fx-font-weight: bold;");
+    private void updateLoopToggleVisual(PlaybackMode mode) {
+        if (btnSingleTrackLoop == null) return;
+        if (mode == PlaybackMode.REPEAT_ONE) {
+            btnSingleTrackLoop.setText("🔁 ON");
+            btnSingleTrackLoop.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
         } else {
-            tglSingleTrackLoop.setText("Loop: OFF");
-            tglSingleTrackLoop.setStyle("-fx-background-color: #e0e0e0; -fx-text-fill: #333333; -fx-font-weight: bold;");
+            btnSingleTrackLoop.setText("🔁 OFF");
+            btnSingleTrackLoop.setStyle("-fx-text-fill: black; -fx-font-weight: normal;");
         }
     }
 
