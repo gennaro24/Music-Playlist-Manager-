@@ -218,6 +218,11 @@ public class PlaybackService {
                     this.currentTrack = currentQueue.getCurrentTrack();
                 }
             }
+            if (currentMode == PlaybackMode.REPEAT_ONE) {
+                currentQueue.setCurrentIndex(0);
+                this.currentTrack = currentQueue.getCurrentTrack();
+                this.elapsedSeconds = 0;
+            }
         }
     }
 
