@@ -1,0 +1,410 @@
+# Sprint 2 Review and Retrospective Report
+
+**Project:** Music Playlist Manager  
+**Course:** Software Architecture Design 2025/2026  
+**Group:** n. 14 - AH  
+**Sprint:** Sprint 2  
+
+---
+
+## 1. Sprint outcome
+
+Durante lo Sprint 2 il team ha consegnato un incremento molto più ampio rispetto allo Sprint 1, orientato sia al consolidamento architetturale sia all'estensione delle funzionalità principali del Music Playlist Manager.
+
+Lo Sprint ha avuto due obiettivi principali:
+
+1. consolidare l'architettura emersa nello Sprint 1, riducendo l'accoppiamento tra controller JavaFX e creazione delle dipendenze infrastrutturali;
+2. completare e rafforzare il motore di playback simulato, includendo pausa completa con timer, riproduzione sequenziale, skip, shuffle, loop e visualizzazione dello stato corrente.
+
+Rispetto allo Sprint 1, l'incremento non è più soltanto una thin slice end-to-end. In Sprint 2 il progetto assume una struttura più stabile e più vicina a un'architettura mantenibile: la UI viene disaccoppiata dalla persistenza, i controller dipendono dalla facade, la composizione delle dipendenze viene spostata nel bootstrap applicativo e il playback viene modellato con coda, snapshot, modalità e strategie.
+
+### Sprint metrics
+
+| Elemento | Valore |
+|---|---:|
+| Story Points pianificati | 43 SP |
+| Story Points completati | 43 SP |
+| User Stories funzionali pianificate | 11 |
+| User Story tecnica pianificata | 1 |
+| User Stories completate | 12 |
+| Test automatici eseguiti | 82 |
+| Test relativi al playback | 42 |
+| Esito test Maven | 0 failure, 0 error |
+
+### User Stories completate
+
+| ID | User Story | Priority | Story Points | Status |
+|---|---|---|---:|---|
+| US-Tech 01 | Refactor instance lifecycle and decouple UI from infrastructure creation | High / Blocking | 5 | DONE |
+| US-03 | Modify an existing track | High | 3 | DONE |
+| US-04 | Delete a track from the catalog | High | 5 | DONE |
+| US-5.1 | Delete an existing playlist | High | 3 | DONE |
+| US-10 | Pause a single track | Medium | 3 | DONE |
+| US-11 | Enable loop mode on a single track | Medium | 2 | DONE |
+| US-12 | Start sequential playback of a playlist/catalog | High | 3 | DONE |
+| US-13 | Pause a playlist | Medium | 3 | DONE |
+| US-14 | Skip to the next track during playback | High | 2 | DONE |
+| US-15 | Play a playlist/catalog in shuffle mode | High | 8 | DONE |
+| US-16 | Enable loop mode on a playlist/catalog | Medium | 3 | DONE |
+| US-17 | View current track and playback state | High | 3 | DONE |
+| **Total** | **11 functional user stories + 1 technical user story** |  | **43** | **DONE** |
+
+---
+
+## 2. Delivered increment
+
+L'incremento consegnato in Sprint 2 estende il prodotto su tre direzioni principali: gestione avanzata del catalogo, gestione avanzata delle playlist e playback simulato completo.
+
+Dal punto di vista funzionale, l'applicazione ora consente di:
+
+- modificare una traccia esistente mantenendo la coerenza con le playlist che la contengono;
+- eliminare una traccia dal catalogo rimuovendo anche i riferimenti nelle playlist;
+- eliminare una playlist senza eliminare le tracce dal catalogo;
+- mantenere coerente il playback quando viene eliminata la traccia o la playlist attualmente in riproduzione;
+- mettere in pausa una traccia mantenendo traccia corrente e tempo simulato;
+- riprodurre una playlist in modalità sequenziale partendo dalla prima traccia;
+- impedire l'avvio del playback su playlist vuote;
+- mettere in pausa una playlist mantenendo indice corrente, traccia corrente e tempo;
+- saltare alla traccia successiva durante il playback;
+- gestire lo skip anche da stato `PAUSED` e da ultimo elemento della coda;
+- usare modalità `REPEAT_ONE`, `SHUFFLE` e `REPEAT_ALL`;
+- visualizzare nella UI lo stato corrente del playback tramite snapshot: traccia corrente, stato, modalità e secondi trascorsi.
+
+### Screenshot funzionalità
+
+#### Modifica traccia
+
+![Modifica traccia](imgs/modificaTraccia.png)
+
+#### Eliminazione traccia e aggiornamento playlist
+
+![Eliminazione traccia](imgs/EliminaTraccia.png)
+
+#### Eliminazione playlist
+
+![Eliminazione playlist](imgs/EliminaPlaylist.png)
+
+#### Playback playlist sequenziale
+
+![Playback playlist sequenziale](imgs/PlaybackSequenzialePlaylist.png)
+
+#### Playback shuffle e loop
+
+![Playback shuffle e loop](imgs/PlaybackShuffleLoop.png)
+
+#### Stato corrente del playback e skip
+
+![Stato playback e skip](imgs/StatoPlaybackSkip.png)
+
+---
+
+## 3. Burndown chart
+
+![Sprint 2 Burndown Chart](imgs/BurndownChart.png)
+
+Il burndown dello Sprint 2 va letto considerando che lo Sprint ha incluso sia feature funzionali sia una User Story tecnica bloccante. La parte iniziale dello Sprint ha richiesto un investimento architetturale significativo: il team ha rifattorizzato il ciclo di vita delle istanze, spostando la creazione di database manager, repository, service e facade fuori dai controller JavaFX.
+
+In particolare, il refactoring architetturale ha introdotto:
+
+- `AppFactory` e `SqliteAppFactory` come punto centralizzato di composizione;
+- `ControllerFactory` per permettere la constructor injection nei controller JavaFX;
+- dipendenza dei controller dalla sola `MusicPlaylistManagerFacade`;
+- eliminazione della creazione diretta di repository e service dal layer UI;
+- service basati su repository interface, non su implementazioni SQLite concrete.
+
+Dopo questa fase, l'avanzamento è diventato più regolare perché le nuove User Stories sono state implementate sopra una struttura più stabile. Il completamento delle funzionalità di playback è avvenuto in modo incrementale: prima stato e timer, poi coda di riproduzione, poi sequenziale, pausa playlist, skip, shuffle, loop e snapshot verso la UI.
+
+Il risultato è un incremento che combina valore funzionale visibile e consolidamento della struttura interna del prodotto.
+
+---
+
+## 4. Architectural evolution
+
+Lo Sprint 2 rappresenta il principale salto architetturale del progetto.
+
+In Sprint 1 l'applicazione aveva già una separazione concettuale tra UI, facade, service, domain e repository, ma una parte della composizione concreta delle dipendenze era ancora concentrata nel controller principale. In Sprint 2 la composizione delle dipendenze viene spostata in un punto dedicato all'avvio dell'applicazione.
+
+Il flusso architetturale effettivo diventa:
+
+```text
+Main
+→ SqliteAppFactory / AppFactory
+→ Repository concrete
+→ Service
+→ MusicPlaylistManagerFacade
+→ ControllerFactory
+→ JavaFX Controllers
+→ View FXML
+```
+
+Dal punto di vista del runtime, `Main.java` diventa il punto di avvio dell'applicazione e delega alla factory la costruzione dell'infrastruttura. `SqliteAppFactory` configura `DatabaseConnectionManager`, repository SQLite, service applicativi e facade. `ControllerFactory` integra questa composizione con `FXMLLoader`, permettendo ai controller di ricevere la facade senza istanziare direttamente componenti infrastrutturali.
+
+Il risultato è una separazione più coerente con l'architettura MVC + layered model:
+
+```text
+FXML/View
+→ Controller
+→ Facade
+→ Service
+→ Domain / Strategy / Repository Interface
+→ SQLite Repository
+→ Database
+```
+
+La UI non conosce SQLite, i controller non creano service, i service dipendono da interfacce repository e il dominio resta indipendente dalla tecnologia di persistenza.
+
+Questa evoluzione ha migliorato:
+
+- testabilità dei controller;
+- manutenibilità del Presentation Layer;
+- sostituibilità delle implementazioni repository;
+- leggibilità del ciclo di avvio;
+- coerenza con Dependency Inversion e Separation of Concerns.
+
+### Class diagram aggiornato
+
+![Sprint 2 Class Diagram](imgs/uml.png)
+
+---
+
+## 5. Design patterns and design principles
+
+### Facade
+
+Il pattern Facade viene rafforzato attraverso `MusicPlaylistManagerFacade`.
+
+La facade diventa il punto di accesso stabile per i controller JavaFX e nasconde la complessità dei service sottostanti. In Sprint 2 questo è particolarmente importante perché molte operazioni sono trasversali: ad esempio eliminare una traccia o una playlist riguarda sia la persistenza sia la coerenza dello stato di playback.
+
+Classi coinvolte:
+
+- `MusicPlaylistManagerFacade`;
+- controller JavaFX;
+- `TrackService`;
+- `PlaylistService`;
+- `PlaybackService`.
+
+Il pattern riduce l'accoppiamento della UI e mantiene più chiara la responsabilità dei controller.
+
+### Factory / Composition Root
+
+Lo Sprint 2 introduce una composizione esplicita delle dipendenze tramite `AppFactory` e `SqliteAppFactory`.
+
+Classi coinvolte:
+
+- `AppFactory`;
+- `SqliteAppFactory`;
+- `Main`.
+
+La creazione delle dipendenze non è più distribuita nei controller. L'applicazione dispone di un composition root chiaro, cioè un punto in cui vengono costruiti e collegati database manager, repository, service e facade.
+
+Questo pattern migliora la coerenza con il Dependency Inversion Principle e mantiene semplice il ciclo di configurazione dell'applicazione.
+
+### Controller Factory
+
+`ControllerFactory` permette di integrare JavaFX/FXML con la dependency injection manuale.
+
+La factory consente ai controller di ricevere la facade tramite costruttore, evitando accessi diretti a repository e database e mantenendo il Presentation Layer focalizzato sugli eventi UI.
+
+### Strategy
+
+Il playback è stato esteso usando il pattern Strategy per separare gli algoritmi di avanzamento della coda.
+
+Classi coinvolte:
+
+- `PlaybackStrategy`;
+- `SequentialPlaybackStrategy`;
+- `ShufflePlaybackStrategy`;
+- `RepeatAllPlaybackStrategy`;
+- `PlaybackService`;
+- `PlaybackQueue`.
+
+Il calcolo della prossima traccia varia in base alla modalità di playback. Strategy separa l'algoritmo dal coordinamento applicativo, rendendo più chiara la differenza tra sequenziale, shuffle e loop playlist.
+
+Questo è coerente con l'Open/Closed Principle: nuove modalità possono essere aggiunte introducendo strategie dedicate.
+
+### Repository
+
+Il pattern Repository viene rafforzato attraverso le interfacce `TrackRepository` e `PlaylistRepository` e le implementazioni SQLite.
+
+Classi coinvolte:
+
+- `TrackRepository`;
+- `PlaylistRepository`;
+- `SqliteTrackRepository`;
+- `SqlitePlaylistRepository`;
+- fake repository usati nei test.
+
+I service non dipendono direttamente da SQLite. Questo permette di testare la logica applicativa con fake repository e riduce l'accoppiamento con la tecnologia di persistenza.
+
+### MVC + Layered Model
+
+Il progetto mantiene e rafforza MVC con un Model organizzato a layer:
+
+- View/FXML: visualizzazione e raccolta input;
+- Controller: gestione eventi UI e chiamata alla facade;
+- Facade: entry point applicativo;
+- Service: casi d'uso;
+- Domain/Strategy: stato e regole del dominio;
+- Repository: astrazione della persistenza;
+- SQLite Repository: dettagli infrastrutturali.
+
+Questa struttura rende il progetto più testabile e coerente con i principi di alta coesione e basso accoppiamento.
+
+---
+
+## 6. Architectural consolidation
+
+Lo Sprint 2 ha consolidato in modo significativo la base tecnica dello Sprint 1.
+
+I principali risultati sono:
+
+- spostamento del bootstrap infrastrutturale fuori da `MainViewController`;
+- eliminazione dei riferimenti diretti dei controller a SQLite, repository e database manager;
+- introduzione della constructor injection della facade nei controller;
+- uso della facade come confine stabile tra UI e application layer;
+- conversione delle `SQLException` in `RepositoryException`;
+- introduzione di eccezioni applicative per validazione e risorse inesistenti;
+- uso di fake repository e fake facade nei test;
+- stato di playback esplicito con `PlaybackQueue`, `PlaybackSource`, `PlaybackSnapshot`, modalità e timer;
+- coordinamento tra cancellazione di tracce/playlist e stato del playback;
+- miglioramento della testabilità dello shuffle tramite `Random` iniettabile.
+
+Dal punto di vista architetturale, il risultato più importante è che l'applicazione non è soltanto funzionante, ma anche più evolvibile. Il team può aggiungere nuove funzionalità mantenendo separate presentazione, casi d'uso, dominio e persistenza.
+
+---
+
+## 7. Product Backlog impact
+
+Lo Sprint 2 ha confermato che il backlog funzionale relativo al playback era centrale per aumentare il valore del prodotto.
+
+La scelta di includere una User Story tecnica bloccante, US-Tech 01, si è rivelata corretta: il refactoring dell'inizializzazione applicativa ha consolidato l'architettura e ha reso più ordinata l'integrazione delle feature successive.
+
+Le story di playback sono state completate in modo coerente:
+
+- US-10 completa il lavoro iniziato nello Sprint 1;
+- US-12 e US-13 introducono playlist playback e pausa playlist;
+- US-14, US-15 e US-16 aggiungono skip, shuffle e loop;
+- US-17 rende visibile lo stato del player e dimostrabile il comportamento interno.
+
+Per Sprint 3 il backlog può concentrarsi sul consolidamento dell'esperienza utente, sulla documentazione e sulla preparazione della demo finale.
+
+---
+
+## 8. Git and integration process
+
+Il team ha continuato a usare branch dedicati e Pull Request verso `main`. Rispetto allo Sprint 1, lo Sprint 2 ha coinvolto più aree collegate: playback state, UI, facade, service, strategy e persistenza.
+
+Il processo Git ha supportato l'incremento perché:
+
+- il branch `main` è rimasto il punto di integrazione stabile;
+- le modifiche sono state integrate tramite Pull Request;
+- il team ha usato `mvn clean test` prima dell'integrazione;
+- le interfacce repository e la facade hanno ridotto l'impatto delle modifiche tra livelli diversi;
+- i fake nei test hanno permesso di verificare i service senza dipendere dal database reale.
+
+L'esperienza dello Sprint 2 ha inoltre rafforzato il valore di una breve condivisione iniziale sulle interfacce comuni quando più task coinvolgono lo stesso sottosistema.
+
+---
+
+## 9. Testing and quality
+
+La qualità dello Sprint 2 è migliorata sensibilmente rispetto allo Sprint 1.
+
+La suite Maven contiene 82 test superati, di cui 42 relativi a `PlaybackService`. Questo è particolarmente importante perché il playback è la parte più ricca di stati e transizioni:
+
+- `PLAYING`;
+- `PAUSED`;
+- `STOPPED`;
+- modalità sequenziale;
+- shuffle;
+- repeat one;
+- repeat all;
+- skip;
+- timer simulato;
+- snapshot verso UI.
+
+I test coprono sia casi validi sia casi limite:
+
+- playlist vuota;
+- pausa idempotente;
+- tick bloccato in pausa;
+- skip da ultimo elemento;
+- shuffle con playlist monotraccia;
+- loop playlist;
+- cambio modalità durante il playback;
+- cancellazione di elementi coinvolti nel playback.
+
+La scelta di usare fake repository e fake facade ha migliorato l'isolamento dei test e ha reso possibile verificare la logica applicativa senza avviare SQLite o JavaFX.
+
+---
+
+## 10. Planning impact for Sprint 3
+
+La velocity dello Sprint 2 mostra che il team è riuscito a completare uno Sprint ambizioso da 43 Story Points, includendo una User Story tecnica bloccante.
+
+Per Sprint 3 il progetto entra nella fase finale e il valore principale sarà dato da stabilità, documentazione, demo e qualità.
+
+| Area | Focus Sprint 3 |
+|---|---|
+| Architettura | Documentare bootstrap, factory, facade, strategy e playback queue |
+| Qualità | Rafforzare le verifiche end-to-end e di integrazione |
+| UI | Rifinire comportamento visuale, messaggi e refresh |
+| Playback | Consolidare le modalità introdotte nello Sprint 2 |
+| Scrum artifacts | Aggiornare Product Backlog, Sprint Backlog, Review, Retrospective e Burndown |
+| Demo finale | Preparare uno scenario end-to-end stabile e ripetibile |
+
+---
+
+## 11. Sprint Retrospective
+
+### Start
+
+- Introdurre una checklist di chiusura Sprint per sincronizzare codice, documentazione e Scrum artifacts.
+- Concordare in anticipo i contratti condivisi per le feature trasversali, soprattutto snapshot, playback queue, repository e modalità di playback.
+- Aggiornare `Architecture.md` durante lo Sprint quando vengono introdotti cambiamenti strutturali.
+
+### More of
+
+- Continuare con Pull Request piccole e focalizzate su una User Story o su un gruppo coerente di task.
+- Scrivere test insieme alle transizioni di stato, specialmente per il playback.
+- Usare fake repository e fake facade per isolare i test da SQLite e JavaFX.
+- Fare brevi review architetturali prima di integrare branch che modificano service, facade o bootstrap.
+
+### Keep doing
+
+- Mantenere la dipendenza dei service da interfacce repository e non da implementazioni SQLite.
+- Usare facade e constructor injection per tenere i controller disaccoppiati dalla logica applicativa e dalla persistenza.
+- Eseguire `mvn clean test` prima delle Pull Request.
+- Mantenere il focus su incrementi funzionanti e dimostrabili.
+- Condividere rapidamente gli aggiornamenti sulle aree comuni del progetto.
+
+### Less of
+
+- Ridurre branch lunghi sulle parti centrali del sistema.
+- Ridurre modifiche contemporanee su UI, service e persistence senza un accordo preliminare sulle interfacce.
+- Ridurre la concentrazione degli aggiornamenti documentali negli ultimi giorni dello Sprint.
+
+### Stop
+
+- Evitare di rimandare la sincronizzazione tra Trello, backlog, burndown e report.
+- Evitare di introdurre funzionalità non tracciate nello Sprint Backlog.
+- Evitare modifiche trasversali senza una breve condivisione tecnica con il team.
+
+---
+
+## 12. Final assessment
+
+Lo Sprint 2 può essere considerato uno Sprint ad alto valore tecnico e funzionale.
+
+Il team ha completato tutte le User Stories pianificate, ha consolidato il principale punto architetturale emerso nello Sprint 1 e ha trasformato il playback da una simulazione minima a un sottosistema strutturato, testabile e visibile in UI.
+
+Il risultato più importante non è soltanto l'aggiunta di nuove feature, ma il miglioramento della qualità interna del progetto:
+
+- architettura più disaccoppiata;
+- controller più semplici;
+- service più testabili;
+- persistenza isolata;
+- playback modellato con stato, coda, snapshot e strategie;
+- maggiore copertura automatizzata.
+
+Lo Sprint 2 consegna quindi un incremento completo e dimostrabile, sostenuto da pattern architetturali coerenti e da una suite automatizzata di 82 test superati.

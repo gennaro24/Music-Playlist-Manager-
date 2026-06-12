@@ -193,24 +193,24 @@ The detailed technical task breakdown is tracked in the Sprint 2 spreadsheet:
 
 ### Documentation and Scrum artifacts
 
-- [ ] `docs/Sprint2/SprintBacklog.md`
-- [ ] Updated `docs/PreGame/ProductBacklog.md`, if backlog refinements are made
-- [ ] Updated `docs/PreGame/Architecture.md`, especially the instance lifecycle and dependency wiring section
-- [ ] `docs/Sprint2/Review-Report.md`
-- [ ] `docs/Sprint2/Retrospective-Report.md`
-- [ ] Updated Project Burndown Chart
-- [ ] 5-minute Sprint 2 presentation/demo notes
+- [X] `docs/Sprint2/SprintBacklog.md`
+- [X] Updated `docs/PreGame/ProductBacklog.md`, if backlog refinements are made
+- [X] Updated `docs/PreGame/Architecture.md`, especially the instance lifecycle and dependency wiring section
+- [X] `docs/Sprint2/Review-Report.md`
+- [X] `docs/Sprint2/Retrospective-Report.md`
+- [X] Updated Project Burndown Chart
+- [X] 5-minute Sprint 2 presentation/demo notes
 
 ### Product increment
 
-- [ ] Application starts correctly after architectural refactoring
-- [ ] Sprint 1 functions still work
-- [ ] Track update/delete available from UI and services
-- [ ] Playlist deletion available from UI and services
-- [ ] Sequential playback, pause and skip available
-- [ ] Shuffle and loop behavior implemented at least at core logic level
-- [ ] Current track and playback state visible in the UI
-- [ ] `mvn clean test` passes
+- [X] Application starts correctly after architectural refactoring
+- [X] Sprint 1 functions still work
+- [X] Track update/delete available from UI and services
+- [X] Playlist deletion available from UI and services
+- [X] Sequential playback, pause and skip available
+- [X] Shuffle and loop behavior implemented at least at core logic level
+- [X] Current track and playback state visible in the UI
+- [X] `mvn clean test` passes
 
 ---
 
@@ -243,8 +243,7 @@ docs/
 │   └── Architecture.md
 ├── Sprint1/
 │   ├── SprintBacklog.md
-│   ├── Sprint-Retrospective-Report.md
-│   └── Burndown-Chart.png
+│   └── Sprint-Retrospective-Report.md
 ├── Sprint2/
 │   ├── SprintBacklog.md
 │   ├── Review-Report.md

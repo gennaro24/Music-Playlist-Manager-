@@ -19,23 +19,21 @@ The expected Sprint 2 increment must provide a more maintainable architecture an
 
 ## Sprint Scope
 
-| ID | User Story | Priority | Story Points | Assigned to | Status |
-|---|---|---|---:|---|---|
-| US-Tech 01 | Refactor instance lifecycle and decouple UI from infrastructure creation | High / Blocking | 5 | All Members | DONE |
-| US-03 | Modify an existing track | High | 3 | TBD | To Do |
-| US-04 | Delete a track from the catalog | High | 5 | TBD | To Do |
-| US-5.1 | Delete an existing playlist | High | 3 | TBD | To Do |
-| US-10 | Pause a single track | Medium | 3 | TBD | To Do |
-| US-11 | Enable loop mode on a single track | Medium | 2 | TBD | To Do |
-| US-12 | Start sequential playback of a playlist/catalog | High | 3 | TBD | To Do |
-| US-13 | Pause a playlist | Medium | 3 | TBD | To Do |
-| US-14 | Skip to the next track during playback | High | 2 | TBD | To Do |
-| US-15 | Play a playlist/catalog in shuffle mode | High | 8 | TBD | To Do |
-| US-16 | Enable loop mode on a playlist/catalog | Medium | 3 | TBD | To Do |
-| US-17 | View current track and playback state | High | 3 | TBD | To Do |
-| **Total** | **11 functional user stories + 1 technical user story** |  | **43** |  |  |
-
----
+| ID | User Story | Priority | Story Points | Status |
+|---|---|---:|---:|---|
+| US-Tech 01 | Refactor instance lifecycle and decouple UI from infrastructure creation | High / Blocking | 5 | DONE |
+| US-03 | Modify an existing track | High | 3 | DONE |
+| US-04 | Delete a track from the catalog | High | 5 | DONE |
+| US-5.1 | Delete an existing playlist | High | 3 | DONE |
+| US-10 | Pause a single track | Medium | 3 | DONE |
+| US-11 | Enable loop mode on a single track | Medium | 2 | DONE |
+| US-12 | Start sequential playback of a playlist/catalog | High | 3 | DONE |
+| US-13 | Pause a playlist | Medium | 3 | DONE |
+| US-14 | Skip to the next track during playback | High | 2 | DONE |
+| US-15 | Play a playlist/catalog in shuffle mode | High | 8 | DONE |
+| US-16 | Enable loop mode on a playlist/catalog | Medium | 3 | DONE |
+| US-17 | View current track and playback state | High | 3 | DONE |
+| **Total** | **11 functional user stories + 1 technical user story** |  | **43** |  |
 
 ## Architectural Focus — Technical Debt Resolution
 
@@ -79,8 +77,6 @@ The spreadsheet includes, for each task:
 - current status;
 - estimated effort;
 - actual time spent.
-
-The spreadsheet is the operational Sprint Task Board detail. This Markdown file summarizes the committed Sprint 2 scope and links the repository documentation to the detailed tracking artifact.
 
 ---
 
