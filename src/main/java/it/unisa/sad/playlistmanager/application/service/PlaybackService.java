@@ -15,6 +15,7 @@ import it.unisa.sad.playlistmanager.domain.strategy.RepeatAllPlaybackStrategy;
 import it.unisa.sad.playlistmanager.domain.strategy.SequentialPlaybackStrategy;
 import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
 import it.unisa.sad.playlistmanager.domain.strategy.ShufflePlaybackStrategy;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -62,17 +63,16 @@ public class PlaybackService {
      */
     public void setPlaybackMode(PlaybackMode mode) {
         PlaybackMode requestedMode = Objects.requireNonNull(mode, "mode non può essere null");
-        if (requestedMode == PlaybackMode.SHUFFLE && !isShuffleAvailable()) {
-            this.currentMode = PlaybackMode.SEQUENTIAL;
-            this.playbackStrategy = new SequentialPlaybackStrategy();
-            return;
-        }
-
         this.currentMode = requestedMode;
 
         if (mode == PlaybackMode.SEQUENTIAL) {
             this.playbackStrategy = new SequentialPlaybackStrategy();
         } else if (mode == PlaybackMode.SHUFFLE) {
+            if (currentQueue != null && currentQueue.getSource() == PlaybackSource.SINGLE) {
+                this.playbackStrategy = new SequentialPlaybackStrategy();
+                return;
+            }
+
             List<Track> currentTracks = java.util.Collections.emptyList();
 
             if (currentQueue != null && !currentQueue.isEmpty()) {
@@ -124,12 +124,8 @@ public class PlaybackService {
         return currentQueue == null ? -1 : currentQueue.getCurrentIndex();
     }
 
-    /**
-     * Lo shuffle non è applicabile alla riproduzione avviata da una singola
-     * traccia, ma resta disponibile prima dell'avvio e per playlist/catalogo.
-     */
     public boolean isShuffleAvailable() {
-        return currentQueue == null || currentQueue.getSource() != PlaybackSource.SINGLE;
+        return true;
     }
 
     public void tick() {
@@ -231,9 +227,10 @@ public class PlaybackService {
             throw new TrackNotFoundException("Track non trovata.");
         }
 
-        // Se la traccia è la stessa ed è in riproduzione o in pausa, gestisce la
-        // ripresa
+        // Se la traccia è la stessa, aggiorna i metadati e gestisce l'eventuale
+        // ripresa senza ricreare la sorgente di playback.
         if (currentTrack != null && currentTrack.getId().equals(track.getId())) {
+            refreshCurrentTrack(track);
             if (currentState == PlaybackState.PAUSED || currentState == PlaybackState.STOPPED) {
                 currentState = PlaybackState.PLAYING;
             }
@@ -242,14 +239,48 @@ public class PlaybackService {
 
         currentTrack = track;
         currentPlaylist = null;
+        //current queue è la coda di riproduzione corrente
         currentQueue = new PlaybackQueue(List.of(track), PlaybackSource.SINGLE);
 
-        if (currentMode == PlaybackMode.SHUFFLE) {
-            currentMode = PlaybackMode.SEQUENTIAL;
-        }
-        playbackStrategy = getStrategyForMode(currentMode);
+        playbackStrategy = currentMode == PlaybackMode.SHUFFLE
+                ? new SequentialPlaybackStrategy()
+                : getStrategyForMode(currentMode);
         currentState = PlaybackState.PLAYING;
         elapsedSeconds = 0;
+    }
+
+    private void refreshCurrentTrack(Track updatedTrack) {
+        this.currentTrack = updatedTrack;
+
+        if (currentQueue == null || currentQueue.isEmpty()) {
+            return;
+        }
+
+        List<Track> updatedTracks = new ArrayList<>(currentQueue.getTracks());
+        int currentIndex = currentQueue.getCurrentIndex();
+        int indexToUpdate = -1;
+
+        if (currentIndex >= 0
+                && currentIndex < updatedTracks.size()
+                && updatedTracks.get(currentIndex).getId().equals(updatedTrack.getId())) {
+            indexToUpdate = currentIndex;
+        } else {
+            for (int i = 0; i < updatedTracks.size(); i++) {
+                if (updatedTracks.get(i).getId().equals(updatedTrack.getId())) {
+                    indexToUpdate = i;
+                    break;
+                }
+            }
+        }
+
+        if (indexToUpdate == -1) {
+            return;
+        }
+
+        updatedTracks.set(indexToUpdate, updatedTrack);
+        PlaybackSource source = currentQueue.getSource();
+        currentQueue = new PlaybackQueue(updatedTracks, source);
+        currentQueue.setCurrentIndex(indexToUpdate);
     }
 
     /**

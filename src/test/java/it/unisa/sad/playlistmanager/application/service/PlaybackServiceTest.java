@@ -55,6 +55,53 @@ class PlaybackServiceTest {
     }
 
     @Test
+    void testPlayTrack_StessaTracciaAggiornata_AggiornaDatiPlayback() {
+        playbackService.playTrack(sampleTrack1);
+        playbackService.tick();
+
+        Track updatedTrack = new Track(
+                sampleTrack1.getId(),
+                "Stairway to Heaven - Remastered",
+                "Led Zeppelin",
+                490,
+                "Classic Rock",
+                1971);
+
+        playbackService.playTrack(updatedTrack);
+
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+        assertEquals(updatedTrack.getId(), playbackService.getCurrentTrack().getId());
+        assertEquals("Stairway to Heaven - Remastered", playbackService.getCurrentTrack().getTitle());
+        assertEquals(490, playbackService.getCurrentTrack().getDuration());
+        assertEquals("Classic Rock", playbackService.getCurrentTrack().getGenre());
+        assertEquals(1, playbackService.getElapsedSeconds(), "Il timer non deve essere resettato se è la stessa traccia");
+    }
+
+    @Test
+    void testPlayTrack_StessaTracciaAggiornataDaPaused_RiprendeConDatiAggiornati() {
+        playbackService.playTrack(sampleTrack1);
+        playbackService.tick();
+        playbackService.pause();
+
+        Track updatedTrack = new Track(
+                sampleTrack1.getId(),
+                "Stairway to Heaven - Live",
+                "Led Zeppelin",
+                510,
+                "Live Rock",
+                1976);
+
+        playbackService.playTrack(updatedTrack);
+
+        assertEquals(PlaybackState.PLAYING, playbackService.getCurrentState());
+        assertEquals(updatedTrack.getId(), playbackService.getCurrentTrack().getId());
+        assertEquals("Stairway to Heaven - Live", playbackService.getCurrentTrack().getTitle());
+        assertEquals(510, playbackService.getCurrentTrack().getDuration());
+        assertEquals("Live Rock", playbackService.getCurrentTrack().getGenre());
+        assertEquals(1, playbackService.getElapsedSeconds(), "La ripresa non deve ripartire da zero");
+    }
+
+    @Test
     void testPlayTrack_TracciaInesistenteNulla() {
         assertThrows(TrackNotFoundException.class, () -> {
             playbackService.playTrack(null);
@@ -165,24 +212,25 @@ class PlaybackServiceTest {
     }
 
     @Test
-    void testPlayTrack_DisattivaShufflePreselezionato() {
+    void testPlayTrack_PreservaShufflePreselezionato() {
         playbackService.setPlaybackMode(PlaybackMode.SHUFFLE);
 
         playbackService.playTrack(sampleTrack1);
 
-        assertEquals(PlaybackMode.SEQUENTIAL, playbackService.getCurrentMode());
-        assertFalse(playbackService.isShuffleAvailable());
+        assertEquals(PlaybackMode.SHUFFLE, playbackService.getCurrentMode());
+        assertTrue(playbackService.isShuffleAvailable());
         assertEquals(sampleTrack1, playbackService.getCurrentTrack());
     }
 
     @Test
-    void testSetShuffle_DuranteRiproduzioneSingolaRestaSequential() {
+    void testSetShuffle_DuranteRiproduzioneSingolaRestaShuffle() {
         playbackService.playTrack(sampleTrack1);
 
         playbackService.setPlaybackMode(PlaybackMode.SHUFFLE);
 
-        assertEquals(PlaybackMode.SEQUENTIAL, playbackService.getCurrentMode());
-        assertFalse(playbackService.isShuffleAvailable());
+        assertEquals(PlaybackMode.SHUFFLE, playbackService.getCurrentMode());
+        assertTrue(playbackService.isShuffleAvailable());
+        assertEquals(sampleTrack1, playbackService.getCurrentTrack());
     }
 
     @Test
