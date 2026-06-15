@@ -140,27 +140,55 @@ public class SqliteTrackRepository implements TrackRepository {
 
     /**
      * Elimina una track nel sistema di persistenza in base al suo id.
-     * 
+     * <p><b>Risoluzione Bug Sprint 3:</b> Svuota preventivamente in modo transazionale 
+     * i record associati in playlist_tracks per evitare violazioni di chiave duplicata all'Undo.</p>
      * @param id dell'oggetto Track da eliminare
      * @return un Optional contenente la traccia eliminata se presente, altrimenti Optional.empty()
      */
     @Override
     public Optional<Track> deleteById(String id) {
         Optional<Track> trackOpt = findById(id);
-        String sql = """
+        if (trackOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        String deleteAssociationsSql = """
+                DELETE FROM playlist_tracks
+                WHERE track_id = ?
+                """;
+
+        String deleteTrackSql = """
                 DELETE FROM tracks
                 WHERE id = ?
                 """;
-        try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, id);
-            int affected = statement.executeUpdate();
-            if (affected == 0) {
-                return Optional.empty();
+
+        // Apriamo la connessione gestendo l'atomicità (Transazione)
+        try (Connection connection = connectionManager.getConnection()) {
+            connection.setAutoCommit(false); // Avvia la transazione
+
+            try {
+                // 1. Cancella prima i riferimenti dalle playlist
+                try (PreparedStatement assocStatement = connection.prepareStatement(deleteAssociationsSql)) {
+                    assocStatement.setString(1, id);
+                    assocStatement.executeUpdate();
+                }
+
+                // 2. Cancella definitivamente la traccia dal catalogo
+                try (PreparedStatement trackStatement = connection.prepareStatement(deleteTrackSql)) {
+                    trackStatement.setString(1, id);
+                    trackStatement.executeUpdate();
+                }
+
+                connection.commit(); // Conferma la rimozione pulita di entrambi
+                return trackOpt;
+
+            } catch (SQLException exception) {
+                connection.rollback(); // In caso di errore annulla tutto
+                throw exception;
             }
-            return trackOpt;
+
         } catch (SQLException exception) {
-            throw new RepositoryException("Errore nell'eliminazione della Track");
+            throw new RepositoryException("Errore nell'eliminazione transazionale della Track con id: [" + id + "]", exception);
         }
     }
 
