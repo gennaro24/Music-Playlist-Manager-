@@ -48,7 +48,7 @@ class TrackControllerTest {
 
         // NOTA: Passiamo null al super() perché in questo test non ci servono i Service reali
         public FakeFacade() {
-            super(null, null, null);
+            super(null, null, null, null);
         }
 
         @Override

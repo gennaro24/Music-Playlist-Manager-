@@ -7,10 +7,12 @@ import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundExceptio
 import it.unisa.sad.playlistmanager.application.service.FakePlaybackService; // IMPORTATO DALLA NUOVA CARTELLA
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
+import it.unisa.sad.playlistmanager.application.service.TagService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.InMemoryPlaylistRepository;
 import it.unisa.sad.playlistmanager.persistence.repository.InMemoryTrackRepository;
+import it.unisa.sad.playlistmanager.persistence.repository.InMemoryTagRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +29,7 @@ class MusicPlaylistManagerFacadeUndoTest {
 
     private TrackService trackService;
     private PlaylistService playlistService;
+    private TagService tagService;
     private FakePlaybackService fakePlaybackService; // Dichiarazione del nostro fake
     private MusicPlaylistManagerFacade facade;
 
@@ -34,18 +37,19 @@ class MusicPlaylistManagerFacadeUndoTest {
     void setUp() {
         InMemoryTrackRepository trackRepository = new InMemoryTrackRepository();
         InMemoryPlaylistRepository playlistRepository = new InMemoryPlaylistRepository(trackRepository);
+        InMemoryTagRepository tagRepository = new InMemoryTagRepository(trackRepository);
         trackRepository.linkPlaylistRepository(playlistRepository);
         trackService = new TrackService(trackRepository);
         playlistService = new PlaylistService(playlistRepository, trackRepository);
-        
+        tagService = new TagService(tagRepository, trackRepository);
         // Istanziamo il fake creato nella nuova cartella
         fakePlaybackService = new FakePlaybackService();
 
-        CommandFactory commandFactory = new CommandFactory(trackService, playlistService);
+        CommandFactory commandFactory = new CommandFactory(trackService, playlistService, tagService);
         
         // Passiamo il fake al posto di null
         facade = new MusicPlaylistManagerFacade(
-                trackService, playlistService, fakePlaybackService, commandFactory, new UndoManager());
+                trackService, playlistService, fakePlaybackService, tagService, commandFactory, new UndoManager());
     }
 
     @Test

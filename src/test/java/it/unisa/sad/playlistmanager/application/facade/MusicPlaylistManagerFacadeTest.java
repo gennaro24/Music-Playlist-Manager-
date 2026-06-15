@@ -5,11 +5,13 @@ import it.unisa.sad.playlistmanager.application.command.UndoManager;
 import it.unisa.sad.playlistmanager.application.service.PlaybackService;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
+import it.unisa.sad.playlistmanager.application.service.TagService;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.FakePlaylistRepository;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -82,6 +84,12 @@ class MusicPlaylistManagerFacadeTest {
         }
     }
 
+    class FakeTagService extends TagService {
+        public FakeTagService() {
+            super(null, null);
+        }
+    }
+
     // ===================================================================================
     // TEST METODI FACADE
     // ===================================================================================
@@ -90,10 +98,12 @@ class MusicPlaylistManagerFacadeTest {
     void testAddTrackDelegaCorrettamente() {
         FakeTrackService fakeService = new FakeTrackService();
         FakePlaylistService fakePlaylistService = new FakePlaylistService();
-        CommandFactory commandFactory = new CommandFactory(fakeService, fakePlaylistService);
+        FakeTagService fakeTagService = new FakeTagService();
+        CommandFactory commandFactory = new CommandFactory(fakeService, fakePlaylistService, fakeTagService);
         MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(
                 fakeService,
                 fakePlaylistService,
+                null,
                 null,
                 commandFactory,
                 new UndoManager());
@@ -107,7 +117,7 @@ class MusicPlaylistManagerFacadeTest {
     void testGetAllTracksDelegaCorrettamente() {
         FakeTrackService fakeService = new FakeTrackService();
         
-        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService, null, null);
+        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService, null, null, null);
 
         List<Track> result = facade.getAllTracks();
 
@@ -124,7 +134,7 @@ class MusicPlaylistManagerFacadeTest {
         FakePlaybackService fakePlaybackService = new FakePlaybackService();
         
         // Inizializziamo la Facade passando il PlaybackService finto
-        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(null, null, fakePlaybackService);
+        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(null, null, fakePlaybackService, null);
 
         // Chiamiamo il nuovo metodo
         PlaybackSnapshot result = facade.setPlaybackMode(PlaybackMode.SHUFFLE);
