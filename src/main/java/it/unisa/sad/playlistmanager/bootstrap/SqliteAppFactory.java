@@ -10,6 +10,8 @@ import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.PlaybackService;
+import it.unisa.sad.playlistmanager.application.command.CommandFactory;
+import it.unisa.sad.playlistmanager.application.command.UndoManager;
 
 /**
  * Factort responsabile della creazione della facade e del connection manager
@@ -44,8 +46,16 @@ public class SqliteAppFactory implements AppFactory{
             PlaylistService playlistService = new PlaylistService(playlistRepository, trackRepository);
             //creazione del playback service
             PlaybackService playbackService = new PlaybackService(playlistRepository);
+            //creazione dell'infrastruttura command con gli stessi service condivisi
+            CommandFactory commandFactory = new CommandFactory(trackService, playlistService);
+            UndoManager undoManager = new UndoManager();
             //creazione della facade
-            return new MusicPlaylistManagerFacade(trackService, playlistService, playbackService);
+            return new MusicPlaylistManagerFacade(
+                    trackService,
+                    playlistService,
+                    playbackService,
+                    commandFactory,
+                    undoManager);
         } catch (Exception e) {
             //TODO: gestire l'eccezione
             throw new RuntimeException("Errore nella creazione della facade", e);

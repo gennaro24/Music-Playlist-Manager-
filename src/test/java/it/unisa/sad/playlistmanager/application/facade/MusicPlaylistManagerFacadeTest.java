@@ -1,6 +1,9 @@
 package it.unisa.sad.playlistmanager.application.facade;
 
+import it.unisa.sad.playlistmanager.application.command.CommandFactory;
+import it.unisa.sad.playlistmanager.application.command.UndoManager;
 import it.unisa.sad.playlistmanager.application.service.PlaybackService;
+import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackMode;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
@@ -69,6 +72,16 @@ class MusicPlaylistManagerFacadeTest {
         }
     }
 
+    /**
+     * Stub necessario solo per costruire la CommandFactory nei test della facade.
+     */
+    class FakePlaylistService extends PlaylistService {
+        public FakePlaylistService() {
+            // TODO: sostituire con repository fake quando saranno aggiunti i test dei command playlist.
+            super(null, null);
+        }
+    }
+
     // ===================================================================================
     // TEST METODI FACADE
     // ===================================================================================
@@ -76,8 +89,14 @@ class MusicPlaylistManagerFacadeTest {
     @Test
     void testAddTrackDelegaCorrettamente() {
         FakeTrackService fakeService = new FakeTrackService();
-        
-        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService, null, null);
+        FakePlaylistService fakePlaylistService = new FakePlaylistService();
+        CommandFactory commandFactory = new CommandFactory(fakeService, fakePlaylistService);
+        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(
+                fakeService,
+                fakePlaylistService,
+                null,
+                commandFactory,
+                new UndoManager());
 
         facade.addTrack("Shape of You", "Ed Sheeran", 233, "Pop", 2017);
 

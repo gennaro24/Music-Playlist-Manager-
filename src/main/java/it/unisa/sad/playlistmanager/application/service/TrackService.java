@@ -47,6 +47,14 @@ public class TrackService {
         return newTrack;
     }
 
+    public Track addTrack(String id, String title, String author, int duration, String genre, int year){
+        Track newTrack = new Track(id, title, author, duration, genre, year);
+
+        trackRepository.save(newTrack);
+
+        return newTrack;
+    }
+
     /**
      * Recupera tutte le tracce presenti nel catalogo.
      *

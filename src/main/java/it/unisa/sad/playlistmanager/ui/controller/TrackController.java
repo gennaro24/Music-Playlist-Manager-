@@ -345,7 +345,7 @@ public class TrackController {
     private void configureTableToggleDeselection() {
         tableTracks.setRowFactory(tv -> {
             final TableRow<Track> row = new TableRow<>();
-            MenuItem playItem = new MenuItem("play");
+            MenuItem playItem = new MenuItem("Play");
             MenuItem editItem = new MenuItem("Modifica"); 
             MenuItem deleteItem = new MenuItem("Elimina dal catalogo"); // Iniezione Task T-89
             ContextMenu contextMenu = new ContextMenu(playItem, editItem, deleteItem);

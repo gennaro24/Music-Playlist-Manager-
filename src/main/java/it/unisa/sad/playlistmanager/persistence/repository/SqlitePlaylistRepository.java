@@ -129,11 +129,6 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
         }
     }
 
-    // TODO: findByName (non so se è utile)
-    @Override
-    public Optional<Playlist> findByName(String name) {
-        return Optional.empty();
-    }
 
     @Override
     public boolean existsByName(String name) {
@@ -276,4 +271,78 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
             throw new RepositoryException("Errore nell'eliminazione della Playlist");
         }
     }
+
+    /**
+     * Ritorna la posizione di una Track all'interno di una Playlist, se presente.
+     * @param playlistId
+     * @param trackId
+     * @return
+     */
+    public Optional<Integer> getTrackPosition(String playlistId, String trackId) {
+        String sql = """
+                SELECT position
+                FROM playlist_tracks
+                WHERE playlist_id = ? AND track_id = ?
+                """;
+
+        try (Connection connection = connectionManager.getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, playlistId);
+            statement.setString(2, trackId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return Optional.of(resultSet.getInt("position"));
+                }
+
+                return Optional.empty();
+            }
+        } catch (SQLException exception) {
+            throw new RepositoryException(
+                    "Errore nel recupero della posizione della traccia.",
+                    exception
+            );
+        }
+    }
+    /**
+     * Aggiunge una Track alla playlist ad una specifica posizione.
+     * @param playlistId
+     * @param trackId
+     * @param position
+     */
+    public void addTrackToPlaylistAtPosition(
+            String playlistId,
+            String trackId,
+            int position
+    ) {
+        String sql = """
+                INSERT INTO playlist_tracks
+                    (playlist_id, track_id, position)
+                VALUES (?, ?, ?)
+                """;
+
+        try (Connection connection = connectionManager.getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, playlistId);
+            statement.setString(2, trackId);
+            statement.setInt(3, position);
+            statement.executeUpdate();
+
+        } catch (SQLException exception) {
+            throw new RepositoryException(
+                    "Errore nel ripristino della traccia nella playlist.",
+                    exception
+            );
+        }
+    }
+
+
+    @Override
+    public Optional<Playlist> findByName(String name) {
+        return Optional.empty();
+    }
+
+
 }

@@ -53,11 +53,13 @@ public interface PlaylistRepository {
     boolean existsByName(String name);
 
     void addTrackToPlaylist(String playlistId, String trackId );
-    
+
     void removeTrackFromPlaylist(String playlistId, String trackId);
 
     List<Track> findTracksByPlaylistId(String playlistId);
-    
+
     Optional<Playlist> deleteById(String playlistId);
     
+    void addTrackToPlaylistAtPosition(String playlistId, String trackId, int position);
+    Optional<Integer> getTrackPosition(String playlistId, String trackId);
 }
