@@ -18,6 +18,8 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
+import javafx.geometry.Insets;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.beans.binding.Bindings;
@@ -31,6 +33,7 @@ import java.util.function.Consumer;
  * concernenti il catalogo globale delle tracce e le canzoni interne a una specifica playlist.
  * <p><b>Revisione Sprint 2 (US-04):</b> Integra la funzionalità di eliminazione di una traccia
  * dal catalogo globale con annesso dialogo di conferma e sincronizzazione in tempo reale delle viste.</p>
+ * <p>La modifica dei metadati avviene tramite dialogo dal menu contestuale, non inline nella tabella.</p>
  * @version 4.0
  */
 public class TrackController {
@@ -144,13 +147,13 @@ public class TrackController {
     }
 
     /**
-     * Inizializza i componenti grafici della TableView, abilita l'editing in linea,
-     * effettua il data-binding ed esegue il caricamento dei dati di catalogo a startup.
+     * Inizializza i componenti grafici della TableView, effettua il data-binding
+     * ed esegue il caricamento dei dati di catalogo a startup.
      */
     @FXML
     private void initialize() {
         if (tableTracks != null) {
-            tableTracks.setEditable(true);
+            tableTracks.setEditable(false);
         }
 
         initializeTableColumns();
@@ -171,39 +174,29 @@ public class TrackController {
     }
 
     /**
-     * Associa le colonne della TableView ai campi dati del Domain Model (Track)
-     * e configura i cell factory custom per l'inline editing automatico al focus lost.
+     * Associa le colonne della TableView ai campi dati del Domain Model (Track).
+     * La modifica dei metadati avviene solo tramite il menu contestuale.
      */
     private void initializeTableColumns() {
         if (colTitle != null) {
             colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
-            colTitle.setCellFactory(col -> new EditableTableCell<>(val -> val));
-            colTitle.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
-                val -> new Track(event.getRowValue().getId(), val, event.getRowValue().getAuthor(), event.getRowValue().getDuration(), event.getRowValue().getGenre(), event.getRowValue().getYear()), event.getNewValue()));
+            colTitle.setEditable(false);
         }
         if (colAuthor != null) {
             colAuthor.setCellValueFactory(new PropertyValueFactory<>("author"));
-            colAuthor.setCellFactory(col -> new EditableTableCell<>(val -> val));
-            colAuthor.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
-                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), val, event.getRowValue().getDuration(), event.getRowValue().getGenre(), event.getRowValue().getYear()), event.getNewValue()));
+            colAuthor.setEditable(false);
         }
         if (colDuration != null) {
             colDuration.setCellValueFactory(new PropertyValueFactory<>("duration"));
-            colDuration.setCellFactory(col -> new EditableTableCell<>(Integer::parseInt));
-            colDuration.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
-                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), event.getRowValue().getAuthor(), val, event.getRowValue().getGenre(), event.getRowValue().getYear()), event.getNewValue()));
+            colDuration.setEditable(false);
         }
         if (colGenre != null) {
             colGenre.setCellValueFactory(new PropertyValueFactory<>("genre"));
-            colGenre.setCellFactory(col -> new EditableTableCell<>(val -> val));
-            colGenre.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
-                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), event.getRowValue().getAuthor(), event.getRowValue().getDuration(), val, event.getRowValue().getYear()), event.getNewValue()));
+            colGenre.setEditable(false);
         }
         if (colYear != null) {
             colYear.setCellValueFactory(new PropertyValueFactory<>("year"));
-            colYear.setCellFactory(col -> new EditableTableCell<>(Integer::parseInt));
-            colYear.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
-                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), event.getRowValue().getAuthor(), event.getRowValue().getDuration(), event.getRowValue().getGenre(), val), event.getNewValue()));
+            colYear.setEditable(false);
         }
         configureTagsColumn();
         configureResponsiveColumnWidths();
@@ -281,118 +274,80 @@ public class TrackController {
     }
 
     /**
-     * Coordina ed esegue in differita l'aggiornamento dei dati tramite Facade, intercettando
-     * le eccezioni di validazione per stampare a schermo l'errore standardizzato (Task T-79).
-     *
-     * @param <T>          Il tipo di dato generico gestito dalla colonna.
-     * @param oldTrack     L'istanza originale della traccia prima della modifica.
-     * @param trackCreator Funzione lambda funzionale atta a istanziare la nuova traccia immutabile.
-     * @param newValue     Il valore testuale o numerico appena inserito dall'utente.
+     * Apre una finestra di dialogo per modificare i metadati della traccia selezionata.
+     * I tag non sono modificabili da questa finestra.
      */
-    private <T> void handleInlineEdit(Track oldTrack, java.util.function.Function<T, Track> trackCreator, T newValue) {
-        Platform.runLater(() -> {
-            try {
-                if (newValue == null) throw new IllegalArgumentException();
-                Track updatedTrack = trackCreator.apply(newValue);
-                facade.updateTrack(oldTrack.getId(), updatedTrack);
-                labelFeedback("Traccia modificata con successo.", "green");
-            } catch (Exception e) {
-                labelFeedback("Errore nella modifica", "red");
+    private void showEditTrackDialog(Track track) {
+        if (facade == null || track == null) {
+            return;
+        }
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Modifica traccia");
+        dialog.setHeaderText("Modifica i metadati di \"" + track.getTitle() + "\"");
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        TextField editTitle = new TextField(track.getTitle());
+        TextField editAuthor = new TextField(track.getAuthor());
+        TextField editDuration = new TextField(String.valueOf(track.getDuration()));
+        TextField editGenre = new TextField(track.getGenre());
+        TextField editYear = new TextField(String.valueOf(track.getYear()));
+
+        GridPane form = new GridPane();
+        form.setHgap(10);
+        form.setVgap(10);
+        form.setPadding(new Insets(10, 20, 10, 10));
+        form.add(new Label("Titolo *"), 0, 0);
+        form.add(editTitle, 1, 0);
+        form.add(new Label("Autore *"), 0, 1);
+        form.add(editAuthor, 1, 1);
+        form.add(new Label("Durata (sec) *"), 0, 2);
+        form.add(editDuration, 1, 2);
+        form.add(new Label("Genere *"), 0, 3);
+        form.add(editGenre, 1, 3);
+        form.add(new Label("Anno *"), 0, 4);
+        form.add(editYear, 1, 4);
+
+        editTitle.setPrefWidth(260);
+        editAuthor.setPrefWidth(260);
+        editDuration.setPrefWidth(260);
+        editGenre.setPrefWidth(260);
+        editYear.setPrefWidth(260);
+
+        dialog.getDialogPane().setContent(form);
+        dialog.showAndWait().ifPresent(buttonType -> {
+            if (buttonType != ButtonType.OK) {
+                return;
             }
-            loadCatalog();
-            if (playlistViewMode && currentPlaylist != null) {
-                loadPlaylistTracks(currentPlaylist);
+            try {
+                String title = toSentenceCase(editTitle.getText());
+                String author = toSentenceCase(editAuthor.getText());
+                String genre = toSentenceCase(editGenre.getText());
+                int duration = Integer.parseInt(editDuration.getText().trim());
+                int year = Integer.parseInt(editYear.getText().trim());
+                validateDataInput(title, author, genre, duration, year);
+
+                Track updatedTrack = new Track(track.getId(), title, author, duration, genre, year);
+                facade.updateTrack(track.getId(), updatedTrack);
+                selectedTrack = updatedTrack;
+                labelFeedback("Traccia modificata con successo.", "#1f7a1f");
+                loadCatalog();
+                if (playlistViewMode && currentPlaylist != null) {
+                    loadPlaylistTracks(currentPlaylist);
+                }
+                if (tableTracks != null) {
+                    tableTracks.refresh();
+                }
+            } catch (NumberFormatException e) {
+                labelFeedback("Durata e anno devono essere numeri validi.", "red");
+            } catch (ValidationException | it.unisa.sad.playlistmanager.domain.exceptions.ValidationException e) {
+                labelFeedback(e.getMessage(), "red");
+            } catch (IllegalArgumentException e) {
+                labelFeedback(e.getMessage(), "red");
+            } catch (Exception e) {
+                labelFeedback("Errore durante la modifica della traccia.", "red");
             }
         });
-    }
-
-    /**
-     * Classe interna di supporto per incorporare un TextField reattivo all'interno delle celle.
-     * Consolida le modifiche in modo sincrono non appena viene perso il focus (Blur).
-     *
-     * @param <R> Tipo di riga del modello (Track).
-     * @param <T> Tipo di cella specifico.
-     */
-    private class EditableTableCell<R, T> extends TableCell<R, T> {
-        /** Componente di input testuale inserito dinamicamente nella cella in stato di editing. */
-        private TextField textField;
-        /** Funzione di conversione per mappare la stringa digitata nel tipo T appropriato. */
-        private final java.util.function.Function<String, T> converter;
-
-        /**
-         * Costruttore della cella editabile inline.
-         *
-         * @param converter Convertitore funzionale da String a T.
-         */
-        public EditableTableCell(java.util.function.Function<String, T> converter) {
-            this.converter = converter;
-        }
-
-        @Override
-        public void startEdit() {
-            if (!isEmpty()) {
-                super.startEdit();
-                createTextField();
-                setText(null);
-                setGraphic(textField);
-                textField.requestFocus();
-                textField.selectAll();
-            }
-        }
-
-        @Override
-        public void cancelEdit() {
-            super.cancelEdit();
-            setText(getItem() != null ? getItem().toString() : null);
-            setGraphic(null);
-        }
-
-        @Override
-        public void updateItem(T item, boolean empty) {
-            super.updateItem(item, empty);
-            if (empty) {
-                setText(null);
-                setGraphic(null);
-            } else {
-                if (isEditing()) {
-                    if (textField != null) {
-                        textField.setText(item != null ? item.toString() : "");
-                    }
-                    setText(null);
-                    setGraphic(textField);
-                } else {
-                    setText(item != null ? item.toString() : null);
-                    setGraphic(null);
-                }
-            }
-        }
-
-        /**
-         * Istanzia il TextField e aggancia i relativi listener per intercettare l'Invio
-         * o la perdita del focus da parte dell'utente (Blur).
-         */
-        private void createTextField() {
-            textField = new TextField(getItem() != null ? getItem().toString() : "");
-            textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
-            textField.setOnAction(e -> triggerCommit());
-            textField.focusedProperty().addListener((obs, oldVal, newVal) -> {
-                if (!newVal && isEditing()) {
-                    triggerCommit();
-                }
-            });
-        }
-
-        /**
-         * Tenta il commit del valore modificato catturando le eccezioni di parsing sintattico.
-         */
-        private void triggerCommit() {
-            try {
-                commitEdit(converter.apply(textField.getText().trim()));
-            } catch (Exception ex) {
-                cancelEdit();
-                labelFeedback("Errore nella modifica", "red");
-            }
-        }
     }
 
     /**
@@ -681,13 +636,7 @@ public class TrackController {
                 if (track == null) return;
                 tableTracks.getSelectionModel().select(track);
                 selectedTrack = track;
-                
-                TableColumn<Track, ?> focusedColumn = tableTracks.getFocusModel().getFocusedCell().getTableColumn();
-                if (focusedColumn != null && focusedColumn.isEditable()) {
-                    tableTracks.edit(row.getIndex(), focusedColumn);
-                } else {
-                    tableTracks.edit(row.getIndex(), colTitle);
-                }
+                showEditTrackDialog(track);
             });
 
             // TASK T-89 e T-90: Finestra di dialogo di conferma ed eliminazione traccia
