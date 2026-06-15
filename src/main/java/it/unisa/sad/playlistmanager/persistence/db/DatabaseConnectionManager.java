@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * Gestisce la creazione delle connessioni verso il database SQLite
@@ -27,7 +28,10 @@ public class DatabaseConnectionManager {
     private static final String DATABASE_URL = "jdbc:sqlite:data/music_playlist_manager.db";
 
     /**
-     * Restituisce una nuova connessione JDBC al database SQLite.
+     * Restituisce una nuova connessione JDBC al database SQLite con i vincoli
+     * di chiave esterna attivi. In SQLite {@code PRAGMA foreign_keys = ON} vale
+     * per connessione: attivarlo qui garantisce CASCADE e integrita' referenziale
+     * su tutte le operazioni dei repository.
      * Crea la directory in cui salvare il database se non esiste.
      * @return una connessione attiva verso il database
      * @throws SQLException se la connessione al database non può essere creata
@@ -35,8 +39,17 @@ public class DatabaseConnectionManager {
     
     public Connection getConnection() throws SQLException{
         ensureDatabaseDirectoryExists();
-        return DriverManager.getConnection(DATABASE_URL);
+        Connection connection = DriverManager.getConnection(DATABASE_URL);
+        enableForeignKeys(connection);
+        return connection;
     }
+
+    private void enableForeignKeys(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("PRAGMA foreign_keys = ON");
+        }
+    }
+
      private void ensureDatabaseDirectoryExists() throws SQLException {
         try {
             Files.createDirectories(Path.of(DATABASE_DIRECTORY));
