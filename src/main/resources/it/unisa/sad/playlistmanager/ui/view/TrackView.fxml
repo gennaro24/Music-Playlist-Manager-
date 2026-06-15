@@ -20,56 +20,85 @@
         <Insets bottom="10" left="10" right="10" top="10" />
     </padding>
 
-    <VBox fx:id="formAddTrack" spacing="10">
+    <HBox fx:id="hboxCatalogForms" alignment="TOP_LEFT" spacing="16.0">
         <children>
-            <Label style="-fx-font-weight: bold;" text="Aggiungi traccia al catalogo" />
+            <VBox fx:id="formAddTrack" maxWidth="400.0" minWidth="320.0" prefWidth="380.0" spacing="10">
+                <children>
+                    <Label style="-fx-font-weight: bold;" text="Aggiungi traccia al catalogo" />
 
-            <GridPane fx:id="trackForm" hgap="10" vgap="8">
-                <Label text="Titolo *" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                <TextField fx:id="txtTitle" promptText="Titolo" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                    <GridPane fx:id="trackForm" hgap="10" maxWidth="380.0" vgap="8">
+                        <Label text="Titolo *" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <TextField fx:id="txtTitle" maxWidth="240.0" prefWidth="220.0" promptText="Titolo" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                <Label text="Autore *" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                <TextField fx:id="txtAuthor" promptText="Autore" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <Label text="Autore *" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <TextField fx:id="txtAuthor" maxWidth="240.0" prefWidth="220.0" promptText="Autore" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                <Label text="Durata (sec) *" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                <TextField fx:id="txtDuration" promptText="Es. 180" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <Label text="Durata (sec) *" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <TextField fx:id="txtDuration" maxWidth="120.0" prefWidth="100.0" promptText="Es. 180" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                <Label text="Genere *" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                <TextField fx:id="txtGenre" promptText="Es. Rock" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        <Label text="Genere *" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                        <TextField fx:id="txtGenre" maxWidth="240.0" prefWidth="220.0" promptText="Es. Rock" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
-                <Label text="Anno *" GridPane.columnIndex="0" GridPane.rowIndex="4" />
-                <TextField fx:id="txtYear" promptText="Es. 2020" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-            <columnConstraints>
-               <ColumnConstraints />
-               <ColumnConstraints />
-            </columnConstraints>
-            <rowConstraints>
-               <RowConstraints />
-               <RowConstraints />
-               <RowConstraints />
-               <RowConstraints />
-               <RowConstraints />
-            </rowConstraints>
-            </GridPane>
-         <HBox alignment="CENTER_LEFT" spacing="8.0">
-            <children>
-               <HBox>
-                  <children>
-            
-                        <Button onAction="#handleTrackAddition" text="Aggiungi traccia" />
-                  </children>
-               </HBox>
-               <Region HBox.hgrow="ALWAYS" />
-               <HBox fx:id="hboxAddtoPlaylist" alignment="CENTER_RIGHT" spacing="15.0" visible="false">
-                  <children>
-                     <ComboBox fx:id="dropdownPlaylists" promptText="Seleziona una playlist" />
-                     <Button fx:id="btnSaveAddPlaylist" mnemonicParsing="false" onAction="#handleSaveAddPlaylist" text="Salva" />
-                  </children>
-               </HBox>
-            </children>
-         </HBox>
+                        <Label text="Anno *" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                        <TextField fx:id="txtYear" maxWidth="120.0" prefWidth="100.0" promptText="Es. 2020" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                        <columnConstraints>
+                            <ColumnConstraints maxWidth="130.0" minWidth="110.0" prefWidth="120.0" />
+                            <ColumnConstraints maxWidth="240.0" prefWidth="220.0" />
+                        </columnConstraints>
+                        <rowConstraints>
+                            <RowConstraints />
+                            <RowConstraints />
+                            <RowConstraints />
+                            <RowConstraints />
+                            <RowConstraints />
+                        </rowConstraints>
+                    </GridPane>
+
+                    <HBox alignment="CENTER_LEFT" maxWidth="380.0" spacing="8.0">
+                        <children>
+                            <Button onAction="#handleTrackAddition" text="Aggiungi traccia" />
+                            <HBox fx:id="hboxAddtoPlaylist" alignment="CENTER_LEFT" spacing="8.0" visible="false">
+                                <children>
+                                    <ComboBox fx:id="dropdownPlaylists" prefWidth="180.0" promptText="Seleziona playlist" />
+                                    <Button fx:id="btnSaveAddPlaylist" mnemonicParsing="false" onAction="#handleSaveAddPlaylist" text="Salva" />
+                                </children>
+                            </HBox>
+                        </children>
+                    </HBox>
+                </children>
+            </VBox>
+
+            <VBox fx:id="formTagManagement" maxWidth="300.0" minWidth="260.0" prefWidth="280.0" spacing="6.0">
+                <children>
+                    <Label style="-fx-font-weight: bold;" text="Gestione tag" />
+
+                    <HBox spacing="6.0">
+                        <TextField fx:id="txtNewTag" prefWidth="160.0" promptText="Nuovo tag" HBox.hgrow="ALWAYS" />
+                        <Button mnemonicParsing="false" onAction="#handleCreateTag" text="Crea" />
+                    </HBox>
+
+                    <HBox spacing="6.0">
+                        <ComboBox fx:id="dropdownAllTags" prefWidth="160.0" promptText="Tag" HBox.hgrow="ALWAYS" />
+                        <Button mnemonicParsing="false" onAction="#handleDeleteTag" text="Elimina" />
+                    </HBox>
+
+                    <Label style="-fx-font-size: 11px; -fx-font-weight: bold;" text="Tag traccia selezionata" />
+
+                    <HBox spacing="6.0">
+                        <ComboBox fx:id="dropdownAssignTag" disable="true" prefWidth="160.0" promptText="Da assegnare" HBox.hgrow="ALWAYS" />
+                        <Button fx:id="btnAssignTag" disable="true" mnemonicParsing="false" onAction="#handleAssignTag" text="+" />
+                    </HBox>
+
+                    <HBox spacing="6.0">
+                        <ComboBox fx:id="dropdownTrackTags" disable="true" prefWidth="160.0" promptText="Da rimuovere" HBox.hgrow="ALWAYS" />
+                        <Button fx:id="btnRemoveTag" disable="true" mnemonicParsing="false" onAction="#handleRemoveTagFromTrack" text="-" />
+                    </HBox>
+                </children>
+            </VBox>
+
+            <Region HBox.hgrow="ALWAYS" />
         </children>
-    </VBox>
+    </HBox>
 
     <TableView fx:id="tableTracks" VBox.vgrow="ALWAYS">
         <columns>
@@ -78,6 +107,7 @@
             <TableColumn fx:id="colDuration" prefWidth="90.0" text="Durata(sec)" />
             <TableColumn fx:id="colGenre" prefWidth="130.0" text="Genere" />
             <TableColumn fx:id="colYear" prefWidth="80.0" text="Anno" />
+            <TableColumn fx:id="colTags" prefWidth="160.0" text="Tag" />
         </columns>
         <columnResizePolicy>
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />

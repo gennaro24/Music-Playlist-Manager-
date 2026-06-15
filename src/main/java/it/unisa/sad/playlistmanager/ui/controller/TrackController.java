@@ -1,12 +1,15 @@
 package it.unisa.sad.playlistmanager.ui.controller;
 
 import it.unisa.sad.playlistmanager.application.exceptions.PlaylistNotFoundException;
+import it.unisa.sad.playlistmanager.application.exceptions.TagNotFoundException;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
+import it.unisa.sad.playlistmanager.domain.model.Tag;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -14,9 +17,13 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.beans.binding.Bindings;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.function.Consumer;
 
 /**
@@ -75,9 +82,15 @@ public class TrackController {
     
     /** Colonna per la visualizzazione e l'editing dell'anno. */
     @FXML private TableColumn<Track, Integer> colYear;
+
+    /** Colonna per la visualizzazione dei tag associati alla traccia. */
+    @FXML private TableColumn<Track, String> colTags;
     
     /** Contenitore grafico del modulo di inserimento tracce. */
     @FXML private VBox formAddTrack;
+
+    /** Riga superiore del catalogo con form traccia e gestione tag affiancati. */
+    @FXML private HBox hboxCatalogForms;
     
     /** Menu a tendina per la scelta della playlist a cui associare il brano. */
     @FXML private ComboBox<Playlist> dropdownPlaylists;
@@ -90,6 +103,27 @@ public class TrackController {
 
     /** Pulsante contestuale per riprodurre tutto il catalogo. */
     @FXML private Button btnPlayCatalog;
+
+    /** Pannello per la gestione dei tag nel catalogo. */
+    @FXML private VBox formTagManagement;
+
+    /** Campo per il nome di un nuovo tag. */
+    @FXML private TextField txtNewTag;
+
+    /** Elenco di tutti i tag disponibili nel sistema. */
+    @FXML private ComboBox<Tag> dropdownAllTags;
+
+    /** Tag disponibili da assegnare alla traccia selezionata. */
+    @FXML private ComboBox<Tag> dropdownAssignTag;
+
+    /** Tag già associati alla traccia selezionata. */
+    @FXML private ComboBox<Tag> dropdownTrackTags;
+
+    /** Pulsante per assegnare un tag alla traccia selezionata. */
+    @FXML private Button btnAssignTag;
+
+    /** Pulsante per rimuovere un tag dalla traccia selezionata. */
+    @FXML private Button btnRemoveTag;
 
     /** Flag discriminante per comprendere se la UI mostra il catalogo o una playlist. */
     private boolean playlistViewMode = false;
@@ -121,6 +155,7 @@ public class TrackController {
 
         initializeTableColumns();
         configureDropdownPlaylistsRendering();
+        configureTagComboRendering();
         if (tableTracks != null) {
             configureTableToggleDeselection();
             configureTableSelectionListener();
@@ -128,6 +163,7 @@ public class TrackController {
 
         if (this.facade != null) {
             loadCatalog();
+            refreshTagCombos();
             if (dropdownPlaylists != null) {
                 dropdownPlaylists.setItems(FXCollections.observableArrayList(this.facade.getAllPlaylists()));
             }
@@ -169,7 +205,79 @@ public class TrackController {
             colYear.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
                 val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), event.getRowValue().getAuthor(), event.getRowValue().getDuration(), event.getRowValue().getGenre(), val), event.getNewValue()));
         }
+        configureTagsColumn();
         configureResponsiveColumnWidths();
+    }
+
+    /**
+     * Configura la colonna dei tag con badge visivi per ogni etichetta associata alla traccia.
+     */
+    private void configureTagsColumn() {
+        if (colTags == null) {
+            return;
+        }
+
+        colTags.setEditable(false);
+        colTags.setCellValueFactory(cellData -> {
+            Track track = cellData.getValue();
+            if (track == null || facade == null) {
+                return new ReadOnlyObjectWrapper<>("");
+            }
+            return new ReadOnlyObjectWrapper<>(formatTagsForDisplay(facade.getTagsForTrack(track.getId())));
+        });
+        colTags.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+
+                Track track = getTableRow().getItem();
+                FlowPane badges = createTagBadges(track);
+                if (badges.getChildren().isEmpty()) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    setText(null);
+                    setGraphic(badges);
+                }
+            }
+        });
+    }
+
+    private FlowPane createTagBadges(Track track) {
+        FlowPane container = new FlowPane();
+        container.setHgap(4);
+        container.setVgap(4);
+
+        if (track == null || facade == null) {
+            return container;
+        }
+
+        for (Tag tag : facade.getTagsForTrack(track.getId())) {
+            Label badge = new Label(tag.getName());
+            badge.setStyle(
+                    "-fx-background-color: #dbeafe;"
+                            + "-fx-text-fill: #1e3a8a;"
+                            + "-fx-padding: 2 8;"
+                            + "-fx-background-radius: 10;"
+                            + "-fx-font-size: 11px;");
+            container.getChildren().add(badge);
+        }
+        return container;
+    }
+
+    private String formatTagsForDisplay(java.util.List<Tag> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return "";
+        }
+        return tags.stream()
+                .map(Tag::getName)
+                .reduce((left, right) -> left + ", " + right)
+                .orElse("");
     }
 
     /**
@@ -292,15 +400,16 @@ public class TrackController {
      */
     private void configureResponsiveColumnWidths() {
         if (tableTracks == null || colTitle == null || colAuthor == null
-                || colDuration == null || colGenre == null || colYear == null) {
+                || colDuration == null || colGenre == null || colYear == null || colTags == null) {
             return;
         }
         tableTracks.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        final double weightTitle = 0.30;
-        final double weightAuthor = 0.30;
-        final double weightDuration = 0.12;
-        final double weightGenre = 0.18;
-        final double weightYear = 0.10;
+        final double weightTitle = 0.24;
+        final double weightAuthor = 0.24;
+        final double weightDuration = 0.10;
+        final double weightGenre = 0.14;
+        final double weightYear = 0.08;
+        final double weightTags = 0.20;
         double scrollbarOffset = 15.0;
 
         colTitle.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightTitle));
@@ -308,12 +417,14 @@ public class TrackController {
         colDuration.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightDuration));
         colGenre.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightGenre));
         colYear.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightYear));
+        colTags.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightTags));
 
-        colTitle.setMinWidth(150);
-        colAuthor.setMinWidth(130);
+        colTitle.setMinWidth(120);
+        colAuthor.setMinWidth(110);
         colDuration.setMinWidth(70);
-        colGenre.setMinWidth(100);
-        colYear.setMinWidth(65);
+        colGenre.setMinWidth(90);
+        colYear.setMinWidth(60);
+        colTags.setMinWidth(100);
     }
 
     /**
@@ -336,6 +447,212 @@ public class TrackController {
                 setText((empty || item == null) ? "Seleziona una playlist" : item.getName());
             }
         });
+    }
+
+    /**
+     * Configura il rendering dei menu a tendina che mostrano oggetti {@link Tag}.
+     */
+    private void configureTagComboRendering() {
+        configureTagCombo(dropdownAllTags, "Seleziona un tag");
+        configureTagCombo(dropdownAssignTag, "Tag da assegnare");
+        configureTagCombo(dropdownTrackTags, "Tag da rimuovere");
+    }
+
+    private void configureTagCombo(ComboBox<Tag> comboBox, String emptyPrompt) {
+        if (comboBox == null) {
+            return;
+        }
+        comboBox.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(Tag item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : item.getName());
+            }
+        });
+        comboBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Tag item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? emptyPrompt : item.getName());
+            }
+        });
+    }
+
+    /**
+     * Aggiorna gli elenchi dei tag globali e quelli legati alla traccia selezionata.
+     */
+    private void refreshTagCombos() {
+        if (facade == null) {
+            return;
+        }
+
+        List<Tag> allTags = facade.getAllTags();
+        if (dropdownAllTags != null) {
+            Tag selectedGlobalTag = dropdownAllTags.getSelectionModel().getSelectedItem();
+            dropdownAllTags.setItems(FXCollections.observableArrayList(allTags));
+            if (selectedGlobalTag != null) {
+                allTags.stream()
+                        .filter(tag -> tag.getId().equals(selectedGlobalTag.getId()))
+                        .findFirst()
+                        .ifPresentOrElse(
+                                dropdownAllTags.getSelectionModel()::select,
+                                () -> dropdownAllTags.getSelectionModel().clearSelection());
+            }
+        }
+
+        if (selectedTrack == null) {
+            if (dropdownAssignTag != null) {
+                dropdownAssignTag.getItems().clear();
+                dropdownAssignTag.setDisable(true);
+            }
+            if (dropdownTrackTags != null) {
+                dropdownTrackTags.getItems().clear();
+                dropdownTrackTags.setDisable(true);
+            }
+            if (btnAssignTag != null) {
+                btnAssignTag.setDisable(true);
+            }
+            if (btnRemoveTag != null) {
+                btnRemoveTag.setDisable(true);
+            }
+            return;
+        }
+
+        List<Tag> trackTags = facade.getTagsForTrack(selectedTrack.getId());
+        Set<String> assignedIds = trackTags.stream().map(Tag::getId).collect(Collectors.toSet());
+        List<Tag> availableTags = allTags.stream()
+                .filter(tag -> !assignedIds.contains(tag.getId()))
+                .toList();
+
+        if (dropdownAssignTag != null) {
+            dropdownAssignTag.setItems(FXCollections.observableArrayList(availableTags));
+            dropdownAssignTag.getSelectionModel().clearSelection();
+            dropdownAssignTag.setDisable(availableTags.isEmpty());
+        }
+        if (dropdownTrackTags != null) {
+            dropdownTrackTags.setItems(FXCollections.observableArrayList(trackTags));
+            dropdownTrackTags.getSelectionModel().clearSelection();
+            dropdownTrackTags.setDisable(trackTags.isEmpty());
+        }
+        if (btnAssignTag != null) {
+            btnAssignTag.setDisable(availableTags.isEmpty());
+        }
+        if (btnRemoveTag != null) {
+            btnRemoveTag.setDisable(trackTags.isEmpty());
+        }
+    }
+
+    @FXML
+    private void handleCreateTag(ActionEvent event) {
+        if (facade == null || txtNewTag == null) {
+            return;
+        }
+
+        try {
+            String tagName = txtNewTag.getText() != null ? txtNewTag.getText().trim() : "";
+            Tag createdTag = facade.addTag(tagName);
+            txtNewTag.clear();
+            refreshTagCombos();
+            if (dropdownAllTags != null) {
+                dropdownAllTags.getSelectionModel().select(createdTag);
+            }
+            if (tableTracks != null) {
+                tableTracks.refresh();
+            }
+            labelFeedback("Tag '" + createdTag.getName() + "' creato con successo.", "#1f7a1f");
+        } catch (ValidationException e) {
+            labelFeedback(e.getMessage(), "red");
+        } catch (RuntimeException e) {
+            labelFeedback("Errore durante la creazione del tag.", "red");
+        }
+    }
+
+    @FXML
+    private void handleDeleteTag(ActionEvent event) {
+        if (facade == null || dropdownAllTags == null) {
+            return;
+        }
+
+        Tag tagToDelete = dropdownAllTags.getSelectionModel().getSelectedItem();
+        if (tagToDelete == null) {
+            labelFeedback("Seleziona un tag da eliminare.", "red");
+            return;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Conferma eliminazione");
+        alert.setHeaderText("Eliminare il tag '" + tagToDelete.getName() + "'?");
+        alert.setContentText("Il tag verrà rimosso da tutte le tracce associate.");
+
+        alert.showAndWait().ifPresent(buttonType -> {
+            if (buttonType != ButtonType.OK) {
+                return;
+            }
+            try {
+                facade.deleteTag(tagToDelete.getId());
+                refreshTagCombos();
+                if (tableTracks != null) {
+                    tableTracks.refresh();
+                }
+                labelFeedback("Tag '" + tagToDelete.getName() + "' eliminato.", "#1f7a1f");
+            } catch (ValidationException | TagNotFoundException e) {
+                labelFeedback(e.getMessage(), "red");
+            }
+        });
+    }
+
+    @FXML
+    private void handleAssignTag(ActionEvent event) {
+        if (facade == null || selectedTrack == null || dropdownAssignTag == null) {
+            labelFeedback("Seleziona una traccia e un tag da assegnare.", "red");
+            return;
+        }
+
+        Tag tagToAssign = dropdownAssignTag.getSelectionModel().getSelectedItem();
+        if (tagToAssign == null) {
+            labelFeedback("Seleziona un tag da assegnare.", "red");
+            return;
+        }
+
+        try {
+            facade.assignTagToTrack(selectedTrack.getId(), tagToAssign.getId());
+            refreshTagCombos();
+            if (tableTracks != null) {
+                tableTracks.refresh();
+            }
+            labelFeedback(
+                    "Tag '" + tagToAssign.getName() + "' assegnato a '" + selectedTrack.getTitle() + "'.",
+                    "#1f7a1f");
+        } catch (ValidationException | TrackNotFoundException | TagNotFoundException e) {
+            labelFeedback(e.getMessage(), "red");
+        }
+    }
+
+    @FXML
+    private void handleRemoveTagFromTrack(ActionEvent event) {
+        if (facade == null || selectedTrack == null || dropdownTrackTags == null) {
+            labelFeedback("Seleziona una traccia e un tag da rimuovere.", "red");
+            return;
+        }
+
+        Tag tagToRemove = dropdownTrackTags.getSelectionModel().getSelectedItem();
+        if (tagToRemove == null) {
+            labelFeedback("Seleziona un tag da rimuovere.", "red");
+            return;
+        }
+
+        try {
+            facade.removeTagFromTrack(selectedTrack.getId(), tagToRemove.getId());
+            refreshTagCombos();
+            if (tableTracks != null) {
+                tableTracks.refresh();
+            }
+            labelFeedback(
+                    "Tag '" + tagToRemove.getName() + "' rimosso da '" + selectedTrack.getTitle() + "'.",
+                    "#1f7a1f");
+        } catch (ValidationException | TrackNotFoundException | TagNotFoundException e) {
+            labelFeedback(e.getMessage(), "red");
+        }
     }
 
     /**
@@ -474,6 +791,7 @@ public class TrackController {
                     btnRemoveFromPlaylist.setManaged(false);
                 }
             }
+            refreshTagCombos();
             tableTracks.refresh();
         });
     }
@@ -636,6 +954,7 @@ public class TrackController {
         if (facade == null || tableTracks == null) return;
         tableTracks.setItems(FXCollections.observableArrayList(facade.getAllTracks()));
         tableTracks.setPlaceholder(new Label("Catalogo vuoto. Aggiungi una traccia."));
+        tableTracks.refresh();
     }
 
     /**
@@ -650,15 +969,16 @@ public class TrackController {
             btnPlayCatalog.setVisible(true);
             btnPlayCatalog.setManaged(true);
         }
-        if (formAddTrack != null) {
-            formAddTrack.setVisible(true);
-            formAddTrack.setManaged(true);
+        if (hboxCatalogForms != null) {
+            hboxCatalogForms.setVisible(true);
+            hboxCatalogForms.setManaged(true);
         }
         if (btnRemoveFromPlaylist != null) {
             btnRemoveFromPlaylist.setVisible(false);
             btnRemoveFromPlaylist.setManaged(false);
         }
         loadCatalog();
+        refreshTagCombos();
         if (tableTracks != null) tableTracks.refresh();
         if (lblFeedback != null) {
             if (tableTracks != null && tableTracks.getItems() != null && tableTracks.getItems().isEmpty()) {
@@ -694,6 +1014,10 @@ public class TrackController {
             btnRemoveFromPlaylist.setVisible(false);
             btnRemoveFromPlaylist.setManaged(false);
         }
+        if (hboxCatalogForms != null) {
+            hboxCatalogForms.setVisible(false);
+            hboxCatalogForms.setManaged(false);
+        }
         labelFeedback("Nessuna playlist selezionata.", "#1f7a1f");
     }
 
@@ -714,9 +1038,9 @@ public class TrackController {
             btnPlayCatalog.setVisible(false);
             btnPlayCatalog.setManaged(false);
         }
-        if (formAddTrack != null) {
-            formAddTrack.setVisible(false);
-            formAddTrack.setManaged(false);
+        if (hboxCatalogForms != null) {
+            hboxCatalogForms.setVisible(false);
+            hboxCatalogForms.setManaged(false);
         }
         if (hboxAddtoPlaylist != null) {
             hboxAddtoPlaylist.setVisible(false);
