@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -204,6 +205,12 @@ public class SqliteTrackRepository implements TrackRepository {
      * il rollback: la traccia e le associazioni gia' elaborate non restano nel
      * database. In questo modo l'undo non puo' terminare a meta'.
      *
+     * Le foreign key vengono attivate esplicitamente su questa connessione
+     * (sono disattivate di default su ogni nuova connessione SQLite), in modo
+     * che un riferimento a una playlist inesistente in playlistPositions causi
+     * un'eccezione e il conseguente rollback, invece di essere inserito
+     * silenziosamente come riga orfana in playlist_tracks.
+     *
      * @param track traccia eliminata da ricreare con lo stesso ID
      * @param playlistPositions ID delle playlist e relative posizioni originali
      */
@@ -222,6 +229,10 @@ public class SqliteTrackRepository implements TrackRepository {
 
         try (Connection connection = connectionManager.getConnection()) {
             connection.setAutoCommit(false);
+
+            try (Statement pragma = connection.createStatement()) {
+                pragma.execute("PRAGMA foreign_keys = ON");
+            }
 
             try {
                 insertTrack(connection, insertTrackSql, track);

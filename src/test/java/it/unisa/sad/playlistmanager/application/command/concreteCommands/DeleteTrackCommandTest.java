@@ -21,23 +21,25 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * Verifica che l'esecuzione elimini la traccia dal catalogo (rimuovendone a
  * cascata le associazioni nelle playlist) e che l'undo ripristini sia l'entita'
- * sia le associazioni nelle posizioni originali.
+ * sia le associazioni nelle posizioni originali tramite un'unica operazione
+ * atomica ({@code TrackRepository.restoreWithPlaylistPositions}).
  *
- * NOTA: la rimozione a cascata delle associazioni alla delete e' riprodotta
- * dalla InMemoryTrackRepository di test. Va confermato che la persistenza reale
- * (SQLite) si comporti allo stesso modo, altrimenti l'undo che richiama
- * restoreTrackToPlaylist troverebbe l'associazione ancora presente.
+ * Vengono inoltre verificati il rollback e il comportamento di retry quando
+ * il ripristino fallisce: lo snapshot interno del command (traccia eliminata
+ * e posizioni nelle playlist) deve restare popolato in modo che un successivo
+ * {@code undo()} possa ritentare l'operazione.
  */
 class DeleteTrackCommandTest {
 
     private TrackService trackService;
     private PlaylistService playlistService;
+    private InMemoryTrackRepository trackRepository;
     private Track track;
     private Playlist playlist;
 
     @BeforeEach
     void setUp() {
-        InMemoryTrackRepository trackRepository = new InMemoryTrackRepository();
+        trackRepository = new InMemoryTrackRepository();
         InMemoryPlaylistRepository playlistRepository = new InMemoryPlaylistRepository(trackRepository);
         trackRepository.linkPlaylistRepository(playlistRepository);
         trackService = new TrackService(trackRepository);
@@ -105,5 +107,55 @@ class DeleteTrackCommandTest {
                 () -> new DeleteTrackCommand(trackService, null, track.getId()));
         assertThrows(IllegalArgumentException.class,
                 () -> new DeleteTrackCommand(trackService, playlistService, "  "));
+    }
+
+    /**
+     * Se {@code restoreWithPlaylistPositions} fallisce, l'eccezione deve
+     * propagare e lo snapshot interno (traccia eliminata e posizioni nelle
+     * playlist) deve restare popolato, in modo che UndoManager possa
+     * conservare il command e ritentare l'undo in seguito.
+     */
+    @Test
+    void undoConRestoreFallitoPropagaEccezioneEMantieneLoSnapshot() {
+        DeleteTrackCommand command = new DeleteTrackCommand(trackService, playlistService, track.getId());
+        command.execute();
+
+        trackRepository.setRestoreFailure(() -> new RuntimeException("Fallimento simulato del restore"));
+
+        assertThrows(RuntimeException.class, command::undo);
+
+        // Lo snapshot non deve essere stato azzerato: serve per il retry.
+        assertNotNull(command.getDeletedTrack());
+        assertEquals(track.getId(), command.getDeletedTrack().getId());
+
+        // Lo stato non deve restare a meta': il rollback simulato riporta lo
+        // storage com'era prima del tentativo (traccia ancora assente).
+        assertThrows(TrackNotFoundException.class, () -> trackService.getTrackById(track.getId()));
+        assertTrue(trackIds().isEmpty());
+    }
+
+    /**
+     * Dopo un primo fallimento, un secondo {@code undo()} con il repository
+     * "guarito" deve ripristinare correttamente sia la traccia sia le
+     * associazioni, usando lo snapshot conservato dal primo tentativo.
+     */
+    @Test
+    void undoRitentatoDopoFallimentoRipristinaCorrettamente() {
+        DeleteTrackCommand command = new DeleteTrackCommand(trackService, playlistService, track.getId());
+        command.execute();
+
+        trackRepository.setRestoreFailure(() -> new RuntimeException("Fallimento simulato del restore"));
+        assertThrows(RuntimeException.class, command::undo);
+
+        // Il repository torna a funzionare normalmente.
+        trackRepository.setRestoreFailure(null);
+        command.undo();
+
+        Track restored = trackService.getTrackById(track.getId());
+        assertEquals("Titolo", restored.getTitle());
+        assertEquals(List.of(track.getId()), trackIds());
+
+        // Dopo il retry riuscito, lo snapshot viene azzerato.
+        assertNull(command.getDeletedTrack());
     }
 }
