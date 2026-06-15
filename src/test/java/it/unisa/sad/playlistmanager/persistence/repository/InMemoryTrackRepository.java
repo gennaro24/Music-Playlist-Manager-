@@ -60,4 +60,37 @@ public class InMemoryTrackRepository implements TrackRepository {
         store.put(track.getId(), track);
         return Optional.of(track);
     }
+
+    /**
+     * Simula il ripristino atomico usato dalla persistenza SQLite.
+     * Se un'associazione fallisce, elimina quelle gia' reinserite e rimuove la
+     * traccia, riportando lo storage allo stato precedente al tentativo.
+     */
+    @Override
+    public void restoreWithPlaylistPositions(
+            Track track,
+            Map<String, Integer> playlistPositions) {
+        List<String> restoredPlaylistIds = new ArrayList<>();
+        store.put(track.getId(), track);
+
+        try {
+            if (playlistRepository != null) {
+                for (Map.Entry<String, Integer> entry : playlistPositions.entrySet()) {
+                    playlistRepository.addTrackToPlaylistAtPosition(
+                            entry.getKey(),
+                            track.getId(),
+                            entry.getValue());
+                    restoredPlaylistIds.add(entry.getKey());
+                }
+            }
+        } catch (RuntimeException exception) {
+            if (playlistRepository != null) {
+                for (String playlistId : restoredPlaylistIds) {
+                    playlistRepository.removeTrackFromPlaylist(playlistId, track.getId());
+                }
+            }
+            store.remove(track.getId());
+            throw exception;
+        }
+    }
 }

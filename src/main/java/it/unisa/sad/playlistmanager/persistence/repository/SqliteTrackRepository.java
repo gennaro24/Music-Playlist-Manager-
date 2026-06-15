@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -192,6 +193,103 @@ public class SqliteTrackRepository implements TrackRepository {
 
         } catch (SQLException exception) {
             throw new RepositoryException("Errore nell'aggiornamento della Track con id");
+        }
+    }
+
+    /**
+     * Ripristina una Track e tutte le associazioni con le playlist usando
+     * un'unica transazione SQLite.
+     *
+     * Se anche una sola associazione non puo' essere inserita, viene eseguito
+     * il rollback: la traccia e le associazioni gia' elaborate non restano nel
+     * database. In questo modo l'undo non puo' terminare a meta'.
+     *
+     * @param track traccia eliminata da ricreare con lo stesso ID
+     * @param playlistPositions ID delle playlist e relative posizioni originali
+     */
+    @Override
+    public void restoreWithPlaylistPositions(
+            Track track,
+            Map<String, Integer> playlistPositions) {
+        String insertTrackSql = """
+                INSERT INTO tracks(id, title, author, duration, genre, year)
+                VALUES(?,?,?,?,?,?)
+                """;
+        String insertAssociationSql = """
+                INSERT INTO playlist_tracks(playlist_id, track_id, position)
+                VALUES(?,?,?)
+                """;
+
+        try (Connection connection = connectionManager.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                insertTrack(connection, insertTrackSql, track);
+                insertPlaylistPositions(
+                        connection,
+                        insertAssociationSql,
+                        track.getId(),
+                        playlistPositions);
+                connection.commit();
+            } catch (SQLException exception) {
+                rollbackRestore(connection, exception);
+                throw new RepositoryException(
+                        "Errore nel ripristino transazionale della Track con id: ["
+                                + track.getId() + "]",
+                        exception);
+            }
+        } catch (SQLException exception) {
+            throw new RepositoryException(
+                    "Errore nell'apertura della transazione di ripristino della Track con id: ["
+                            + track.getId() + "]",
+                    exception);
+        }
+    }
+
+    /**
+     * Inserisce la traccia usando la connessione della transazione corrente.
+     */
+    private void insertTrack(Connection connection, String sql, Track track)
+            throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, track.getId());
+            statement.setString(2, track.getTitle());
+            statement.setString(3, track.getAuthor());
+            statement.setInt(4, track.getDuration());
+            statement.setString(5, track.getGenre());
+            statement.setInt(6, track.getYear());
+            statement.executeUpdate();
+        }
+    }
+
+    /**
+     * Ripristina in batch tutte le associazioni playlist-track.
+     */
+    private void insertPlaylistPositions(
+            Connection connection,
+            String sql,
+            String trackId,
+            Map<String, Integer> playlistPositions) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (Map.Entry<String, Integer> entry : playlistPositions.entrySet()) {
+                statement.setString(1, entry.getKey());
+                statement.setString(2, trackId);
+                statement.setInt(3, entry.getValue());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
+    /**
+     * Esegue il rollback conservando anche un eventuale errore del rollback
+     * come eccezione soppressa della causa originale.
+     */
+    private void rollbackRestore(Connection connection, SQLException cause) {
+        try {
+            connection.rollback();
+        } catch (SQLException rollbackException) {
+            cause.addSuppressed(rollbackException);
         }
     }
 }
