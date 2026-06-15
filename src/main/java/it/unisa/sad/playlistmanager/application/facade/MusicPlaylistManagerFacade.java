@@ -12,9 +12,11 @@ import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.application.service.PlaybackService;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
+import it.unisa.sad.playlistmanager.application.service.TagService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
+import it.unisa.sad.playlistmanager.domain.model.Tag;
 
 /**
  * Facciata principale dell'applicazione (Facade Pattern).
@@ -31,7 +33,7 @@ public class MusicPlaylistManagerFacade {
     private final PlaybackService playbackService;
     private final CommandFactory commandFactory;
     private final UndoManager undoManager;
-
+    private final TagService tagService;
     /**
      * Costruttore della Facade. Inietta le dipendenze dei servizi necessari.
      *
@@ -43,8 +45,8 @@ public class MusicPlaylistManagerFacade {
      *                        playback.
      */
     public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService,
-            PlaybackService playbackService) {
-        this(trackService, playlistService, playbackService, null, new UndoManager());
+            PlaybackService playbackService, TagService tagService) {
+        this(trackService, playlistService, playbackService,tagService, null, new UndoManager());
     }
 
     /**
@@ -60,11 +62,13 @@ public class MusicPlaylistManagerFacade {
             TrackService trackService,
             PlaylistService playlistService,
             PlaybackService playbackService,
+            TagService tagService,
             CommandFactory commandFactory,
             UndoManager undoManager) {
         this.playbackService = playbackService;
         this.trackService = trackService;
         this.playlistService = playlistService;
+        this.tagService = tagService;
         this.commandFactory = commandFactory;
         this.undoManager = undoManager;
     }
@@ -368,5 +372,35 @@ public class MusicPlaylistManagerFacade {
     public PlaybackSnapshot setPlaybackMode(it.unisa.sad.playlistmanager.domain.model.PlaybackMode mode) {
         this.playbackService.setPlaybackMode(mode);
         return this.playbackService.getSnapshot();
+    }
+
+    //====================METODI PER IL TAG=====================:
+
+    public Tag addTag(String name) {
+        return tagService.addTag(name);
+    }
+
+    public Tag deleteTag(String tagId) {
+        return tagService.deleteTag(tagId);
+    }
+
+    public void assignTagToTrack(String trackId, String tagId) {
+        tagService.assignTagToTrack(trackId, tagId);
+    }
+
+    public void removeTagFromTrack(String trackId, String tagId) {
+        tagService.removeTagFromTrack(trackId, tagId);
+    }
+
+    public List<Track> getTracksByTag(String tagId) {
+        return tagService.getTracksByTag(tagId);
+    }
+
+    public List<Tag> getAllTags() {
+        return tagService.getAllTags();
+    }
+
+    public List<Tag> getTagsForTrack(String trackId) {
+        return tagService.getTagsForTrack(trackId);
     }
 }
