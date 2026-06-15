@@ -70,22 +70,14 @@ public class DeleteTrackCommand implements Command {
             return;
         }
 
-        trackService.addTrack(
-                deletedTrack.getId(),
-                deletedTrack.getTitle(),
-                deletedTrack.getAuthor(),
-                deletedTrack.getDuration(),
-                deletedTrack.getGenre(),
-                deletedTrack.getYear());
+        /*
+         * Il repository esegue il ripristino della traccia e delle associazioni
+         * come una sola operazione atomica. In caso di errore UndoManager
+         * conserva il command nella cronologia per consentire un nuovo tentativo.
+         */
+        trackService.restoreTrack(deletedTrack, playlistPositions);
 
-        for (Map.Entry<String, Integer> entry : playlistPositions.entrySet()) {
-            playlistService.restoreTrackToPlaylist(
-                    entry.getKey(),
-                    deletedTrack.getId(),
-                    entry.getValue());
-        }
-
-        // Se il ripristino fallisce, queste righe non vengono raggiunte.
+        // Lo snapshot viene eliminato soltanto dopo il commit riuscito.
         deletedTrack = null;
         playlistPositions.clear();
     }

@@ -1,9 +1,9 @@
 package it.unisa.sad.playlistmanager.application.service;
 
 import java.util.List;
+import java.util.Map;
 
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
-import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
@@ -53,6 +53,29 @@ public class TrackService {
         trackRepository.save(newTrack);
 
         return newTrack;
+    }
+
+    /**
+     * Ripristina atomicamente una traccia eliminata e le associazioni che aveva
+     * con le playlist.
+     *
+     * La transazione e' gestita dal repository, che possiede la connessione al
+     * database. Se il ripristino fallisce, nessuna modifica parziale deve
+     * rimanere persistita.
+     *
+     * @param track traccia da ricreare con ID e metadati originali
+     * @param playlistPositions ID delle playlist e posizioni da ripristinare
+     */
+    public void restoreTrack(
+            Track track,
+            Map<String, Integer> playlistPositions) {
+        validateTrackInput(track);
+        if (playlistPositions == null) {
+            throw new ValidationException(
+                    "Le posizioni della Track nelle playlist non possono essere nulle.");
+        }
+
+        trackRepository.restoreWithPlaylistPositions(track, playlistPositions);
     }
 
     /**

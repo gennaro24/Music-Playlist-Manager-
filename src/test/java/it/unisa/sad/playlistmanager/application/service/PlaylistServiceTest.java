@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -183,6 +184,25 @@ class PlaylistServiceTest {
                 }
             }
             return Optional.empty();
+        }
+
+        @Override
+        public void restoreWithPlaylistPositions(
+                Track track,
+                Map<String, Integer> playlistPositions) {
+            simulatedCatalog.add(track);
+
+            if (linkedPlaylistRepo == null) {
+                return;
+            }
+
+            Integer position = playlistPositions.get("1");
+            if (position != null) {
+                int index = Math.max(
+                        0,
+                        Math.min(position - 1, linkedPlaylistRepo.tracksInPlaylist1.size()));
+                linkedPlaylistRepo.tracksInPlaylist1.add(index, track);
+            }
         }
     }
 
