@@ -88,6 +88,11 @@ class PlaylistServiceTest {
         }
 
         @Override
+        public void addTrackToPlaylistAtPosition(String playlistId, String trackId, int position) {
+            // TODO: simulare l'inserimento della traccia nella posizione richiesta.
+        }
+
+        @Override
         public void removeTrackFromPlaylist(String playlistId, String trackId) {
             this.isRemoveTrackCalled = true;
             this.tracksInPlaylist1.removeIf(t -> t.getId().equals(trackId));
@@ -99,6 +104,12 @@ class PlaylistServiceTest {
                 return Collections.emptyList();
             }
             return this.tracksInPlaylist1;
+        }
+
+        @Override
+        public Optional<Integer> getTrackPosition(String playlistId, String trackId) {
+            // TODO: restituire la posizione simulata della traccia nella playlist.
+            return Optional.empty();
         }
 
         /**

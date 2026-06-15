@@ -31,6 +31,22 @@ public class Playlist {
 
     }
 
+    /**
+     * Costruttore completo dell'entità Playlist con tracce.
+     * @param id   L'identificativo univoco. Se nullo o vuoto, viene generato automaticamente un UUID.
+     * @param name Il nome assegnato alla playlist.
+     * @param tracks La lista di tracce da associare alla playlist.
+     * @throws ValidationException Se il nome viola le regole di validazione del dominio.
+     */
+    public Playlist(String id, String name, List<Track> tracks) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new ValidationException("Il nome della playlist non può essere vuoto o nullo.");
+        }
+        this.id = (id == null || id.trim().isEmpty()) ? UUID.randomUUID().toString() : id;
+        this.name = name;
+        this.tracks = new ArrayList<>(tracks);
+    }
+
     // --- GETTERS ---
     public String getId() { return id; }
     public String getName() { return name; }
