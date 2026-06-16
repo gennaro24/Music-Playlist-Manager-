@@ -348,7 +348,7 @@ public class PlaylistController {
      * Invia una richiesta sincrona alla Facade estraendo tutte le playlist salvate
      * e le riversa all'interno della lista grafica globale.
      */
-    private void loadPlaylists() {
+    public void loadPlaylists() {
         if (facade == null || listPlaylists == null) return;
         listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
     }

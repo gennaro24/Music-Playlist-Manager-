@@ -260,4 +260,14 @@ public class PlaybackController {
         int seconds = totalSeconds % 60;
         return String.format("%d:%02d", minutes, seconds);
     }
+
+    /**
+     * TASK T3-12: Forza un riallineamento sincrono immediato della vista del lettore
+     * prelevando l'ultimo snapshot disponibile dalla Facade.
+     */
+    public void refreshView() {
+        if (facade != null) {
+            updatePlaybackView(facade.getPlaybackSnapshot());
+        }
+    }
 }

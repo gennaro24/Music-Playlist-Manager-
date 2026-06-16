@@ -2,24 +2,20 @@ package it.unisa.sad.playlistmanager.ui.controller;
 
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.scene.control.Button;
+import javafx.util.Duration;
 
 /**
  * Controllore principale della vista di dashboard (MainView).
- * Agisce come coordinatore (Mediator) di presentazione tra i sotto-controller
- * inclusi nell'interfaccia grafica (Viste nidificate via {@code <fx:include>}).
- * * <p><b>Revisione Sprint 2 (US-Tech 01):</b> È stato rimosso l'intero blocco legacy
- * di bootstrap infrastrutturale. La classe non detiene alcuna dipendenza verso
- * {@code DatabaseConnectionManager}, repository concrete o pacchetti di servizio,
- * delegando la risoluzione del grafo delle dipendenze alla {@code ControllerFactory}
- * mediante Constructor Injection.</p>
- * @version 2.0
- * @see MusicPlaylistManagerFacade
+ * Agisce come coordinatore (Mediator) di presentazione tra i sotto-controller.
+ * * @version 3.0 (Sprint 3 - Undo Integration)
  */
 public class MainViewController {
 
@@ -32,14 +28,15 @@ public class MainViewController {
      * Stato locale della playlist attualmente selezionata dall'utente.
      */
     private Playlist selectedPlaylist;
+    private Timeline undoMonitorTimeline;
 
     @FXML private Label lblFeedback;
     @FXML private Label labelPageTitle;
     @FXML private VBox trackContainer;
     
-    /**
-     * Sotto-controllore iniettato da JavaFX per la gestione del catalogo tracce.
-     */
+    // Pulsante aggiunto per US-19/20 (T3-11)
+    @FXML private Button btnUndo;
+    
     @FXML private TrackController trackContainerController;
     
     /**
@@ -70,19 +67,65 @@ public class MainViewController {
      */
     @FXML
     private void initialize() {
-        // CONFIGURAZIONE DEI COMPORTAMENTI INTER-CONTROLLER (EVENT LISTENERS)
         configurePlaylistSelectionBehavior();
         configureTrackPlaybackBehavior();
-    
-        // AGGIORNAMENTO DELLO STATO INIZIALE DELLA UI
         updateTitleLabel();
+    
+        // T3-11: Avvia il monitoraggio reattivo dello stato del pulsante Undo
+        startUndoStateMonitoring();
     }
     
     /**
-     * Configura la callback reattiva sulla ListView del PlaylistController.
-     * Gestisce il layout geometrico della dashboard a seconda che una playlist
-     * venga selezionata o deselezionata (Toggle Behavior).
+     * TASK T3-11: Configura un ciclo temporizzato leggero (ogni 300ms) per verificare 
+     * lo stato dello stack dei comandi e disabilitare/abilitare il pulsante in tempo reale.
      */
+    private void startUndoStateMonitoring() {
+        undoMonitorTimeline = new Timeline(new KeyFrame(Duration.millis(300), event -> {
+            if (btnUndo != null && facade != null) {
+                btnUndo.setDisable(!facade.canUndo());
+            }
+        }));
+        undoMonitorTimeline.setCycleCount(Timeline.INDEFINITE);
+        undoMonitorTimeline.play();
+    }
+    
+    /**
+     * TASK T3-11, T3-12, T3-13: Gestore centralizzato dell'azione di Undo.
+     * Innesca il rollback logico e ridistribuisce l'ordine di rinfresco ai sotto-moduli.
+     */
+    @FXML
+    private void handleUndo(ActionEvent event) {
+        if (facade == null) return;
+        
+        try {
+            if (facade.canUndo()) {
+                // 1. Esecuzione dell'Undo sul motore applicativo
+                facade.undoLastAction();
+                
+                // 2. TASK T3-12: Sincronizzazione ed allineamento dell'interfaccia grafica
+                if (playlistViewController != null) {
+                    playlistViewController.loadPlaylists();
+                }
+                if (trackContainerController != null) {
+                    trackContainerController.refresh();
+                }
+                if (playbackViewController != null) {
+                    playbackViewController.refreshView();
+                }
+                
+                updateTitleLabel();
+                
+                // 3. TASK T3-13: Feedback testuale chiaro di successo
+                setUIFeedback("#1f7a1f", "↶ Successo: Ultima operazione annullata!");
+            } else {
+                // TASK T3-13: Operazione non annullabile o storico vuoto
+                setUIFeedback("#b0413e", "Nessuna operazione da annullare nello storico.");
+            }
+        } catch (Exception e) {
+            setUIFeedback("#b0413e", "Errore durante l'esecuzione dell'undo: " + e.getMessage());
+        }
+    }
+    
     private void configurePlaylistSelectionBehavior() {
         if (playlistViewController == null) return;
     
@@ -123,7 +166,6 @@ public class MainViewController {
 
         if (trackContainerController != null) {
             trackContainerController.showCatalogView();
-            // Workaround per prevenire difetti di rendering geometrico al primo rendering
             Platform.runLater(() -> trackContainerController.displayPlaylistTracks(playlist));
         }
 
