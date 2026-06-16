@@ -62,15 +62,18 @@ class PlaylistServiceTest {
         }
 
         @Override
+        public void saveWithTracks(Playlist playlist, List<Track> tracks) {
+            save(playlist);
+            if ("1".equals(playlist.getId())) {
+                this.tracksInPlaylist1 = new ArrayList<>(tracks);
+            }
+        }
+
+        @Override
         public Optional<Playlist> findById(String id) {
             return this.simulatedPlaylists.stream()
                     .filter(p -> p.getId().equals(id))
                     .findFirst();
-        }
-
-        @Override
-        public Optional<Playlist> findByName(String name) {
-            return Optional.empty();
         }
 
         @Override

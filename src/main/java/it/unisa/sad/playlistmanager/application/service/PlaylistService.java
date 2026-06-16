@@ -66,6 +66,20 @@ public class PlaylistService {
         return newPlaylist;
     }
 
+    public Playlist createPlaylistWithTracks(String name, List<Track> tracks) {
+        return createPlaylistWithTracks(null, name, tracks);
+    }
+
+    public Playlist createPlaylistWithTracks(String id, String name, List<Track> tracks) {
+        validateText(name, "Il nome della playlist non può essere nullo o vuoto.");
+        validateTracksInput(tracks);
+
+        Playlist newPlaylist = new Playlist(id, name);
+        playlistRepository.saveWithTracks(newPlaylist, tracks);
+
+        return newPlaylist;
+    }
+
     /**
      * Popola una playlist esistente con tracce.
      */
@@ -228,6 +242,18 @@ public class PlaylistService {
     private void validateText(String value, String errorMessage) {
         if (value == null || value.trim().isEmpty()) {
             throw new ValidationException(errorMessage);
+        }
+    }
+
+    private void validateTracksInput(List<Track> tracks) {
+        if (tracks == null) {
+            throw new ValidationException("La lista di tracce non può essere nulla.");
+        }
+        for (Track track : tracks) {
+            if (track == null) {
+                throw new ValidationException("La playlist non può contenere tracce nulle.");
+            }
+            getExistingTrack(track.getId());
         }
     }
 

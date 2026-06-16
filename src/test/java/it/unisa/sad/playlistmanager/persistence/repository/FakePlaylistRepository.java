@@ -33,14 +33,21 @@ public class FakePlaylistRepository implements PlaylistRepository {
     }
 
     @Override
+    public void saveWithTracks(Playlist playlist, List<Track> tracks) {
+        save(playlist);
+        if ("1".equals(playlist.getId())) {
+            tracksInPlaylist1 = new ArrayList<>(tracks);
+        } else if ("2".equals(playlist.getId())) {
+            tracksInPlaylist2 = new ArrayList<>(tracks);
+        }
+    }
+
+    @Override
     public Optional<Playlist> findById(String id) {
         return this.simulatedPlaylists.stream()
                 .filter(p -> p.getId().equals(id))
                 .findFirst();
     }
-
-    @Override
-    public Optional<Playlist> findByName(String name) { return Optional.empty(); }
 
     @Override
     public List<Playlist> findAll() { return this.simulatedPlaylists; }

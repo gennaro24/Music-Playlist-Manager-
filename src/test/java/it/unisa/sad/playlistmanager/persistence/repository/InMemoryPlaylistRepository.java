@@ -35,13 +35,18 @@ public class InMemoryPlaylistRepository implements PlaylistRepository {
     }
 
     @Override
-    public Optional<Playlist> findById(String id) {
-        return Optional.ofNullable(playlists.get(id));
+    public void saveWithTracks(Playlist playlist, List<Track> tracks) {
+        save(playlist);
+        List<String> ids = trackIdsByPlaylist.get(playlist.getId());
+        ids.clear();
+        for (Track track : tracks) {
+            ids.add(track.getId());
+        }
     }
 
     @Override
-    public Optional<Playlist> findByName(String name) {
-        return playlists.values().stream().filter(p -> p.getName().equals(name)).findFirst();
+    public Optional<Playlist> findById(String id) {
+        return Optional.ofNullable(playlists.get(id));
     }
 
     @Override
