@@ -8,6 +8,9 @@ import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacad
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Tag;
 import it.unisa.sad.playlistmanager.domain.model.Track;
+import it.unisa.sad.playlistmanager.ui.util.TrackFormValues;
+import it.unisa.sad.playlistmanager.ui.util.TrackTagTextFormatter;
+import it.unisa.sad.playlistmanager.ui.util.StyledAlertFactory;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
@@ -17,17 +20,11 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Region;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.beans.binding.Bindings;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.function.Consumer;
 
 /**
@@ -39,6 +36,12 @@ import java.util.function.Consumer;
  * @version 4.0
  */
 public class TrackController {
+
+    private static final String FEEDBACK_COLOR_ERROR = "red";
+    private static final String FEEDBACK_COLOR_SUCCESS = "#1f7a1f";
+    private static final String FEEDBACK_COLOR_SUCCESS_ALT = "green";
+    private static final String FEEDBACK_COLOR_INFO = "#0066cc";
+    private static final String FEEDBACK_COLOR_WARNING = "#b0413e";
 
     /** Istanza centralizzata dell'Application Facade per il pass-through dei casi d'uso. */
     private final MusicPlaylistManagerFacade facade;
@@ -145,23 +148,30 @@ public class TrackController {
      */
     @FXML
     private void initialize() {
+        // 1. CONFIGURAZIONE INIZIALE DEI COMPONENTI GRAFICI
         if (tableTracks != null) {
+            // 2. CONFIGURAZIONE DELLA TABLEVIEW
             tableTracks.setEditable(false);
             tableTracks.setFixedCellSize(-1);
         }
 
+        // 3. CONFIGURAZIONE DELLE COLONNE DELLA TABLEVIEW
         initializeTableColumns();
+
+        // 4. CONFIGURAZIONE DELLE PLAYLIST
         configureDropdownPlaylistsRendering();
         configureTagComboRendering();
         if (tableTracks != null) {
             configureTableToggleDeselection();
             configureTableSelectionListener();
         }
-
+        // 5. CARICAMENTO DEI DATI DI CATALOGO
         if (this.facade != null) {
             loadCatalog();
             refreshTagCombos();
+            // 6. CONFIGURAZIONE DELLE PLAYLIST
             if (dropdownPlaylists != null) {
+                //PATTERN OBSERVABLE ARRAY LIST, in questo caso viene passato l'elenco delle playlist alla dropdown
                 dropdownPlaylists.setItems(FXCollections.observableArrayList(this.facade.getAllPlaylists()));
             }
         }
@@ -197,245 +207,85 @@ public class TrackController {
     }
 
     /**
-     * Configura la colonna dei tag come testo compatto: un tag per riga.
+     * Configura la colonna tag come testo semplice: un nome per riga.
      */
     private void configureTagsColumn() {
         if (colTags == null) {
             return;
         }
 
-        colTags.setEditable(false);
+        // 7. CONFIGURAZIONE DELLA COLONNA TAG
+        colTags.setEditable(false); //NON è editabile
         colTags.setCellValueFactory(cellData -> {
             Track track = cellData.getValue();
             if (track == null || facade == null) {
                 return new ReadOnlyObjectWrapper<>("");
             }
-            return new ReadOnlyObjectWrapper<>(formatTagsForDisplay(facade.getTagsForTrack(track.getId())));
+            return new ReadOnlyObjectWrapper<>(TrackTagTextFormatter.formatForTable( //FORMATTA I TAG PER LA TABELLA
+                    facade.getTagsForTrack(track.getId())));
         });
         colTags.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                setGraphic(null);
                 if (empty || item == null || item.isBlank()) {
                     setText(null);
+                    setGraphic(null);
                     setTooltip(null);
-                    setPrefHeight(Region.USE_COMPUTED_SIZE);
-                    setMinHeight(Region.USE_COMPUTED_SIZE);
                     return;
                 }
-
-                setText(item);
-                setWrapText(false);
-                setAlignment(Pos.CENTER_LEFT);
-                setTooltip(new Tooltip(item.replace("\n", ", ")));
-
-                double cellHeight = computeTagCellHeight(item);
-                setMinHeight(cellHeight);
-                setPrefHeight(cellHeight);
-
-                TableRow<Track> row = getTableRow();
-                if (row != null) {
-                    row.setMinHeight(cellHeight);
-                    row.setPrefHeight(cellHeight);
-                }
+                // 8. CONFIGURAZIONE DELLA CELLA TAG
+                setGraphic(null);
+                setText(item); //SETTA IL TESTO DELLA CELLA
+                setWrapText(false); //NON SI PUò INVIARE A CAPO
+                setAlignment(Pos.CENTER_LEFT); //CENTRA IL TESTO A SINISTRA
+                setTooltip(new Tooltip(item.replace("\n", ", "))); //TOOLTIP PER MOSTRARE I TAG SEPARATI DA VIRGOLA
             }
         });
     }
 
-    private double computeTagCellHeight(String tagsText) {
-        int lineCount = tagsText.split("\n", -1).length;
-        return Math.max(32, lineCount * 17.0 + 8.0);
-    }
-
-    private Label createTagBadgeLabel(String tagName) {
-        Label badge = new Label(tagName);
-        badge.setStyle(
-                "-fx-background-color: #dbeafe;"
-                        + "-fx-text-fill: #1e3a8a;"
-                        + "-fx-padding: 2 8;"
-                        + "-fx-background-radius: 10;"
-                        + "-fx-font-size: 11px;");
-        return badge;
-    }
-
-    private String formatTagsForDisplay(java.util.List<Tag> tags) {
-        if (tags == null || tags.isEmpty()) {
-            return "";
-        }
-        return tags.stream()
-                .map(Tag::getName)
-                .collect(Collectors.joining("\n"));
-    }
-
     /**
-     * Apre una finestra di dialogo per modificare i metadati e i tag della traccia.
+     * Apre il dialog dedicato per modificare metadati e tag della traccia selezionata.
      */
     private void showEditTrackDialog(Track track) {
         if (facade == null || track == null) {
             return;
         }
+        // 9. APERTURA DEL DIALOGO DI MODIFICA DEI METADATI E DEI TAG
+        TrackEditDialog dialog = new TrackEditDialog(
+                facade,
 
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Modifica traccia");
-        dialog.setHeaderText("Modifica i metadati di \"" + track.getTitle() + "\"");
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-
-        TextField editTitle = new TextField(track.getTitle());
-        TextField editAuthor = new TextField(track.getAuthor());
-        TextField editDuration = new TextField(String.valueOf(track.getDuration()));
-        TextField editGenre = new TextField(track.getGenre());
-        TextField editYear = new TextField(String.valueOf(track.getYear()));
-
-        FlowPane tagsPreview = new FlowPane();
-        tagsPreview.setHgap(4);
-        tagsPreview.setVgap(4);
-        tagsPreview.setPrefWrapLength(280);
-        tagsPreview.setMaxHeight(72);
-
-        ComboBox<Tag> dialogAssignTag = new ComboBox<>();
-        ComboBox<Tag> dialogRemoveTag = new ComboBox<>();
-        configureTagCombo(dialogAssignTag, "Tag da assegnare");
-        configureTagCombo(dialogRemoveTag, "Tag da rimuovere");
-        dialogAssignTag.setPrefWidth(200);
-        dialogRemoveTag.setPrefWidth(200);
-
-        Button dialogAssignBtn = new Button("Assegna");
-        Button dialogRemoveBtn = new Button("Rimuovi");
-
-        Runnable refreshDialogTagControls = () -> refreshTrackTagDialogControls(
-                track,
-                tagsPreview,
-                dialogAssignTag,
-                dialogRemoveTag,
-                dialogAssignBtn,
-                dialogRemoveBtn);
-        refreshDialogTagControls.run();
-
-        dialogAssignBtn.setOnAction(event -> {
-            Tag tagToAssign = dialogAssignTag.getSelectionModel().getSelectedItem();
-            if (tagToAssign == null) {
-                return;
+                this::showErrorFeedback,
+                this::refreshTagColumn,
+                this::validateFormValues);
+        //MOSTRA IL DIALOGO E SE IL VALORE DELLA TRACCIA È MODIFICATO, VENGONO AGGIORNATI I DATI DEL CATALOGO
+        dialog.show(track).ifPresent(updatedTrack -> {
+            selectedTrack = updatedTrack;
+            showSuccessFeedback("Traccia modificata con successo.");
+            loadCatalog();
+            refreshTagCombos();
+            if (playlistViewMode && currentPlaylist != null) {
+                loadPlaylistTracks(currentPlaylist);
             }
-            try {
-                facade.assignTagToTrack(track.getId(), tagToAssign.getId());
-                refreshDialogTagControls.run();
-                if (tableTracks != null) {
-                    tableTracks.refresh();
-                }
-            } catch (ValidationException | TrackNotFoundException | TagNotFoundException e) {
-                labelFeedback(e.getMessage(), "red");
-            }
-        });
-
-        dialogRemoveBtn.setOnAction(event -> {
-            Tag tagToRemove = dialogRemoveTag.getSelectionModel().getSelectedItem();
-            if (tagToRemove == null) {
-                return;
-            }
-            try {
-                facade.removeTagFromTrack(track.getId(), tagToRemove.getId());
-                refreshDialogTagControls.run();
-                if (tableTracks != null) {
-                    tableTracks.refresh();
-                }
-            } catch (ValidationException | TrackNotFoundException | TagNotFoundException e) {
-                labelFeedback(e.getMessage(), "red");
-            }
-        });
-
-        GridPane form = new GridPane();
-        form.setHgap(10);
-        form.setVgap(10);
-        form.setPadding(new Insets(10, 20, 10, 10));
-        form.add(new Label("Titolo *"), 0, 0);
-        form.add(editTitle, 1, 0);
-        form.add(new Label("Autore *"), 0, 1);
-        form.add(editAuthor, 1, 1);
-        form.add(new Label("Durata (sec) *"), 0, 2);
-        form.add(editDuration, 1, 2);
-        form.add(new Label("Genere *"), 0, 3);
-        form.add(editGenre, 1, 3);
-        form.add(new Label("Anno *"), 0, 4);
-        form.add(editYear, 1, 4);
-        form.add(new Label("Tag assegnati"), 0, 5, 2, 1);
-        form.add(tagsPreview, 0, 6, 2, 1);
-        form.add(new Label("Assegna tag"), 0, 7);
-        form.add(new HBox(8, dialogAssignTag, dialogAssignBtn), 1, 7);
-        form.add(new Label("Rimuovi tag"), 0, 8);
-        form.add(new HBox(8, dialogRemoveTag, dialogRemoveBtn), 1, 8);
-
-        editTitle.setPrefWidth(260);
-        editAuthor.setPrefWidth(260);
-        editDuration.setPrefWidth(260);
-        editGenre.setPrefWidth(260);
-        editYear.setPrefWidth(260);
-
-        dialog.getDialogPane().setContent(form);
-        dialog.showAndWait().ifPresent(buttonType -> {
-            if (buttonType != ButtonType.OK) {
-                return;
-            }
-            try {
-                String title = toSentenceCase(editTitle.getText());
-                String author = toSentenceCase(editAuthor.getText());
-                String genre = toSentenceCase(editGenre.getText());
-                int duration = Integer.parseInt(editDuration.getText().trim());
-                int year = Integer.parseInt(editYear.getText().trim());
-                validateDataInput(title, author, genre, duration, year);
-
-                Track updatedTrack = new Track(track.getId(), title, author, duration, genre, year);
-                facade.updateTrack(track.getId(), updatedTrack);
-                selectedTrack = updatedTrack;
-                labelFeedback("Traccia modificata con successo.", "#1f7a1f");
-                loadCatalog();
-                refreshTagCombos();
-                if (playlistViewMode && currentPlaylist != null) {
-                    loadPlaylistTracks(currentPlaylist);
-                }
-                if (tableTracks != null) {
-                    tableTracks.refresh();
-                }
-            } catch (NumberFormatException e) {
-                labelFeedback("Durata e anno devono essere numeri validi.", "red");
-            } catch (ValidationException | it.unisa.sad.playlistmanager.domain.exceptions.ValidationException e) {
-                labelFeedback(e.getMessage(), "red");
-            } catch (IllegalArgumentException e) {
-                labelFeedback(e.getMessage(), "red");
-            } catch (Exception e) {
-                labelFeedback("Errore durante la modifica della traccia.", "red");
-            }
+            refreshTagColumn();
         });
     }
 
-    private void refreshTrackTagDialogControls(
-            Track track,
-            FlowPane preview,
-            ComboBox<Tag> assignCombo,
-            ComboBox<Tag> removeCombo,
-            Button assignButton,
-            Button removeButton) {
-        if (facade == null || track == null) {
-            return;
+    /** Aggiorna il rendering della colonna tag dopo mutazioni sui tag. */
+    private void refreshTagColumn() {
+        if (tableTracks != null) {
+            tableTracks.refresh();
         }
+    }
 
-        preview.getChildren().clear();
-        List<Tag> trackTags = facade.getTagsForTrack(track.getId());
-        for (Tag tag : trackTags) {
-            preview.getChildren().add(createTagBadgeLabel(tag.getName()));
-        }
-
-        Set<String> assignedIds = trackTags.stream().map(Tag::getId).collect(Collectors.toSet());
-        List<Tag> availableTags = facade.getAllTags().stream()
-                .filter(tag -> !assignedIds.contains(tag.getId()))
-                .toList();
-
-        assignCombo.setItems(FXCollections.observableArrayList(availableTags));
-        assignCombo.getSelectionModel().clearSelection();
-        removeCombo.setItems(FXCollections.observableArrayList(trackTags));
-        removeCombo.getSelectionModel().clearSelection();
-        assignButton.setDisable(availableTags.isEmpty());
-        removeButton.setDisable(trackTags.isEmpty());
+    /** Valida i campi del form traccia prima dell'invocazione dei servizi. */
+    private void validateFormValues(TrackFormValues values) {
+        validateDataInput(
+                values.title(),
+                values.author(),
+                values.genre(),
+                values.duration(),
+                values.year());
     }
 
     /**
@@ -446,6 +296,7 @@ public class TrackController {
                 || colDuration == null || colGenre == null || colYear == null || colTags == null) {
             return;
         }
+        //CONFIGURAZIONE DELLE COLONNE RESPONSIVE
         tableTracks.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         final double weightTitle = 0.23;
         final double weightAuthor = 0.23;
@@ -455,6 +306,7 @@ public class TrackController {
         final double weightTags = 0.22;
         double scrollbarOffset = 15.0;
 
+        //BINDING DELLE COLONNE RESPONSIVE
         colTitle.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightTitle));
         colAuthor.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightAuthor));
         colDuration.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightDuration));
@@ -462,6 +314,7 @@ public class TrackController {
         colYear.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightYear));
         colTags.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightTags));
 
+        //SETTA LE MIN WIDTH DELLE COLONNE
         colTitle.setMinWidth(120);
         colAuthor.setMinWidth(110);
         colDuration.setMinWidth(70);
@@ -476,15 +329,19 @@ public class TrackController {
      */
     private void configureDropdownPlaylistsRendering() {
         if (dropdownPlaylists == null) return;
+        //CONFIGURAZIONE DELLE CELLE DELLA DROPDOWN PLAYLIST
         dropdownPlaylists.setCellFactory(lv -> new ListCell<>() {
             @Override
+            //SETTA IL TESTO DELLA CELLA
             protected void updateItem(Playlist item, boolean empty) {
                 super.updateItem(item, empty);
                 setText((empty || item == null) ? null : item.getName());
             }
         });
+        //CONFIGURAZIONE DELLE CELLE DEL BOTTONE DELLA DROPDOWN PLAYLIST
         dropdownPlaylists.setButtonCell(new ListCell<>() {
             @Override
+            //SETTA IL TESTO DEL BOTTONE
             protected void updateItem(Playlist item, boolean empty) {
                 super.updateItem(item, empty);
                 setText((empty || item == null) ? "Seleziona una playlist" : item.getName());
@@ -496,10 +353,12 @@ public class TrackController {
      * Configura il rendering dei menu a tendina che mostrano oggetti {@link Tag}.
      */
     private void configureTagComboRendering() {
+        //CONFIGURAZIONE DELLE CELLE DELLA DROPDOWN TAG
         configureTagCombo(dropdownAllTags, "Seleziona un tag");
     }
 
     private void configureTagCombo(ComboBox<Tag> comboBox, String emptyPrompt) {
+        //CONFIGURAZIONE DELLE CELLE DELLA DROPDOWN TAG
         if (comboBox == null) {
             return;
         }
@@ -559,11 +418,9 @@ public class TrackController {
             if (tableTracks != null) {
                 tableTracks.refresh();
             }
-            labelFeedback("Tag '" + createdTag.getName() + "' creato con successo.", "#1f7a1f");
-        } catch (ValidationException e) {
-            labelFeedback(e.getMessage(), "red");
+            showSuccessFeedback("Tag '" + createdTag.getName() + "' creato con successo.");
         } catch (RuntimeException e) {
-            labelFeedback("Errore durante la creazione del tag.", "red");
+            handleUIException(e, "Errore durante la creazione del tag.");
         }
     }
 
@@ -575,11 +432,11 @@ public class TrackController {
 
         Tag tagToDelete = dropdownAllTags.getSelectionModel().getSelectedItem();
         if (tagToDelete == null) {
-            labelFeedback("Seleziona un tag da eliminare.", "red");
+            showErrorFeedback("Seleziona un tag da eliminare.");
             return;
         }
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        Alert alert = StyledAlertFactory.create(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Conferma eliminazione");
         alert.setHeaderText("Eliminare il tag '" + tagToDelete.getName() + "'?");
         alert.setContentText("Il tag verrà rimosso da tutte le tracce associate.");
@@ -594,9 +451,9 @@ public class TrackController {
                 if (tableTracks != null) {
                     tableTracks.refresh();
                 }
-                labelFeedback("Tag '" + tagToDelete.getName() + "' eliminato.", "#1f7a1f");
-            } catch (ValidationException | TagNotFoundException e) {
-                labelFeedback(e.getMessage(), "red");
+                showSuccessFeedback("Tag '" + tagToDelete.getName() + "' eliminato.");
+            } catch (RuntimeException e) {
+                handleUIException(e, "Errore durante l'eliminazione del tag.");
             }
         });
     }
@@ -607,16 +464,7 @@ public class TrackController {
      */
     private void configureTableToggleDeselection() {
         tableTracks.setRowFactory(tv -> {
-            final TableRow<Track> row = new TableRow<>() {
-                @Override
-                protected void updateItem(Track item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) {
-                        setMinHeight(Region.USE_COMPUTED_SIZE);
-                        setPrefHeight(Region.USE_COMPUTED_SIZE);
-                    }
-                }
-            };
+            final TableRow<Track> row = new TableRow<>();
             MenuItem playItem = new MenuItem("Play");
             MenuItem editItem = new MenuItem("Modifica"); 
             MenuItem deleteItem = new MenuItem("Elimina dal catalogo"); // Iniezione Task T-89
@@ -645,7 +493,7 @@ public class TrackController {
                 if (track == null) return;
 
                 // T-89: Configurazione e apertura del dialogo di conferma nativo
-                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                Alert alert = StyledAlertFactory.create(Alert.AlertType.CONFIRMATION);
                 alert.setTitle("Conferma Eliminazione");
                 alert.setHeaderText("Eliminare la traccia dal catalogo?");
                 alert.setContentText("L'operazione rimuoverà definitivamente la traccia '" + track.getTitle() + "' anche da tutte le playlist.");
@@ -654,9 +502,8 @@ public class TrackController {
                 if (confirmationResult.isPresent() && confirmationResult.get() == ButtonType.OK) {
                     try {
                         facade.deleteTrack(track.getId());
-                        labelFeedback("Traccia eliminata con successo.", "green");
-                        
-                        // T-90: Aggiornamento reattivo in tempo reale del catalogo e della playlist corrente
+                        showSuccessFeedbackAlt("Traccia eliminata con successo.");
+
                         loadCatalog();
                         if (playlistViewMode && currentPlaylist != null) {
                             loadPlaylistTracks(currentPlaylist);
@@ -664,10 +511,10 @@ public class TrackController {
                         tableTracks.getSelectionModel().clearSelection();
                         selectedTrack = null;
                     } catch (Exception e) {
-                        labelFeedback("Errore durante l'eliminazione della traccia.", "red");
+                        handleUIException(e, "Errore durante l'eliminazione della traccia.");
                     }
                 } else {
-                    labelFeedback("Eliminazione annullata.", "#0066cc"); // Scenario 2
+                    showInfoFeedback("Eliminazione annullata.");
                 }
             });
 
@@ -774,14 +621,14 @@ public class TrackController {
     @FXML
     private void handlePlayCatalog(ActionEvent event) {
         if (facade == null) {
-            labelFeedback("Errore: Facade non inizializzata.", "red");
+            showErrorFeedback("Errore: Facade non inizializzata.");
             return;
         }
         try {
             facade.playCatalog();
-            labelFeedback("Riproduzione del catalogo globale avviata.", "green");
+            showSuccessFeedbackAlt("Riproduzione del catalogo globale avviata.");
         } catch (Exception e) {
-            labelFeedback("Errore durante l'avvio del catalogo: " + e.getMessage(), "red");
+            handleUIException(e, "Errore durante l'avvio del catalogo.");
         }
     }
 
@@ -795,33 +642,32 @@ public class TrackController {
     private void handleTrackAddition(ActionEvent event) {
         lblFeedback.setText("");
         if (facade == null) {
-            labelFeedback("Errore interno: facade non inizializzata.", "red");
+            showErrorFeedback("Errore interno: facade non inizializzata.");
             return;
         }
         try {
-            String title = toSentenceCase(txtTitle.getText());
-            String author = toSentenceCase(txtAuthor.getText());
-            String genre = toSentenceCase(txtGenre.getText());
-            int duration = Integer.parseInt(txtDuration.getText().trim());
-            int year = Integer.parseInt(txtYear.getText().trim());
-            validateDataInput(title, author, genre, duration, year);
+            TrackFormValues values = TrackFormValues.fromRaw(
+                    txtTitle.getText(),
+                    txtAuthor.getText(),
+                    txtDuration.getText(),
+                    txtGenre.getText(),
+                    txtYear.getText());
+            validateFormValues(values);
 
-            Track newTrack = facade.addTrack(title, author, duration, genre, year);
+            Track newTrack = facade.addTrack(
+                    values.title(),
+                    values.author(),
+                    values.duration(),
+                    values.genre(),
+                    values.year());
             if (newTrack != null) {
                 tableTracks.getSelectionModel().clearSelection();
                 clearForm();
-                labelFeedback("Traccia aggiunta con successo.", "green");
+                showSuccessFeedbackAlt("Traccia aggiunta con successo.");
                 loadCatalog();
             }
-        } catch (NumberFormatException e) {
-            labelFeedback("Durata e anno devono essere numeri validi.", "red");
-        } catch (ValidationException | it.unisa.sad.playlistmanager.domain.exceptions.ValidationException e) {
-            labelFeedback(e.getMessage(), "red");
-        } catch (IllegalArgumentException e) {
-            labelFeedback(e.getMessage(), "red");
         } catch (Exception e) {
-            labelFeedback("Errore durante il salvataggio della traccia.", "red");
-            e.printStackTrace();
+            handleUIException(e, "Errore durante il salvataggio della traccia.");
         }
     }
 
@@ -847,12 +693,13 @@ public class TrackController {
             Playlist targetPlaylist = dropdownPlaylists.getSelectionModel().getSelectedItem();
             try {
                 facade.addTrackToPlaylist(targetPlaylist.getId(), selectedTrack.getId());
-            } catch (ValidationException | PlaylistNotFoundException | TrackNotFoundException | IllegalArgumentException e) {
-                labelFeedback(e.getMessage(), "red");
+            } catch (Exception e) {
+                handleUIException(e, "Errore durante l'aggiunta alla playlist.");
                 return;
             }
 
-            labelFeedback("Traccia '" + selectedTrack.getTitle() + "' aggiunta alla playlist '" + targetPlaylist.getName() + "' con successo.", "green");
+            showSuccessFeedbackAlt("Traccia '" + selectedTrack.getTitle()
+                    + "' aggiunta alla playlist '" + targetPlaylist.getName() + "' con successo.");
             if (playlistViewMode && currentPlaylist != null && currentPlaylist.getId().equals(targetPlaylist.getId())) {
                 loadPlaylistTracks(currentPlaylist);
             }
@@ -862,7 +709,7 @@ public class TrackController {
                 hboxAddtoPlaylist.setManaged(false);
             }
         } else {
-            labelFeedback("Seleziona una playlist valida dal menu a tendina.", "red");
+            showErrorFeedback("Seleziona una playlist valida dal menu a tendina.");
         }
     }
 
@@ -880,14 +727,14 @@ public class TrackController {
      */
     private void removeSelectedTrackFromCurrentPlaylist() {
         if (!playlistViewMode || currentPlaylist == null || selectedTrack == null) {
-            labelFeedback("Seleziona una traccia della playlist da rimuovere.", "red");
+            showErrorFeedback("Seleziona una traccia della playlist da rimuovere.");
             return;
         }
 
         try {
             facade.removeTrackFromPlaylist(currentPlaylist.getId(), selectedTrack.getId());
-        } catch (ValidationException | PlaylistNotFoundException | TrackNotFoundException | IllegalArgumentException e) {
-            labelFeedback(e.getMessage(), "red");
+        } catch (Exception e) {
+            handleUIException(e, "Errore durante la rimozione dalla playlist.");
             return;
         }
         loadPlaylistTracks(currentPlaylist);
@@ -898,9 +745,9 @@ public class TrackController {
 
         if (lblFeedback != null) {
             if (currentPlaylistTracks.isEmpty()) {
-                labelFeedback("Playlist '" + currentPlaylist.getName() + "' vuota.", "#1f7a1f");
+                showSuccessFeedback("Playlist '" + currentPlaylist.getName() + "' vuota.");
             } else {
-                labelFeedback("Traccia rimossa da '" + currentPlaylist.getName() + "'.", "#1f7a1f");
+                showSuccessFeedback("Traccia rimossa da '" + currentPlaylist.getName() + "'.");
             }
         }
     }
@@ -940,9 +787,9 @@ public class TrackController {
         if (tableTracks != null) tableTracks.refresh();
         if (lblFeedback != null) {
             if (tableTracks != null && tableTracks.getItems() != null && tableTracks.getItems().isEmpty()) {
-                labelFeedback("Catalogo vuoto. Aggiungi una traccia.", "#b0413e");
+                labelFeedback("Catalogo vuoto. Aggiungi una traccia.", FEEDBACK_COLOR_WARNING);
             } else {
-                labelFeedback("Visualizzazione catalogo completo.", "#1f7a1f");
+                showSuccessFeedback("Visualizzazione catalogo completo.");
             }
         }
     }
@@ -976,7 +823,7 @@ public class TrackController {
             hboxCatalogForms.setVisible(false);
             hboxCatalogForms.setManaged(false);
         }
-        labelFeedback("Nessuna playlist selezionata.", "#1f7a1f");
+        showSuccessFeedback("Nessuna playlist selezionata.");
     }
 
     /**
@@ -1015,7 +862,7 @@ public class TrackController {
             tableTracks.layout();
             tableTracks.refresh();
         });
-        labelFeedback("Contenuto playlist: " + playlist.getName(), "#0066cc");
+        labelFeedback("Contenuto playlist: " + playlist.getName(), FEEDBACK_COLOR_INFO);
     }
 
     /**
@@ -1026,8 +873,8 @@ public class TrackController {
         if (tableTracks == null || playlist == null || facade == null) return;
         try {
             currentPlaylistTracks = facade.getTracksForPlaylist(playlist.getId());
-        } catch (ValidationException | PlaylistNotFoundException | IllegalArgumentException e) {
-            labelFeedback(e.getMessage(), "red");
+        } catch (Exception e) {
+            handleUIException(e, "Errore durante il caricamento della playlist.");
             currentPlaylistTracks = new java.util.ArrayList<>();
         }
         tableTracks.setItems(FXCollections.observableArrayList(currentPlaylistTracks));
@@ -1047,18 +894,9 @@ public class TrackController {
     }
 
     /**
-     * Uniforma la formattazione di una stringa impostando in maiuscolo il primo carattere.
-     */
-    private String toSentenceCase(String value) {
-        if (value == null) return "";
-        String trimmed = value.trim().replaceAll("\\s+", " ");
-        if (trimmed.isEmpty()) return "";
-        return trimmed.substring(0, 1).toUpperCase() + trimmed.substring(1).toLowerCase();
-    }
-
-    /**
-     * Modifica lo stile cromatico e il testo della etichetta informativa inferiore.
-     * * @param text  Il testo descrittivo da stampare.
+     * Modifica lo stile cromatico e il testo dell'etichetta informativa inferiore.
+     *
+     * @param text  Il testo descrittivo da stampare.
      * @param color La specifica CSS per la colorazione del font.
      */
     public void labelFeedback(String text, String color) {
@@ -1066,6 +904,67 @@ public class TrackController {
             lblFeedback.setStyle("-fx-text-fill: " + color + ";");
             lblFeedback.setText(text);
         }
+    }
+
+    /** Mostra un messaggio di errore con lo stile standardizzato. */
+    private void showErrorFeedback(String message) {
+        labelFeedback(message, FEEDBACK_COLOR_ERROR);
+    }
+
+    /** Mostra un messaggio di successo con lo stile primario. */
+    private void showSuccessFeedback(String message) {
+        labelFeedback(message, FEEDBACK_COLOR_SUCCESS);
+    }
+
+    /** Mostra un messaggio di successo con lo stile alternativo (verde pieno). */
+    private void showSuccessFeedbackAlt(String message) {
+        labelFeedback(message, FEEDBACK_COLOR_SUCCESS_ALT);
+    }
+
+    /** Mostra un messaggio informativo con lo stile standardizzato. */
+    private void showInfoFeedback(String message) {
+        labelFeedback(message, FEEDBACK_COLOR_INFO);
+    }
+
+    /**
+     * Centralizza la gestione delle eccezioni UI estraendo il messaggio appropriato.
+     */
+    private void handleUIException(Exception exception, String defaultMessage) {
+        if (exception instanceof NumberFormatException) {
+            showErrorFeedback("Durata e anno devono essere numeri validi.");
+            return;
+        }
+        if (exception instanceof ValidationException validationException) {
+            showErrorFeedback(validationException.getMessage());
+            return;
+        }
+        if (exception instanceof it.unisa.sad.playlistmanager.domain.exceptions.ValidationException validationException) {
+            showErrorFeedback(validationException.getMessage());
+            return;
+        }
+        if (exception instanceof TrackNotFoundException trackNotFoundException) {
+            showErrorFeedback(trackNotFoundException.getMessage());
+            return;
+        }
+        if (exception instanceof TagNotFoundException tagNotFoundException) {
+            showErrorFeedback(tagNotFoundException.getMessage());
+            return;
+        }
+        if (exception instanceof PlaylistNotFoundException playlistNotFoundException) {
+            showErrorFeedback(playlistNotFoundException.getMessage());
+            return;
+        }
+        if (exception instanceof IllegalArgumentException illegalArgumentException) {
+            showErrorFeedback(illegalArgumentException.getMessage());
+            return;
+        }
+        if (defaultMessage != null && !defaultMessage.isBlank() && exception.getMessage() != null) {
+            showErrorFeedback(defaultMessage + ": " + exception.getMessage());
+            return;
+        }
+        showErrorFeedback(defaultMessage != null && !defaultMessage.isBlank()
+                ? defaultMessage
+                : "Si è verificato un errore imprevisto.");
     }
 
     /**
@@ -1087,7 +986,7 @@ public class TrackController {
     @FXML
     private void handleCreateAutoPlaylist(ActionEvent event) {
         if (facade == null) {
-            labelFeedback("Errore interno: facade non inizializzata.", "red");
+            showErrorFeedback("Errore interno: facade non inizializzata.");
             return;
         }
 

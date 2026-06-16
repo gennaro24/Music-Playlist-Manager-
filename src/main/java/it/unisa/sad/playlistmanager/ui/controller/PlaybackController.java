@@ -210,10 +210,10 @@ public class PlaybackController {
         if (btnShuffle != null) {
             if (snapshot.mode() == PlaybackMode.SHUFFLE) {
                 btnShuffle.setText("🔀 ON");
-                btnShuffle.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+                setPlayerToggleActive(btnShuffle, true);
             } else {
                 btnShuffle.setText("🔀 OFF");
-                btnShuffle.setStyle("-fx-text-fill: black; -fx-font-weight: normal;");
+                setPlayerToggleActive(btnShuffle, false);
             }
         }
 
@@ -239,13 +239,21 @@ public class PlaybackController {
         if (btnLoop == null) return;
         if (mode == PlaybackMode.REPEAT_ONE) {
             btnLoop.setText("🔂 ONE");
-            btnLoop.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+            setPlayerToggleActive(btnLoop, true);
         } else if (mode == PlaybackMode.REPEAT_ALL) {
             btnLoop.setText("🔁 ALL");
-            btnLoop.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+            setPlayerToggleActive(btnLoop, true);
         } else {
             btnLoop.setText("🔂 OFF");
-            btnLoop.setStyle("-fx-text-fill: black; -fx-font-weight: normal;");
+            setPlayerToggleActive(btnLoop, false);
+        }
+    }
+
+    /** Applica lo stato visivo ON/OFF ai toggle del player tramite CSS, senza colori inline. */
+    private void setPlayerToggleActive(Button button, boolean active) {
+        button.getStyleClass().remove("btn-player-toggle-active");
+        if (active) {
+            button.getStyleClass().add("btn-player-toggle-active");
         }
     }
 

@@ -41,7 +41,11 @@ public class Main extends Application {
 
         // Configurazione della finestra principale (Stage)
         Scene scene = new Scene(root);
+        scene.getStylesheets().add(
+                Main.class.getResource("/it/unisa/sad/playlistmanager/ui/styles/app.css").toExternalForm());
         stage.setTitle("Music Playlist Manager");
+        stage.setMinWidth(960);
+        stage.setMinHeight(600);
         stage.setScene(scene);
         stage.show();
     }

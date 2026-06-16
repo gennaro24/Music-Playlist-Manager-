@@ -4,6 +4,7 @@ import it.unisa.sad.playlistmanager.application.exceptions.PlaylistNotFoundExcep
 import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
+import it.unisa.sad.playlistmanager.ui.util.StyledAlertFactory;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.event.ActionEvent;
@@ -271,7 +272,7 @@ public class PlaylistController {
         if (selected != null) {
             
             // TASK T-101: Creazione e configurazione del dialogo di conferma nativo
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            Alert alert = StyledAlertFactory.create(Alert.AlertType.CONFIRMATION);
             alert.setTitle("Conferma Eliminazione Playlist");
             alert.setHeaderText("Eliminare la playlist selezionata?");
             alert.setContentText("Sei sicuro di voler rimuovere '" + selected.getName() + "'? Le canzoni rimarranno inalterate nel catalogo.");
