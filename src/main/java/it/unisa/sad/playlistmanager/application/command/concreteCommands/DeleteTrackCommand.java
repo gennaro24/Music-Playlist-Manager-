@@ -22,6 +22,7 @@ import java.util.Map;
  * facade dopo la cancellazione riuscita e non viene ripreso durante l'undo.
  *
  * @author Foschillo G.
+ * @author Fraws
  * @version 1.0
  */
 public class DeleteTrackCommand implements Command {
