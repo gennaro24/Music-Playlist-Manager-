@@ -72,6 +72,8 @@ public class AutoPlaylistDialog {
         configureTagCombo();
         configureResultsList();
 
+        txtName.textProperty().addListener((obs, oldV, newV) -> updatePreview(dialog));
+
         // Anteprima reattiva a ogni cambio di criterio.
         cmbGenre.valueProperty().addListener((obs, oldV, newV) -> updatePreview(dialog));
         cmbYear.valueProperty().addListener((obs, oldV, newV) -> updatePreview(dialog));
@@ -165,17 +167,41 @@ public class AutoPlaylistDialog {
      * Ricalcola e mostra l'anteprima in base ai criteri correnti.
      * <p><b>TASK T3-33:</b> Disabilita in tempo reale il pulsante Crea se l'anteprima produce 0 risultati.</p>
      */
+    /**
+     * Ricalcola e mostra l'anteprima in base ai criteri correnti.
+     * <p><b>TASK T3-33:</b> Disabilita reattivamente il pulsante se l'anteprima è vuota, 
+     * se il nome è vuoto o se il nome inserito è un duplicato già presente nel database.</p>
+     */
     private void updatePreview(Dialog<ButtonType> dialog) {
         AutoPlaylistCriteria criteria = buildCriteria();
         Button btnCrea = (Button) dialog.getDialogPane().lookupButton(btnTypeCrea);
+        
+        // Preleva e normalizza il testo inserito dall'utente per il nome
+        String nameInput = txtName.getText() != null ? txtName.getText().trim() : "";
+
+        // Verifica in tempo reale se il nome inserito collide con una playlist esistente
+        boolean isNameDuplicate = facade.getAllPlaylists().stream()
+                .anyMatch(p -> p.getName().equalsIgnoreCase(nameInput));
 
         if (criteria == null) {
             lastPreview = List.of();
             listResults.getItems().clear();
-            lblInfo.setStyle("-fx-text-fill: #0066cc;");
+            lblInfo.setStyle("-fx-text-fill: #0066cc; -fx-font-weight: normal;");
             lblInfo.setText("Seleziona almeno un criterio (genere, anno o tag).");
             if (btnCrea != null) {
-                btnCrea.setDisable(true); // T3-33: Blocca l'azione se nessun criterio è presente
+                btnCrea.setDisable(true);
+            }
+            return;
+        }
+
+        // Se il nome è un duplicato, blocca preventivamente l'interfaccia dando un feedback visivo immediato
+        if (isNameDuplicate) {
+            lastPreview = facade.previewAutoPlaylist(criteria);
+            listResults.setItems(FXCollections.observableArrayList(lastPreview));
+            lblInfo.setStyle("-fx-text-fill: #b0413e; -fx-font-weight: bold;");
+            lblInfo.setText("Errore: Il nome '" + nameInput + "' è già utilizzato.");
+            if (btnCrea != null) {
+                btnCrea.setDisable(true); // Disabilita il pulsante
             }
             return;
         }
@@ -185,23 +211,25 @@ public class AutoPlaylistDialog {
             listResults.setItems(FXCollections.observableArrayList(lastPreview));
             
             if (lastPreview.isEmpty()) {
-                lblInfo.setStyle("-fx-text-fill: #b0413e;");
+                lblInfo.setStyle("-fx-text-fill: #b0413e; -fx-font-weight: normal;");
                 lblInfo.setText("Nessuna traccia corrisponde ai criteri selezionati.");
                 if (btnCrea != null) {
-                    btnCrea.setDisable(true); // TASK T3-33: Disabilitazione se l'anteprima ha 0 risultati
+                    btnCrea.setDisable(true);
                 }
             } else {
                 int n = lastPreview.size();
-                lblInfo.setStyle("-fx-text-fill: green;");
+                lblInfo.setStyle("-fx-text-fill: green; -fx-font-weight: normal;");
                 lblInfo.setText(n + (n == 1 ? " traccia trovata." : " tracce trovate."));
+                
+                // Il pulsante si abilita SOLO se ci sono tracce E il campo nome non è vuoto
                 if (btnCrea != null) {
-                    btnCrea.setDisable(false); // Sblocca il pulsante se ci sono canzoni valide
+                    btnCrea.setDisable(nameInput.isEmpty());
                 }
             }
         } catch (RuntimeException exception) {
             lastPreview = List.of();
             listResults.getItems().clear();
-            lblInfo.setStyle("-fx-text-fill: #b0413e;");
+            lblInfo.setStyle("-fx-text-fill: #b0413e; -fx-font-weight: normal;");
             lblInfo.setText(exception.getMessage());
             if (btnCrea != null) {
                 btnCrea.setDisable(true);

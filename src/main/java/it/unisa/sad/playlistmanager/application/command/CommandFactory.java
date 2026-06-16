@@ -2,13 +2,16 @@ package it.unisa.sad.playlistmanager.application.command;
 
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.AddTrackCommand;
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.AddTrackToPlaylistCommand;
+import it.unisa.sad.playlistmanager.application.command.concreteCommands.CreateAutoPlaylistCommand;
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.CreatePlaylistCommand;
+import it.unisa.sad.playlistmanager.application.command.concreteCommands.CreateAutoPlaylistCommand;
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.DeletePlaylistCommand;
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.DeleteTrackCommand;
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.RemoveTrackFromPlaylistCommand;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.application.service.TagService;
+import it.unisa.sad.playlistmanager.domain.model.Track;
 
 /**
  * Centralizza la costruzione dei command usando le istanze condivise dei
@@ -56,6 +59,10 @@ public class CommandFactory {
 
     public CreatePlaylistCommand createCreatePlaylistCommand(String name) {
         return new CreatePlaylistCommand(name, playlistService);
+    }
+    
+    public CreateAutoPlaylistCommand createCreateAutoPlaylistCommand(String name, java.util.List<Track> matchingTracks) {
+        return new CreateAutoPlaylistCommand(name, matchingTracks, this.playlistService);
     }
 
     public DeletePlaylistCommand createDeletePlaylistCommand(String playlistId) {

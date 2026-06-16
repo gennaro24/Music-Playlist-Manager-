@@ -459,7 +459,37 @@ public class MusicPlaylistManagerFacade {
      * @param criteria I criteri di filtraggio (genere, anno, tag).
      * @return La playlist generata e salvata su database.
      */
+    /**
+     * TASK SPRINT 3: Gestione transazionale e annullabile della playlist automatica.
+     * Include validazione preventiva anti-duplicazione e iniezione nell'UndoManager.
+     */
     public Playlist createAutoPlaylist(String name, AutoPlaylistCriteria criteria) {
-        return autoPlaylistService.createAutoPlaylist(name, criteria);
+        // 1. Recupera l'anteprima delle tracce dal servizio di Adinolfi
+        List<Track> matchingTracks = autoPlaylistService.previewAutoPlaylist(criteria);
+        
+        // 2. VALIDAZIONE: Verifica che il nome non sia vuoto
+        if (name == null || name.trim().isEmpty()) {
+            throw new it.unisa.sad.playlistmanager.application.exceptions.ValidationException("Il nome della playlist automatica è obbligatorio.");
+        }
+        
+        // 3. VALIDAZIONE BUG UNIQUE: Controlla preventivamente se esiste già una playlist con lo stesso nome
+        boolean nameExists = playlistService.getAllPlaylists().stream()
+                .anyMatch(p -> p.getName().equalsIgnoreCase(name.trim()));
+        if (nameExists) {
+            throw new it.unisa.sad.playlistmanager.application.exceptions.ValidationException("Esiste già una playlist denominata '" + name + "'. Scegli un nome univoco.");
+        }
+        
+        // 4. VALIDAZIONE: Impedisce la creazione di playlist vuote
+        if (matchingTracks == null || matchingTracks.isEmpty()) {
+            throw new it.unisa.sad.playlistmanager.application.exceptions.ValidationException("Nessuna traccia soddisfa i criteri scelti. Impossibile creare la playlist.");
+        }
+
+        // 5. INTEGRAZIONE UNDO: Incapsula nel comando e registra nella cronologia della sessione
+        it.unisa.sad.playlistmanager.application.command.concreteCommands.CreateAutoPlaylistCommand command = 
+                commandFactory.createCreateAutoPlaylistCommand(name.trim(), matchingTracks);
+        
+        undoManager.executeAndPush(command);
+        
+        return command.getCreatedPlaylist();
     }
 }
