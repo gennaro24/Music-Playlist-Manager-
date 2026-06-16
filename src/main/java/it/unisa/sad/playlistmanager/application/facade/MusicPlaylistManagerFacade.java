@@ -40,6 +40,7 @@ public class MusicPlaylistManagerFacade {
 
     /**
      * Costruttore della Facade. Inietta le dipendenze dei servizi necessari.
+     * Questo costruttore è pensato per essere usato nei test.
      *
      * @param trackService    Il servizio incaricato della logica di business delle
      *                        tracce.
@@ -48,9 +49,19 @@ public class MusicPlaylistManagerFacade {
      * @param playbackService Il servizio incaricato della logica di business del
      *                        playback.
      */
-    public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService,
-            PlaybackService playbackService, TagService tagService) {
-        this(trackService, playlistService, playbackService, tagService, null, new UndoManager());
+    public MusicPlaylistManagerFacade(
+        TrackService trackService,
+        PlaylistService playlistService,
+        PlaybackService playbackService,
+        TagService tagService) {
+            this(
+                    trackService,
+                    playlistService,
+                    playbackService,
+                    tagService,
+                    new CommandFactory(trackService, playlistService, tagService),
+                    new UndoManager()
+            );
     }
 
     /**
