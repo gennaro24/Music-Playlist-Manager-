@@ -82,7 +82,8 @@ class TrackServiceTest {
         @Override
         public void restoreWithPlaylistPositions(
                 Track track,
-                Map<String, Integer> playlistPositions) {
+                Map<String, Integer> playlistPositions,
+                List<String> tagIds) {
             simulatedDatabase.add(track);
         }
     }

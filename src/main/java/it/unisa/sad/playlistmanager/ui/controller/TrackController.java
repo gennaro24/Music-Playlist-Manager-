@@ -1,12 +1,15 @@
 package it.unisa.sad.playlistmanager.ui.controller;
 
 import it.unisa.sad.playlistmanager.application.exceptions.PlaylistNotFoundException;
+import it.unisa.sad.playlistmanager.application.exceptions.TagNotFoundException;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
+import it.unisa.sad.playlistmanager.domain.model.Tag;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -14,9 +17,17 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Region;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.beans.binding.Bindings;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.function.Consumer;
 
 /**
@@ -24,6 +35,7 @@ import java.util.function.Consumer;
  * concernenti il catalogo globale delle tracce e le canzoni interne a una specifica playlist.
  * <p><b>Revisione Sprint 2 (US-04):</b> Integra la funzionalità di eliminazione di una traccia
  * dal catalogo globale con annesso dialogo di conferma e sincronizzazione in tempo reale delle viste.</p>
+ * <p>La modifica dei metadati avviene tramite dialogo dal menu contestuale, non inline nella tabella.</p>
  * @version 4.0
  */
 public class TrackController {
@@ -75,9 +87,15 @@ public class TrackController {
     
     /** Colonna per la visualizzazione e l'editing dell'anno. */
     @FXML private TableColumn<Track, Integer> colYear;
+
+    /** Colonna per la visualizzazione dei tag associati alla traccia. */
+    @FXML private TableColumn<Track, String> colTags;
     
     /** Contenitore grafico del modulo di inserimento tracce. */
     @FXML private VBox formAddTrack;
+
+    /** Riga superiore del catalogo con form traccia e gestione tag affiancati. */
+    @FXML private HBox hboxCatalogForms;
     
     /** Menu a tendina per la scelta della playlist a cui associare il brano. */
     @FXML private ComboBox<Playlist> dropdownPlaylists;
@@ -90,6 +108,15 @@ public class TrackController {
 
     /** Pulsante contestuale per riprodurre tutto il catalogo. */
     @FXML private Button btnPlayCatalog;
+
+    /** Pannello per la gestione dei tag nel catalogo. */
+    @FXML private VBox formTagManagement;
+
+    /** Campo per il nome di un nuovo tag. */
+    @FXML private TextField txtNewTag;
+
+    /** Elenco di tutti i tag disponibili nel sistema. */
+    @FXML private ComboBox<Tag> dropdownAllTags;
 
     /** Flag discriminante per comprendere se la UI mostra il catalogo o una playlist. */
     private boolean playlistViewMode = false;
@@ -110,17 +137,19 @@ public class TrackController {
     }
 
     /**
-     * Inizializza i componenti grafici della TableView, abilita l'editing in linea,
-     * effettua il data-binding ed esegue il caricamento dei dati di catalogo a startup.
+     * Inizializza i componenti grafici della TableView, effettua il data-binding
+     * ed esegue il caricamento dei dati di catalogo a startup.
      */
     @FXML
     private void initialize() {
         if (tableTracks != null) {
-            tableTracks.setEditable(true);
+            tableTracks.setEditable(false);
+            tableTracks.setFixedCellSize(-1);
         }
 
         initializeTableColumns();
         configureDropdownPlaylistsRendering();
+        configureTagComboRendering();
         if (tableTracks != null) {
             configureTableToggleDeselection();
             configureTableSelectionListener();
@@ -128,6 +157,7 @@ public class TrackController {
 
         if (this.facade != null) {
             loadCatalog();
+            refreshTagCombos();
             if (dropdownPlaylists != null) {
                 dropdownPlaylists.setItems(FXCollections.observableArrayList(this.facade.getAllPlaylists()));
             }
@@ -135,156 +165,274 @@ public class TrackController {
     }
 
     /**
-     * Associa le colonne della TableView ai campi dati del Domain Model (Track)
-     * e configura i cell factory custom per l'inline editing automatico al focus lost.
+     * Associa le colonne della TableView ai campi dati del Domain Model (Track).
+     * La modifica dei metadati avviene solo tramite il menu contestuale.
      */
     private void initializeTableColumns() {
         if (colTitle != null) {
             colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
-            colTitle.setCellFactory(col -> new EditableTableCell<>(val -> val));
-            colTitle.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
-                val -> new Track(event.getRowValue().getId(), val, event.getRowValue().getAuthor(), event.getRowValue().getDuration(), event.getRowValue().getGenre(), event.getRowValue().getYear()), event.getNewValue()));
+            colTitle.setEditable(false);
         }
         if (colAuthor != null) {
             colAuthor.setCellValueFactory(new PropertyValueFactory<>("author"));
-            colAuthor.setCellFactory(col -> new EditableTableCell<>(val -> val));
-            colAuthor.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
-                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), val, event.getRowValue().getDuration(), event.getRowValue().getGenre(), event.getRowValue().getYear()), event.getNewValue()));
+            colAuthor.setEditable(false);
         }
         if (colDuration != null) {
             colDuration.setCellValueFactory(new PropertyValueFactory<>("duration"));
-            colDuration.setCellFactory(col -> new EditableTableCell<>(Integer::parseInt));
-            colDuration.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
-                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), event.getRowValue().getAuthor(), val, event.getRowValue().getGenre(), event.getRowValue().getYear()), event.getNewValue()));
+            colDuration.setEditable(false);
         }
         if (colGenre != null) {
             colGenre.setCellValueFactory(new PropertyValueFactory<>("genre"));
-            colGenre.setCellFactory(col -> new EditableTableCell<>(val -> val));
-            colGenre.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
-                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), event.getRowValue().getAuthor(), event.getRowValue().getDuration(), val, event.getRowValue().getYear()), event.getNewValue()));
+            colGenre.setEditable(false);
         }
         if (colYear != null) {
             colYear.setCellValueFactory(new PropertyValueFactory<>("year"));
-            colYear.setCellFactory(col -> new EditableTableCell<>(Integer::parseInt));
-            colYear.setOnEditCommit(event -> handleInlineEdit(event.getRowValue(), 
-                val -> new Track(event.getRowValue().getId(), event.getRowValue().getTitle(), event.getRowValue().getAuthor(), event.getRowValue().getDuration(), event.getRowValue().getGenre(), val), event.getNewValue()));
+            colYear.setEditable(false);
         }
+        configureTagsColumn();
         configureResponsiveColumnWidths();
     }
 
     /**
-     * Coordina ed esegue in differita l'aggiornamento dei dati tramite Facade, intercettando
-     * le eccezioni di validazione per stampare a schermo l'errore standardizzato (Task T-79).
-     *
-     * @param <T>          Il tipo di dato generico gestito dalla colonna.
-     * @param oldTrack     L'istanza originale della traccia prima della modifica.
-     * @param trackCreator Funzione lambda funzionale atta a istanziare la nuova traccia immutabile.
-     * @param newValue     Il valore testuale o numerico appena inserito dall'utente.
+     * Configura la colonna dei tag come testo compatto: un tag per riga.
      */
-    private <T> void handleInlineEdit(Track oldTrack, java.util.function.Function<T, Track> trackCreator, T newValue) {
-        Platform.runLater(() -> {
-            try {
-                if (newValue == null) throw new IllegalArgumentException();
-                Track updatedTrack = trackCreator.apply(newValue);
-                facade.updateTrack(oldTrack.getId(), updatedTrack);
-                labelFeedback("Traccia modificata con successo.", "green");
-            } catch (Exception e) {
-                labelFeedback("Errore nella modifica", "red");
+    private void configureTagsColumn() {
+        if (colTags == null) {
+            return;
+        }
+
+        colTags.setEditable(false);
+        colTags.setCellValueFactory(cellData -> {
+            Track track = cellData.getValue();
+            if (track == null || facade == null) {
+                return new ReadOnlyObjectWrapper<>("");
             }
-            loadCatalog();
-            if (playlistViewMode && currentPlaylist != null) {
-                loadPlaylistTracks(currentPlaylist);
+            return new ReadOnlyObjectWrapper<>(formatTagsForDisplay(facade.getTagsForTrack(track.getId())));
+        });
+        colTags.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(null);
+                if (empty || item == null || item.isBlank()) {
+                    setText(null);
+                    setTooltip(null);
+                    setPrefHeight(Region.USE_COMPUTED_SIZE);
+                    setMinHeight(Region.USE_COMPUTED_SIZE);
+                    return;
+                }
+
+                setText(item);
+                setWrapText(false);
+                setAlignment(Pos.CENTER_LEFT);
+                setTooltip(new Tooltip(item.replace("\n", ", ")));
+
+                double cellHeight = computeTagCellHeight(item);
+                setMinHeight(cellHeight);
+                setPrefHeight(cellHeight);
+
+                TableRow<Track> row = getTableRow();
+                if (row != null) {
+                    row.setMinHeight(cellHeight);
+                    row.setPrefHeight(cellHeight);
+                }
             }
         });
     }
 
+    private double computeTagCellHeight(String tagsText) {
+        int lineCount = tagsText.split("\n", -1).length;
+        return Math.max(32, lineCount * 17.0 + 8.0);
+    }
+
+    private Label createTagBadgeLabel(String tagName) {
+        Label badge = new Label(tagName);
+        badge.setStyle(
+                "-fx-background-color: #dbeafe;"
+                        + "-fx-text-fill: #1e3a8a;"
+                        + "-fx-padding: 2 8;"
+                        + "-fx-background-radius: 10;"
+                        + "-fx-font-size: 11px;");
+        return badge;
+    }
+
+    private String formatTagsForDisplay(java.util.List<Tag> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return "";
+        }
+        return tags.stream()
+                .map(Tag::getName)
+                .collect(Collectors.joining("\n"));
+    }
+
     /**
-     * Classe interna di supporto per incorporare un TextField reattivo all'interno delle celle.
-     * Consolida le modifiche in modo sincrono non appena viene perso il focus (Blur).
-     *
-     * @param <R> Tipo di riga del modello (Track).
-     * @param <T> Tipo di cella specifico.
+     * Apre una finestra di dialogo per modificare i metadati e i tag della traccia.
      */
-    private class EditableTableCell<R, T> extends TableCell<R, T> {
-        /** Componente di input testuale inserito dinamicamente nella cella in stato di editing. */
-        private TextField textField;
-        /** Funzione di conversione per mappare la stringa digitata nel tipo T appropriato. */
-        private final java.util.function.Function<String, T> converter;
-
-        /**
-         * Costruttore della cella editabile inline.
-         *
-         * @param converter Convertitore funzionale da String a T.
-         */
-        public EditableTableCell(java.util.function.Function<String, T> converter) {
-            this.converter = converter;
+    private void showEditTrackDialog(Track track) {
+        if (facade == null || track == null) {
+            return;
         }
 
-        @Override
-        public void startEdit() {
-            if (!isEmpty()) {
-                super.startEdit();
-                createTextField();
-                setText(null);
-                setGraphic(textField);
-                textField.requestFocus();
-                textField.selectAll();
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Modifica traccia");
+        dialog.setHeaderText("Modifica i metadati di \"" + track.getTitle() + "\"");
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        TextField editTitle = new TextField(track.getTitle());
+        TextField editAuthor = new TextField(track.getAuthor());
+        TextField editDuration = new TextField(String.valueOf(track.getDuration()));
+        TextField editGenre = new TextField(track.getGenre());
+        TextField editYear = new TextField(String.valueOf(track.getYear()));
+
+        FlowPane tagsPreview = new FlowPane();
+        tagsPreview.setHgap(4);
+        tagsPreview.setVgap(4);
+        tagsPreview.setPrefWrapLength(280);
+        tagsPreview.setMaxHeight(72);
+
+        ComboBox<Tag> dialogAssignTag = new ComboBox<>();
+        ComboBox<Tag> dialogRemoveTag = new ComboBox<>();
+        configureTagCombo(dialogAssignTag, "Tag da assegnare");
+        configureTagCombo(dialogRemoveTag, "Tag da rimuovere");
+        dialogAssignTag.setPrefWidth(200);
+        dialogRemoveTag.setPrefWidth(200);
+
+        Button dialogAssignBtn = new Button("Assegna");
+        Button dialogRemoveBtn = new Button("Rimuovi");
+
+        Runnable refreshDialogTagControls = () -> refreshTrackTagDialogControls(
+                track,
+                tagsPreview,
+                dialogAssignTag,
+                dialogRemoveTag,
+                dialogAssignBtn,
+                dialogRemoveBtn);
+        refreshDialogTagControls.run();
+
+        dialogAssignBtn.setOnAction(event -> {
+            Tag tagToAssign = dialogAssignTag.getSelectionModel().getSelectedItem();
+            if (tagToAssign == null) {
+                return;
             }
-        }
-
-        @Override
-        public void cancelEdit() {
-            super.cancelEdit();
-            setText(getItem() != null ? getItem().toString() : null);
-            setGraphic(null);
-        }
-
-        @Override
-        public void updateItem(T item, boolean empty) {
-            super.updateItem(item, empty);
-            if (empty) {
-                setText(null);
-                setGraphic(null);
-            } else {
-                if (isEditing()) {
-                    if (textField != null) {
-                        textField.setText(item != null ? item.toString() : "");
-                    }
-                    setText(null);
-                    setGraphic(textField);
-                } else {
-                    setText(item != null ? item.toString() : null);
-                    setGraphic(null);
-                }
-            }
-        }
-
-        /**
-         * Istanzia il TextField e aggancia i relativi listener per intercettare l'Invio
-         * o la perdita del focus da parte dell'utente (Blur).
-         */
-        private void createTextField() {
-            textField = new TextField(getItem() != null ? getItem().toString() : "");
-            textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
-            textField.setOnAction(e -> triggerCommit());
-            textField.focusedProperty().addListener((obs, oldVal, newVal) -> {
-                if (!newVal && isEditing()) {
-                    triggerCommit();
-                }
-            });
-        }
-
-        /**
-         * Tenta il commit del valore modificato catturando le eccezioni di parsing sintattico.
-         */
-        private void triggerCommit() {
             try {
-                commitEdit(converter.apply(textField.getText().trim()));
-            } catch (Exception ex) {
-                cancelEdit();
-                labelFeedback("Errore nella modifica", "red");
+                facade.assignTagToTrack(track.getId(), tagToAssign.getId());
+                refreshDialogTagControls.run();
+                if (tableTracks != null) {
+                    tableTracks.refresh();
+                }
+            } catch (ValidationException | TrackNotFoundException | TagNotFoundException e) {
+                labelFeedback(e.getMessage(), "red");
             }
+        });
+
+        dialogRemoveBtn.setOnAction(event -> {
+            Tag tagToRemove = dialogRemoveTag.getSelectionModel().getSelectedItem();
+            if (tagToRemove == null) {
+                return;
+            }
+            try {
+                facade.removeTagFromTrack(track.getId(), tagToRemove.getId());
+                refreshDialogTagControls.run();
+                if (tableTracks != null) {
+                    tableTracks.refresh();
+                }
+            } catch (ValidationException | TrackNotFoundException | TagNotFoundException e) {
+                labelFeedback(e.getMessage(), "red");
+            }
+        });
+
+        GridPane form = new GridPane();
+        form.setHgap(10);
+        form.setVgap(10);
+        form.setPadding(new Insets(10, 20, 10, 10));
+        form.add(new Label("Titolo *"), 0, 0);
+        form.add(editTitle, 1, 0);
+        form.add(new Label("Autore *"), 0, 1);
+        form.add(editAuthor, 1, 1);
+        form.add(new Label("Durata (sec) *"), 0, 2);
+        form.add(editDuration, 1, 2);
+        form.add(new Label("Genere *"), 0, 3);
+        form.add(editGenre, 1, 3);
+        form.add(new Label("Anno *"), 0, 4);
+        form.add(editYear, 1, 4);
+        form.add(new Label("Tag assegnati"), 0, 5, 2, 1);
+        form.add(tagsPreview, 0, 6, 2, 1);
+        form.add(new Label("Assegna tag"), 0, 7);
+        form.add(new HBox(8, dialogAssignTag, dialogAssignBtn), 1, 7);
+        form.add(new Label("Rimuovi tag"), 0, 8);
+        form.add(new HBox(8, dialogRemoveTag, dialogRemoveBtn), 1, 8);
+
+        editTitle.setPrefWidth(260);
+        editAuthor.setPrefWidth(260);
+        editDuration.setPrefWidth(260);
+        editGenre.setPrefWidth(260);
+        editYear.setPrefWidth(260);
+
+        dialog.getDialogPane().setContent(form);
+        dialog.showAndWait().ifPresent(buttonType -> {
+            if (buttonType != ButtonType.OK) {
+                return;
+            }
+            try {
+                String title = toSentenceCase(editTitle.getText());
+                String author = toSentenceCase(editAuthor.getText());
+                String genre = toSentenceCase(editGenre.getText());
+                int duration = Integer.parseInt(editDuration.getText().trim());
+                int year = Integer.parseInt(editYear.getText().trim());
+                validateDataInput(title, author, genre, duration, year);
+
+                Track updatedTrack = new Track(track.getId(), title, author, duration, genre, year);
+                facade.updateTrack(track.getId(), updatedTrack);
+                selectedTrack = updatedTrack;
+                labelFeedback("Traccia modificata con successo.", "#1f7a1f");
+                loadCatalog();
+                refreshTagCombos();
+                if (playlistViewMode && currentPlaylist != null) {
+                    loadPlaylistTracks(currentPlaylist);
+                }
+                if (tableTracks != null) {
+                    tableTracks.refresh();
+                }
+            } catch (NumberFormatException e) {
+                labelFeedback("Durata e anno devono essere numeri validi.", "red");
+            } catch (ValidationException | it.unisa.sad.playlistmanager.domain.exceptions.ValidationException e) {
+                labelFeedback(e.getMessage(), "red");
+            } catch (IllegalArgumentException e) {
+                labelFeedback(e.getMessage(), "red");
+            } catch (Exception e) {
+                labelFeedback("Errore durante la modifica della traccia.", "red");
+            }
+        });
+    }
+
+    private void refreshTrackTagDialogControls(
+            Track track,
+            FlowPane preview,
+            ComboBox<Tag> assignCombo,
+            ComboBox<Tag> removeCombo,
+            Button assignButton,
+            Button removeButton) {
+        if (facade == null || track == null) {
+            return;
         }
+
+        preview.getChildren().clear();
+        List<Tag> trackTags = facade.getTagsForTrack(track.getId());
+        for (Tag tag : trackTags) {
+            preview.getChildren().add(createTagBadgeLabel(tag.getName()));
+        }
+
+        Set<String> assignedIds = trackTags.stream().map(Tag::getId).collect(Collectors.toSet());
+        List<Tag> availableTags = facade.getAllTags().stream()
+                .filter(tag -> !assignedIds.contains(tag.getId()))
+                .toList();
+
+        assignCombo.setItems(FXCollections.observableArrayList(availableTags));
+        assignCombo.getSelectionModel().clearSelection();
+        removeCombo.setItems(FXCollections.observableArrayList(trackTags));
+        removeCombo.getSelectionModel().clearSelection();
+        assignButton.setDisable(availableTags.isEmpty());
+        removeButton.setDisable(trackTags.isEmpty());
     }
 
     /**
@@ -292,15 +440,16 @@ public class TrackController {
      */
     private void configureResponsiveColumnWidths() {
         if (tableTracks == null || colTitle == null || colAuthor == null
-                || colDuration == null || colGenre == null || colYear == null) {
+                || colDuration == null || colGenre == null || colYear == null || colTags == null) {
             return;
         }
         tableTracks.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        final double weightTitle = 0.30;
-        final double weightAuthor = 0.30;
-        final double weightDuration = 0.12;
-        final double weightGenre = 0.18;
-        final double weightYear = 0.10;
+        final double weightTitle = 0.23;
+        final double weightAuthor = 0.23;
+        final double weightDuration = 0.10;
+        final double weightGenre = 0.14;
+        final double weightYear = 0.08;
+        final double weightTags = 0.22;
         double scrollbarOffset = 15.0;
 
         colTitle.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightTitle));
@@ -308,12 +457,14 @@ public class TrackController {
         colDuration.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightDuration));
         colGenre.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightGenre));
         colYear.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightYear));
+        colTags.prefWidthProperty().bind(tableTracks.widthProperty().subtract(scrollbarOffset).multiply(weightTags));
 
-        colTitle.setMinWidth(150);
-        colAuthor.setMinWidth(130);
+        colTitle.setMinWidth(120);
+        colAuthor.setMinWidth(110);
         colDuration.setMinWidth(70);
-        colGenre.setMinWidth(100);
-        colYear.setMinWidth(65);
+        colGenre.setMinWidth(90);
+        colYear.setMinWidth(60);
+        colTags.setMinWidth(120);
     }
 
     /**
@@ -339,12 +490,130 @@ public class TrackController {
     }
 
     /**
+     * Configura il rendering dei menu a tendina che mostrano oggetti {@link Tag}.
+     */
+    private void configureTagComboRendering() {
+        configureTagCombo(dropdownAllTags, "Seleziona un tag");
+    }
+
+    private void configureTagCombo(ComboBox<Tag> comboBox, String emptyPrompt) {
+        if (comboBox == null) {
+            return;
+        }
+        comboBox.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(Tag item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : item.getName());
+            }
+        });
+        comboBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Tag item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? emptyPrompt : item.getName());
+            }
+        });
+    }
+
+    /**
+     * Aggiorna l'elenco dei tag globali nel pannello di gestione.
+     */
+    private void refreshTagCombos() {
+        if (facade == null) {
+            return;
+        }
+
+        List<Tag> allTags = facade.getAllTags();
+        if (dropdownAllTags != null) {
+            Tag selectedGlobalTag = dropdownAllTags.getSelectionModel().getSelectedItem();
+            dropdownAllTags.setItems(FXCollections.observableArrayList(allTags));
+            if (selectedGlobalTag != null) {
+                allTags.stream()
+                        .filter(tag -> tag.getId().equals(selectedGlobalTag.getId()))
+                        .findFirst()
+                        .ifPresentOrElse(
+                                dropdownAllTags.getSelectionModel()::select,
+                                () -> dropdownAllTags.getSelectionModel().clearSelection());
+            }
+        }
+    }
+
+    @FXML
+    private void handleCreateTag(ActionEvent event) {
+        if (facade == null || txtNewTag == null) {
+            return;
+        }
+
+        try {
+            String tagName = txtNewTag.getText() != null ? txtNewTag.getText().trim() : "";
+            Tag createdTag = facade.addTag(tagName);
+            txtNewTag.clear();
+            refreshTagCombos();
+            if (dropdownAllTags != null) {
+                dropdownAllTags.getSelectionModel().select(createdTag);
+            }
+            if (tableTracks != null) {
+                tableTracks.refresh();
+            }
+            labelFeedback("Tag '" + createdTag.getName() + "' creato con successo.", "#1f7a1f");
+        } catch (ValidationException e) {
+            labelFeedback(e.getMessage(), "red");
+        } catch (RuntimeException e) {
+            labelFeedback("Errore durante la creazione del tag.", "red");
+        }
+    }
+
+    @FXML
+    private void handleDeleteTag(ActionEvent event) {
+        if (facade == null || dropdownAllTags == null) {
+            return;
+        }
+
+        Tag tagToDelete = dropdownAllTags.getSelectionModel().getSelectedItem();
+        if (tagToDelete == null) {
+            labelFeedback("Seleziona un tag da eliminare.", "red");
+            return;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Conferma eliminazione");
+        alert.setHeaderText("Eliminare il tag '" + tagToDelete.getName() + "'?");
+        alert.setContentText("Il tag verrà rimosso da tutte le tracce associate.");
+
+        alert.showAndWait().ifPresent(buttonType -> {
+            if (buttonType != ButtonType.OK) {
+                return;
+            }
+            try {
+                facade.deleteTag(tagToDelete.getId());
+                refreshTagCombos();
+                if (tableTracks != null) {
+                    tableTracks.refresh();
+                }
+                labelFeedback("Tag '" + tagToDelete.getName() + "' eliminato.", "#1f7a1f");
+            } catch (ValidationException | TagNotFoundException e) {
+                labelFeedback(e.getMessage(), "red");
+            }
+        });
+    }
+
+    /**
      * Configura la riga della tabella iniettando un menu contestuale per il comando "Play",
      * "Modifica" e il nuovo comando di eliminazione dal catalogo globale (Task T-89).
      */
     private void configureTableToggleDeselection() {
         tableTracks.setRowFactory(tv -> {
-            final TableRow<Track> row = new TableRow<>();
+            final TableRow<Track> row = new TableRow<>() {
+                @Override
+                protected void updateItem(Track item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setMinHeight(Region.USE_COMPUTED_SIZE);
+                        setPrefHeight(Region.USE_COMPUTED_SIZE);
+                    }
+                }
+            };
             MenuItem playItem = new MenuItem("Play");
             MenuItem editItem = new MenuItem("Modifica"); 
             MenuItem deleteItem = new MenuItem("Elimina dal catalogo"); // Iniezione Task T-89
@@ -364,13 +633,7 @@ public class TrackController {
                 if (track == null) return;
                 tableTracks.getSelectionModel().select(track);
                 selectedTrack = track;
-                
-                TableColumn<Track, ?> focusedColumn = tableTracks.getFocusModel().getFocusedCell().getTableColumn();
-                if (focusedColumn != null && focusedColumn.isEditable()) {
-                    tableTracks.edit(row.getIndex(), focusedColumn);
-                } else {
-                    tableTracks.edit(row.getIndex(), colTitle);
-                }
+                showEditTrackDialog(track);
             });
 
             // TASK T-89 e T-90: Finestra di dialogo di conferma ed eliminazione traccia
@@ -474,6 +737,7 @@ public class TrackController {
                     btnRemoveFromPlaylist.setManaged(false);
                 }
             }
+            refreshTagCombos();
             tableTracks.refresh();
         });
     }
@@ -636,6 +900,7 @@ public class TrackController {
         if (facade == null || tableTracks == null) return;
         tableTracks.setItems(FXCollections.observableArrayList(facade.getAllTracks()));
         tableTracks.setPlaceholder(new Label("Catalogo vuoto. Aggiungi una traccia."));
+        tableTracks.refresh();
     }
 
     /**
@@ -650,15 +915,16 @@ public class TrackController {
             btnPlayCatalog.setVisible(true);
             btnPlayCatalog.setManaged(true);
         }
-        if (formAddTrack != null) {
-            formAddTrack.setVisible(true);
-            formAddTrack.setManaged(true);
+        if (hboxCatalogForms != null) {
+            hboxCatalogForms.setVisible(true);
+            hboxCatalogForms.setManaged(true);
         }
         if (btnRemoveFromPlaylist != null) {
             btnRemoveFromPlaylist.setVisible(false);
             btnRemoveFromPlaylist.setManaged(false);
         }
         loadCatalog();
+        refreshTagCombos();
         if (tableTracks != null) tableTracks.refresh();
         if (lblFeedback != null) {
             if (tableTracks != null && tableTracks.getItems() != null && tableTracks.getItems().isEmpty()) {
@@ -694,6 +960,10 @@ public class TrackController {
             btnRemoveFromPlaylist.setVisible(false);
             btnRemoveFromPlaylist.setManaged(false);
         }
+        if (hboxCatalogForms != null) {
+            hboxCatalogForms.setVisible(false);
+            hboxCatalogForms.setManaged(false);
+        }
         labelFeedback("Nessuna playlist selezionata.", "#1f7a1f");
     }
 
@@ -714,9 +984,9 @@ public class TrackController {
             btnPlayCatalog.setVisible(false);
             btnPlayCatalog.setManaged(false);
         }
-        if (formAddTrack != null) {
-            formAddTrack.setVisible(false);
-            formAddTrack.setManaged(false);
+        if (hboxCatalogForms != null) {
+            hboxCatalogForms.setVisible(false);
+            hboxCatalogForms.setManaged(false);
         }
         if (hboxAddtoPlaylist != null) {
             hboxAddtoPlaylist.setVisible(false);

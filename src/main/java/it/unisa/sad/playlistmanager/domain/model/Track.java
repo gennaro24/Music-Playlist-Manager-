@@ -129,7 +129,6 @@ public class Track {
                 '}';
     }
 
-    // Aggiungi in fondo a Track.java
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

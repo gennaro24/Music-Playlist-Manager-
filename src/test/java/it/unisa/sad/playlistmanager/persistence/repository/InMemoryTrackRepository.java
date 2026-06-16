@@ -23,6 +23,7 @@ public class InMemoryTrackRepository implements TrackRepository {
 
     private final Map<String, Track> store = new LinkedHashMap<>();
     private InMemoryPlaylistRepository playlistRepository;
+    private InMemoryTagRepository tagRepository;
 
     /**
      * Hook di test: se impostato, viene invocato durante
@@ -37,6 +38,11 @@ public class InMemoryTrackRepository implements TrackRepository {
     /** Collega il repository delle playlist per propagare la delete a cascata. */
     public void linkPlaylistRepository(InMemoryPlaylistRepository playlistRepository) {
         this.playlistRepository = playlistRepository;
+    }
+
+    /** Collega il repository dei tag per propagare delete e restore a cascata. */
+    public void linkTagRepository(InMemoryTagRepository tagRepository) {
+        this.tagRepository = tagRepository;
     }
 
     /**
@@ -67,8 +73,13 @@ public class InMemoryTrackRepository implements TrackRepository {
     @Override
     public Optional<Track> deleteById(String id) {
         Track removed = store.remove(id);
-        if (removed != null && playlistRepository != null) {
-            playlistRepository.removeTrackFromAllPlaylists(id);
+        if (removed != null) {
+            if (playlistRepository != null) {
+                playlistRepository.removeTrackFromAllPlaylists(id);
+            }
+            if (tagRepository != null) {
+                tagRepository.removeTrackFromAllTags(id);
+            }
         }
         return Optional.ofNullable(removed);
     }
@@ -92,8 +103,10 @@ public class InMemoryTrackRepository implements TrackRepository {
     @Override
     public void restoreWithPlaylistPositions(
             Track track,
-            Map<String, Integer> playlistPositions) {
+            Map<String, Integer> playlistPositions,
+            List<String> tagIds) {
         List<String> restoredPlaylistIds = new ArrayList<>();
+        List<String> restoredTagIds = new ArrayList<>();
         store.put(track.getId(), track);
 
         try {
@@ -107,6 +120,13 @@ public class InMemoryTrackRepository implements TrackRepository {
                 }
             }
 
+            if (tagRepository != null) {
+                for (String tagId : tagIds) {
+                    tagRepository.attach(track.getId(), tagId);
+                    restoredTagIds.add(tagId);
+                }
+            }
+
             if (restoreFailure != null) {
                 RuntimeException simulated = restoreFailure.get();
                 if (simulated != null) {
@@ -114,6 +134,11 @@ public class InMemoryTrackRepository implements TrackRepository {
                 }
             }
         } catch (RuntimeException exception) {
+            if (tagRepository != null) {
+                for (String tagId : restoredTagIds) {
+                    tagRepository.detach(track.getId(), tagId);
+                }
+            }
             if (playlistRepository != null) {
                 for (String playlistId : restoredPlaylistIds) {
                     playlistRepository.removeTrackFromPlaylist(playlistId, track.getId());

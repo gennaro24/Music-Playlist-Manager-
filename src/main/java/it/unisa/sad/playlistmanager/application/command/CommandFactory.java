@@ -8,6 +8,7 @@ import it.unisa.sad.playlistmanager.application.command.concreteCommands.DeleteT
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.RemoveTrackFromPlaylistCommand;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
+import it.unisa.sad.playlistmanager.application.service.TagService;
 
 /**
  * Centralizza la costruzione dei command usando le istanze condivise dei
@@ -24,17 +25,20 @@ public class CommandFactory {
 
     private final TrackService trackService;
     private final PlaylistService playlistService;
-
-    public CommandFactory(TrackService trackService, PlaylistService playlistService) {
+    private final TagService tagService;
+    public CommandFactory(TrackService trackService, PlaylistService playlistService, TagService tagService) {
         if (trackService == null) {
             throw new IllegalArgumentException("TrackService cannot be null");
         }
         if (playlistService == null) {
             throw new IllegalArgumentException("PlaylistService cannot be null");
         }
-
+        if (tagService == null) {
+            throw new IllegalArgumentException("TagService cannot be null");
+        }
         this.trackService = trackService;
         this.playlistService = playlistService;
+        this.tagService = tagService;
     }
 
     public AddTrackCommand createAddTrackCommand(
@@ -47,7 +51,7 @@ public class CommandFactory {
     }
 
     public DeleteTrackCommand createDeleteTrackCommand(String trackId) {
-        return new DeleteTrackCommand(trackService, playlistService, trackId);
+        return new DeleteTrackCommand(trackService, playlistService, tagService, trackId);
     }
 
     public CreatePlaylistCommand createCreatePlaylistCommand(String name) {
