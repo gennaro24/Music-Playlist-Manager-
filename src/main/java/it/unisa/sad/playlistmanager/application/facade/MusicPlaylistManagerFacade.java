@@ -10,10 +10,12 @@ import it.unisa.sad.playlistmanager.application.command.concreteCommands.DeleteP
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.DeleteTrackCommand;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
+import it.unisa.sad.playlistmanager.application.service.AutoPlaylistService;
 import it.unisa.sad.playlistmanager.application.service.PlaybackService;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TagService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
+import it.unisa.sad.playlistmanager.domain.model.AutoPlaylistCriteria;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.domain.model.Tag;
@@ -34,6 +36,8 @@ public class MusicPlaylistManagerFacade {
     private final CommandFactory commandFactory;
     private final UndoManager undoManager;
     private final TagService tagService;
+    private final AutoPlaylistService autoPlaylistService;
+
     /**
      * Costruttore della Facade. Inietta le dipendenze dei servizi necessari.
      *
@@ -46,15 +50,20 @@ public class MusicPlaylistManagerFacade {
      */
     public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService,
             PlaybackService playbackService, TagService tagService) {
-        this(trackService, playlistService, playbackService,tagService, null, new UndoManager());
+        this(trackService, playlistService, playbackService, tagService, null, new UndoManager());
     }
 
     /**
-     * Costruttore completo usato dal bootstrap applicativo.
+     * Costruttore con i servizi e l'infrastruttura command/undo.
+     *
+     * Mantiene la firma precedente: costruisce internamente un
+     * {@link AutoPlaylistService} di default a partire dai service gia' iniettati,
+     * cosi' i chiamatori esistenti non devono cambiare.
      *
      * @param trackService servizio delle tracce
      * @param playlistService servizio delle playlist
      * @param playbackService servizio di playback
+     * @param tagService servizio dei tag
      * @param commandFactory factory condivisa dei command
      * @param undoManager cronologia globale della sessione
      */
@@ -65,12 +74,36 @@ public class MusicPlaylistManagerFacade {
             TagService tagService,
             CommandFactory commandFactory,
             UndoManager undoManager) {
+        this(trackService, playlistService, playbackService, tagService, commandFactory, undoManager,
+                new AutoPlaylistService(trackService, tagService, playlistService));
+    }
+
+    /**
+     * Costruttore completo usato dal bootstrap applicativo.
+     *
+     * @param trackService servizio delle tracce
+     * @param playlistService servizio delle playlist
+     * @param playbackService servizio di playback
+     * @param tagService servizio dei tag
+     * @param commandFactory factory condivisa dei command
+     * @param undoManager cronologia globale della sessione
+     * @param autoPlaylistService servizio delle playlist automatiche
+     */
+    public MusicPlaylistManagerFacade(
+            TrackService trackService,
+            PlaylistService playlistService,
+            PlaybackService playbackService,
+            TagService tagService,
+            CommandFactory commandFactory,
+            UndoManager undoManager,
+            AutoPlaylistService autoPlaylistService) {
         this.playbackService = playbackService;
         this.trackService = trackService;
         this.playlistService = playlistService;
         this.tagService = tagService;
         this.commandFactory = commandFactory;
         this.undoManager = undoManager;
+        this.autoPlaylistService = autoPlaylistService;
     }
 
     /**
@@ -402,5 +435,19 @@ public class MusicPlaylistManagerFacade {
 
     public List<Tag> getTagsForTrack(String trackId) {
         return tagService.getTagsForTrack(trackId);
+    }
+
+    //====================METODI PER LE PLAYLIST AUTOMATICHE=====================:
+
+    /**
+     * Espone al Presentation Layer l'anteprima di una playlist automatica:
+     * restituisce le tracce del catalogo che soddisfano i criteri indicati, senza
+     * creare alcuna playlist. Pass-through verso {@link AutoPlaylistService}.
+     *
+     * @param criteria criteri di genere, anno e tag scelti dall'utente
+     * @return le tracce corrispondenti, eventualmente lista vuota
+     */
+    public List<Track> previewAutoPlaylist(AutoPlaylistCriteria criteria) {
+        return autoPlaylistService.previewAutoPlaylist(criteria);
     }
 }

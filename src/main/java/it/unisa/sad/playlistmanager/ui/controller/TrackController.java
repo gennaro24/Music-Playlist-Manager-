@@ -1067,4 +1067,13 @@ public class TrackController {
             loadCatalog();
         }
     }
+
+    @FXML
+    private void handleCreateAutoPlaylist(ActionEvent event) {
+    if (facade == null) {
+        labelFeedback("Errore interno: facade non inizializzata.", "red");
+        return;
+    }
+    new AutoPlaylistDialog(facade).show();
+    }
 }

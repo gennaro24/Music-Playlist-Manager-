@@ -1,7 +1,10 @@
 package it.unisa.sad.playlistmanager.application.service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.domain.model.AutoPlaylistCriteria;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
@@ -9,19 +12,16 @@ import it.unisa.sad.playlistmanager.domain.model.Track;
 /**
  * Servizio applicativo dedicato alla creazione di playlist automatiche.
  *
- * Questo service dovra coordinare i casi d'uso della US-28:
+ * Coordina i casi d'uso della US-28:
  * - produrre un'anteprima delle tracce che soddisfano i criteri scelti;
  * - creare una playlist popolata automaticamente con quelle tracce.
  *
- * I criteri arrivano da {@link AutoPlaylistCriteria}. Il service deve
- * interpretarli come filtri combinati: se sono presenti genere, anno e tag, una
- * traccia deve soddisfare tutti i criteri per essere inclusa.
+ * I criteri arrivano da {@link AutoPlaylistCriteria} e vengono interpretati come
+ * filtri combinati in AND: se sono presenti genere, anno e tag, una traccia deve
+ * soddisfarli tutti per essere inclusa.
  *
- * La classe e' uno scheletro intenzionale: le task successive completeranno la
- * logica di preview, creazione, validazione dei risultati vuoti e cablaggio in
- * facade/bootstrap.
- * @author Foschillo G. (Solo lo scheletro)
- * @version 1.0
+ * @author Foschillo G. (scheletro), Adinolfi G. (previewAutoPlaylist)
+ * @version 1.1
  */
 public class AutoPlaylistService {
 
@@ -41,30 +41,53 @@ public class AutoPlaylistService {
     /**
      * Restituisce le tracce del catalogo che soddisfano i criteri indicati.
      *
-     * Implementazione prevista per T3-26:
-     * - validare che criteria non sia nullo;
-     * - partire da trackService.getAllTracks();
-     * - filtrare per genere se criteria.hasGenreCriteria();
-     * - filtrare per anno se criteria.hasYearCriteria();
-     * - filtrare per tag se criteria.hasTagCriteria();
-     * - restituire una lista eventualmente vuota, senza creare playlist.
+     * Parte dall'intero catalogo e applica in sequenza i filtri attivi (genere,
+     * anno, tag), interpretati come condizioni combinate in AND. Il filtro per
+     * genere e' case-insensitive. Non crea alcuna playlist: si limita a calcolare
+     * l'anteprima e puo' restituire una lista vuota se nessuna traccia
+     * corrisponde ai criteri.
      *
      * @param criteria criteri della playlist automatica
-     * @return tracce corrispondenti ai criteri
+     * @return tracce corrispondenti ai criteri, eventualmente lista vuota
+     * @throws ValidationException se criteria e' nullo
      */
     public List<Track> previewAutoPlaylist(AutoPlaylistCriteria criteria) {
-        throw new UnsupportedOperationException("TODO T3-26: implementare previewAutoPlaylist.");
+        if (criteria == null) {
+            throw new ValidationException("I criteri della playlist automatica non possono essere nulli.");
+        }
+
+        List<Track> tracks = trackService.getAllTracks();
+
+        if (criteria.hasGenreCriteria()) {
+            String genre = criteria.getGenre();
+            tracks = tracks.stream()
+                    .filter(track -> genre.equalsIgnoreCase(track.getGenre()))
+                    .collect(Collectors.toList());
+        }
+
+        if (criteria.hasYearCriteria()) {
+            int year = criteria.getYear();
+            tracks = tracks.stream()
+                    .filter(track -> track.getYear() == year)
+                    .collect(Collectors.toList());
+        }
+
+        if (criteria.hasTagCriteria()) {
+            Set<String> taggedTrackIds = tagService.getTracksByTag(criteria.getTagId())
+                    .stream()
+                    .map(Track::getId)
+                    .collect(Collectors.toSet());
+            tracks = tracks.stream()
+                    .filter(track -> taggedTrackIds.contains(track.getId()))
+                    .collect(Collectors.toList());
+        }
+
+        return tracks;
     }
 
     /**
      * Crea una playlist popolata con le tracce corrispondenti ai criteri.
      *
-     * Implementazione prevista per T3-30/T3-31:
-     * - chiamare previewAutoPlaylist(criteria);
-     * - se la preview e' vuota, lanciare ValidationException;
-     * - creare la playlist con playlistService.createPlaylist(name);
-     * - popolarla con playlistService.populatePlaylist(...);
-     * - restituire la playlist creata.
      *
      * @param name nome della playlist da creare
      * @param criteria criteri della playlist automatica
