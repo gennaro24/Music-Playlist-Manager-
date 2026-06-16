@@ -81,18 +81,6 @@
                         <ComboBox fx:id="dropdownAllTags" prefWidth="160.0" promptText="Tag" HBox.hgrow="ALWAYS" />
                         <Button mnemonicParsing="false" onAction="#handleDeleteTag" text="Elimina" />
                     </HBox>
-
-                    <Label style="-fx-font-size: 11px; -fx-font-weight: bold;" text="Tag traccia selezionata" />
-
-                    <HBox spacing="6.0">
-                        <ComboBox fx:id="dropdownAssignTag" disable="true" prefWidth="160.0" promptText="Da assegnare" HBox.hgrow="ALWAYS" />
-                        <Button fx:id="btnAssignTag" disable="true" mnemonicParsing="false" onAction="#handleAssignTag" text="+" />
-                    </HBox>
-
-                    <HBox spacing="6.0">
-                        <ComboBox fx:id="dropdownTrackTags" disable="true" prefWidth="160.0" promptText="Da rimuovere" HBox.hgrow="ALWAYS" />
-                        <Button fx:id="btnRemoveTag" disable="true" mnemonicParsing="false" onAction="#handleRemoveTagFromTrack" text="-" />
-                    </HBox>
                 </children>
             </VBox>
 
