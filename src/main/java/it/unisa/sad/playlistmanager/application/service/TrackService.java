@@ -65,17 +65,22 @@ public class TrackService {
      *
      * @param track traccia da ricreare con ID e metadati originali
      * @param playlistPositions ID delle playlist e posizioni da ripristinare
+     * @param tagIds identificativi dei tag da riassegnare alla traccia
      */
     public void restoreTrack(
             Track track,
-            Map<String, Integer> playlistPositions) {
+            Map<String, Integer> playlistPositions,
+            List<String> tagIds) {
         validateTrackInput(track);
         if (playlistPositions == null) {
             throw new ValidationException(
                     "Le posizioni della Track nelle playlist non possono essere nulle.");
         }
+        if (tagIds == null) {
+            throw new ValidationException("Gli id dei tag non possono essere nulli.");
+        }
 
-        trackRepository.restoreWithPlaylistPositions(track, playlistPositions);
+        trackRepository.restoreWithPlaylistPositions(track, playlistPositions, tagIds);
     }
 
     /**

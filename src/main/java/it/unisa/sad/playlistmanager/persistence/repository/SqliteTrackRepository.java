@@ -243,7 +243,8 @@ public class SqliteTrackRepository implements TrackRepository {
     @Override
     public void restoreWithPlaylistPositions(
             Track track,
-            Map<String, Integer> playlistPositions) {
+            Map<String, Integer> playlistPositions,
+            List<String> tagIds) {
         String insertTrackSql = """
                 INSERT INTO tracks(id, title, author, duration, genre, year)
                 VALUES(?,?,?,?,?,?)
@@ -251,6 +252,10 @@ public class SqliteTrackRepository implements TrackRepository {
         String insertAssociationSql = """
                 INSERT INTO playlist_tracks(playlist_id, track_id, position)
                 VALUES(?,?,?)
+                """;
+        String insertTagAssociationSql = """
+                INSERT INTO track_tags(track_id, tag_id)
+                VALUES(?,?)
                 """;
 
         try (Connection connection = connectionManager.getConnection()) {
@@ -263,6 +268,11 @@ public class SqliteTrackRepository implements TrackRepository {
                         insertAssociationSql,
                         track.getId(),
                         playlistPositions);
+                insertTagAssociations(
+                        connection,
+                        insertTagAssociationSql,
+                        track.getId(),
+                        tagIds);
                 connection.commit();
             } catch (SQLException exception) {
                 rollbackRestore(connection, exception);
@@ -308,6 +318,28 @@ public class SqliteTrackRepository implements TrackRepository {
                 statement.setString(1, entry.getKey());
                 statement.setString(2, trackId);
                 statement.setInt(3, entry.getValue());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
+    /**
+     * Ripristina in batch tutte le associazioni traccia-tag.
+     */
+    private void insertTagAssociations(
+            Connection connection,
+            String sql,
+            String trackId,
+            List<String> tagIds) throws SQLException {
+        if (tagIds.isEmpty()) {
+            return;
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (String tagId : tagIds) {
+                statement.setString(1, trackId);
+                statement.setString(2, tagId);
                 statement.addBatch();
             }
             statement.executeBatch();

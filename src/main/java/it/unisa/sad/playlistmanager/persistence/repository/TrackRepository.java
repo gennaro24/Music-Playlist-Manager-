@@ -50,8 +50,10 @@ public interface TrackRepository {
      *
      * @param track traccia da ricreare con il suo identificativo originale
      * @param playlistPositions associazione tra ID playlist e posizione originale
+     * @param tagIds identificativi dei tag da riassegnare alla traccia
      */
     void restoreWithPlaylistPositions(
             Track track,
-            Map<String, Integer> playlistPositions);
+            Map<String, Integer> playlistPositions,
+            List<String> tagIds);
 }

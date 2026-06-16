@@ -59,7 +59,8 @@ public class FakeTrackRepository implements TrackRepository {
     @Override
     public void restoreWithPlaylistPositions(
             Track track,
-            Map<String, Integer> playlistPositions) {
+            Map<String, Integer> playlistPositions,
+            List<String> tagIds) {
         simulatedCatalog.add(track);
 
         if (linkedPlaylistRepo == null) {

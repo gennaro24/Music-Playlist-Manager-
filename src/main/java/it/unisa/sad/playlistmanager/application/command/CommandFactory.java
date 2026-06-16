@@ -51,7 +51,7 @@ public class CommandFactory {
     }
 
     public DeleteTrackCommand createDeleteTrackCommand(String trackId) {
-        return new DeleteTrackCommand(trackService, playlistService, trackId);
+        return new DeleteTrackCommand(trackService, playlistService, tagService, trackId);
     }
 
     public CreatePlaylistCommand createCreatePlaylistCommand(String name) {
