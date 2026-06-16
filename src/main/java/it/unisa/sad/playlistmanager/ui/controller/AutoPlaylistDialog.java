@@ -1,12 +1,15 @@
 package it.unisa.sad.playlistmanager.ui.controller;
 
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
+import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.domain.model.AutoPlaylistCriteria;
 import it.unisa.sad.playlistmanager.domain.model.Tag;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
@@ -23,22 +26,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Dialog per la creazione di una playlist automatica (US-28, T3-28).
- *
- * Consente di selezionare i criteri (genere, anno, tag) e mostra in tempo reale
- * l'anteprima delle tracce del catalogo che li soddisfano, interrogando
- * {@link MusicPlaylistManagerFacade#previewAutoPlaylist}. I criteri sono
- * combinati in AND; lasciare una voce su "Qualsiasi" significa non filtrare su
- * quella dimensione. Se nessuna traccia corrisponde, viene mostrato un
- * messaggio di "nessun risultato" e non viene creata alcuna playlist.
- *
- * Il bottone "Crea" e il suo collegamento a createAutoPlaylist (T3-33) e la sua
- * disabilitazione a 0 risultati (T3-34) sono a carico di un'altra task: qui i
- * punti d'aggancio sono predisposti (campo nome, {@link #buildCriteria()},
- * {@link #lastPreview}).
- *
- * @author Adinolfi G.
- * @version 1.0
+ * Dialog per la creazione di una playlist automatica (US-28).
+ * * @version 2.0 (Task T3-32 & T3-33)
  */
 public class AutoPlaylistDialog {
 
@@ -51,15 +40,17 @@ public class AutoPlaylistDialog {
     private final ListView<Track> listResults = new ListView<>();
     private final Label lblInfo = new Label();
 
-    /** Ultima anteprima calcolata: utile per la creazione effettiva (T3-33/T3-34). */
     private List<Track> lastPreview = List.of();
+    
+    // T3-32: Definizione del tipo di bottone personalizzato per confermare la creazione
+    private final ButtonType btnTypeCrea = new ButtonType("Crea Playlist", ButtonBar.ButtonData.OK_DONE);
 
     public AutoPlaylistDialog(MusicPlaylistManagerFacade facade) {
         this.facade = facade;
     }
 
     /**
-     * Costruisce e mostra la dialog di anteprima.
+     * Costruisce e mostra la dialog di anteprima e creazione.
      */
     public void show() {
         if (facade == null) {
@@ -69,7 +60,9 @@ public class AutoPlaylistDialog {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Playlist automatica");
         dialog.setHeaderText("Scegli i criteri e visualizza l'anteprima delle tracce nel catalogo");
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        
+        // T3-32: Aggiunge sia il pulsante "Crea Playlist" sia il pulsante "Chiudi" alla Dialog
+        dialog.getDialogPane().getButtonTypes().addAll(btnTypeCrea, ButtonType.CLOSE);
 
         txtName.setPromptText("Nome della playlist");
         txtName.setPrefWidth(260);
@@ -80,15 +73,15 @@ public class AutoPlaylistDialog {
         configureResultsList();
 
         // Anteprima reattiva a ogni cambio di criterio.
-        cmbGenre.valueProperty().addListener((obs, oldV, newV) -> updatePreview());
-        cmbYear.valueProperty().addListener((obs, oldV, newV) -> updatePreview());
-        cmbTag.valueProperty().addListener((obs, oldV, newV) -> updatePreview());
+        cmbGenre.valueProperty().addListener((obs, oldV, newV) -> updatePreview(dialog));
+        cmbYear.valueProperty().addListener((obs, oldV, newV) -> updatePreview(dialog));
+        cmbTag.valueProperty().addListener((obs, oldV, newV) -> updatePreview(dialog));
 
         GridPane criteriaForm = new GridPane();
         criteriaForm.setHgap(10);
         criteriaForm.setVgap(10);
         criteriaForm.setPadding(new Insets(10, 10, 4, 10));
-        criteriaForm.add(new Label("Nome"), 0, 0);
+        criteriaForm.add(new Label("Nome *"), 0, 0);
         criteriaForm.add(txtName, 1, 0);
         criteriaForm.add(new Label("Genere"), 0, 1);
         criteriaForm.add(cmbGenre, 1, 1);
@@ -111,14 +104,39 @@ public class AutoPlaylistDialog {
         content.setPrefWidth(420);
         dialog.getDialogPane().setContent(content);
 
-        // Stato iniziale: nessun criterio selezionato.
-        updatePreview();
+        // Calcola lo stato di partenza iniziale
+        updatePreview(dialog);
 
-        // TODO T3-33 (Di Marino): aggiungere un ButtonType "Crea" e, alla conferma,
-        //   chiamare la creazione effettiva con il nome (txtName) e i criteri
-        //   (buildCriteria()). La preview corrente e' disponibile in lastPreview.
-        // TODO T3-34 (Di Marino): disabilitare il bottone "Crea" quando
-        //   lastPreview e' vuota (vedi updatePreview()).
+        // T3-32: Intercetta la pressione del tasto Crea e ne valida le condizioni operative
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == btnTypeCrea) {
+                String playlistName = txtName.getText() != null ? txtName.getText().trim() : "";
+                AutoPlaylistCriteria criteria = buildCriteria();
+                
+                try {
+                    // Esegue la creazione effettiva passando i dati alla Facade
+                    facade.createAutoPlaylist(playlistName, criteria);
+                    
+                    // Mostra un feedback di successo all'utente
+                    Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                    successAlert.setTitle("Playlist Creata");
+                    successAlert.setHeaderText(null);
+                    successAlert.setContentText("La playlist automatica '" + playlistName + "' è stata creata con successo con " + lastPreview.size() + " tracce!");
+                    successAlert.showAndWait();
+                    
+                    return btnTypeCrea;
+                } catch (ValidationException | it.unisa.sad.playlistmanager.domain.exceptions.ValidationException ex) {
+                    // Mostra un messaggio di validazione chiaro in caso di errore (es. nome vuoto)
+                    Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                    errorAlert.setTitle("Errore di Validazione");
+                    errorAlert.setHeaderText("Impossibile creare la playlist");
+                    errorAlert.setContentText(ex.getMessage());
+                    errorAlert.showAndWait();
+                    return null; // Consuma l'evento impedendo la chiusura automatica della dialog
+                }
+            }
+            return null;
+        });
 
         dialog.showAndWait();
     }
@@ -145,29 +163,49 @@ public class AutoPlaylistDialog {
 
     /**
      * Ricalcola e mostra l'anteprima in base ai criteri correnti.
+     * <p><b>TASK T3-33:</b> Disabilita in tempo reale il pulsante Crea se l'anteprima produce 0 risultati.</p>
      */
-    private void updatePreview() {
+    private void updatePreview(Dialog<ButtonType> dialog) {
         AutoPlaylistCriteria criteria = buildCriteria();
+        Button btnCrea = (Button) dialog.getDialogPane().lookupButton(btnTypeCrea);
+
         if (criteria == null) {
             lastPreview = List.of();
             listResults.getItems().clear();
+            lblInfo.setStyle("-fx-text-fill: #0066cc;");
             lblInfo.setText("Seleziona almeno un criterio (genere, anno o tag).");
+            if (btnCrea != null) {
+                btnCrea.setDisable(true); // T3-33: Blocca l'azione se nessun criterio è presente
+            }
             return;
         }
 
         try {
             lastPreview = facade.previewAutoPlaylist(criteria);
             listResults.setItems(FXCollections.observableArrayList(lastPreview));
+            
             if (lastPreview.isEmpty()) {
+                lblInfo.setStyle("-fx-text-fill: #b0413e;");
                 lblInfo.setText("Nessuna traccia corrisponde ai criteri selezionati.");
+                if (btnCrea != null) {
+                    btnCrea.setDisable(true); // TASK T3-33: Disabilitazione se l'anteprima ha 0 risultati
+                }
             } else {
                 int n = lastPreview.size();
+                lblInfo.setStyle("-fx-text-fill: green;");
                 lblInfo.setText(n + (n == 1 ? " traccia trovata." : " tracce trovate."));
+                if (btnCrea != null) {
+                    btnCrea.setDisable(false); // Sblocca il pulsante se ci sono canzoni valide
+                }
             }
         } catch (RuntimeException exception) {
             lastPreview = List.of();
             listResults.getItems().clear();
+            lblInfo.setStyle("-fx-text-fill: #b0413e;");
             lblInfo.setText(exception.getMessage());
+            if (btnCrea != null) {
+                btnCrea.setDisable(true);
+            }
         }
     }
 
@@ -179,7 +217,7 @@ public class AutoPlaylistDialog {
                 .sorted()
                 .collect(Collectors.toList());
         List<String> items = new ArrayList<>();
-        items.add(null); // "Qualsiasi genere"
+        items.add(null); 
         items.addAll(genres);
         cmbGenre.setItems(FXCollections.observableArrayList(items));
         cmbGenre.getSelectionModel().selectFirst();
@@ -194,7 +232,7 @@ public class AutoPlaylistDialog {
                 .sorted()
                 .collect(Collectors.toList());
         List<Integer> items = new ArrayList<>();
-        items.add(null); // "Qualsiasi anno"
+        items.add(null); 
         items.addAll(years);
         cmbYear.setItems(FXCollections.observableArrayList(items));
         cmbYear.getSelectionModel().selectFirst();
@@ -204,7 +242,7 @@ public class AutoPlaylistDialog {
 
     private void configureTagCombo() {
         List<Tag> items = new ArrayList<>();
-        items.add(null); // "Qualsiasi tag"
+        items.add(null); 
         items.addAll(facade.getAllTags());
         cmbTag.setItems(FXCollections.observableArrayList(items));
         cmbTag.getSelectionModel().selectFirst();

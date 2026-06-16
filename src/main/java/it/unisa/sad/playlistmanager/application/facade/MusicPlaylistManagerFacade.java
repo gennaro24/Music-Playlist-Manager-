@@ -450,4 +450,16 @@ public class MusicPlaylistManagerFacade {
     public List<Track> previewAutoPlaylist(AutoPlaylistCriteria criteria) {
         return autoPlaylistService.previewAutoPlaylist(criteria);
     }
+
+    /**
+     * TASK T3-30: Espone al Presentation Layer il caso d'uso di creazione effettiva
+     * di una playlist automatica basata sui criteri specificati.
+     *
+     * @param name     Il nome da assegnare alla playlist.
+     * @param criteria I criteri di filtraggio (genere, anno, tag).
+     * @return La playlist generata e salvata su database.
+     */
+    public Playlist createAutoPlaylist(String name, AutoPlaylistCriteria criteria) {
+        return autoPlaylistService.createAutoPlaylist(name, criteria);
+    }
 }

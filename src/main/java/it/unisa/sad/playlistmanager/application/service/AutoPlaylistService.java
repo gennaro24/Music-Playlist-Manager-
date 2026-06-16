@@ -86,14 +86,35 @@ public class AutoPlaylistService {
     }
 
     /**
-     * Crea una playlist popolata con le tracce corrispondenti ai criteri.
-     *
+     * TASK T3-30 & T3-31: Crea una playlist popolata con le tracce corrispondenti ai criteri.
      *
      * @param name nome della playlist da creare
      * @param criteria criteri della playlist automatica
      * @return playlist creata e popolata automaticamente
+     * @throws ValidationException se il nome è vuoto o se non ci sono tracce corrispondenti
      */
     public Playlist createAutoPlaylist(String name, AutoPlaylistCriteria criteria) {
-        throw new UnsupportedOperationException("TODO T3-30/T3-31: implementare createAutoPlaylist.");
+        // Validazione formale del nome inserito dall'utente
+        if (name == null || name.trim().isEmpty()) {
+            throw new ValidationException("Il nome della playlist automatica è obbligatorio.");
+        }
+
+        // 1. Sfrutta il metodo di filtraggio in AND sviluppato da Adinolfi (T3-26)
+        List<Track> matchingTracks = previewAutoPlaylist(criteria);
+
+        // 2. TASK T3-31: Blocca la creazione tramite eccezione se l'anteprima produce 0 risultati
+        if (matchingTracks == null || matchingTracks.isEmpty()) {
+            throw new ValidationException("Nessuna traccia soddisfa i criteri scelti. Impossibile creare una playlist vuota.");
+        }
+
+        // 3. TASK T3-30: Creazione fisica della playlist tramite il PlaylistService esistente
+        Playlist autoPlaylist = playlistService.createPlaylist(name);
+
+        // 4. Associazione in sequenza di tutte le tracce filtrate all'interno della nuova playlist
+        for (Track track : matchingTracks) {
+            playlistService.addTrackToPlaylist(autoPlaylist.getId(), track.getId());
+        }
+
+        return autoPlaylist;
     }
 }
