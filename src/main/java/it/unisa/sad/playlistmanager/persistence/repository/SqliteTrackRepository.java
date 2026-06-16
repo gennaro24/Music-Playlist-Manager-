@@ -7,8 +7,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -138,27 +140,55 @@ public class SqliteTrackRepository implements TrackRepository {
 
     /**
      * Elimina una track nel sistema di persistenza in base al suo id.
-     * 
+     * <p><b>Risoluzione Bug Sprint 3:</b> Svuota preventivamente in modo transazionale 
+     * i record associati in playlist_tracks per evitare violazioni di chiave duplicata all'Undo.</p>
      * @param id dell'oggetto Track da eliminare
      * @return un Optional contenente la traccia eliminata se presente, altrimenti Optional.empty()
      */
     @Override
     public Optional<Track> deleteById(String id) {
         Optional<Track> trackOpt = findById(id);
-        String sql = """
+        if (trackOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        String deleteAssociationsSql = """
+                DELETE FROM playlist_tracks
+                WHERE track_id = ?
+                """;
+
+        String deleteTrackSql = """
                 DELETE FROM tracks
                 WHERE id = ?
                 """;
-        try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, id);
-            int affected = statement.executeUpdate();
-            if (affected == 0) {
-                return Optional.empty();
+
+        // Apriamo la connessione gestendo l'atomicità (Transazione)
+        try (Connection connection = connectionManager.getConnection()) {
+            connection.setAutoCommit(false); // Avvia la transazione
+
+            try {
+                // 1. Cancella prima i riferimenti dalle playlist
+                try (PreparedStatement assocStatement = connection.prepareStatement(deleteAssociationsSql)) {
+                    assocStatement.setString(1, id);
+                    assocStatement.executeUpdate();
+                }
+
+                // 2. Cancella definitivamente la traccia dal catalogo
+                try (PreparedStatement trackStatement = connection.prepareStatement(deleteTrackSql)) {
+                    trackStatement.setString(1, id);
+                    trackStatement.executeUpdate();
+                }
+
+                connection.commit(); // Conferma la rimozione pulita di entrambi
+                return trackOpt;
+
+            } catch (SQLException exception) {
+                connection.rollback(); // In caso di errore annulla tutto
+                throw exception;
             }
-            return trackOpt;
+
         } catch (SQLException exception) {
-            throw new RepositoryException("Errore nell'eliminazione della Track");
+            throw new RepositoryException("Errore nell'eliminazione transazionale della Track con id: [" + id + "]", exception);
         }
     }
 
@@ -192,6 +222,113 @@ public class SqliteTrackRepository implements TrackRepository {
 
         } catch (SQLException exception) {
             throw new RepositoryException("Errore nell'aggiornamento della Track con id");
+        }
+    }
+
+    /**
+     * Ripristina una Track e tutte le associazioni con le playlist usando
+     * un'unica transazione SQLite.
+     *
+     * Se anche una sola associazione non puo' essere inserita, viene eseguito
+     * il rollback: la traccia e le associazioni gia' elaborate non restano nel
+     * database. In questo modo l'undo non puo' terminare a meta'.
+     *
+     * Le foreign key vengono attivate esplicitamente su questa connessione
+     * (sono disattivate di default su ogni nuova connessione SQLite), in modo
+     * che un riferimento a una playlist inesistente in playlistPositions causi
+     * un'eccezione e il conseguente rollback, invece di essere inserito
+     * silenziosamente come riga orfana in playlist_tracks.
+     *
+     * @param track traccia eliminata da ricreare con lo stesso ID
+     * @param playlistPositions ID delle playlist e relative posizioni originali
+     */
+    @Override
+    public void restoreWithPlaylistPositions(
+            Track track,
+            Map<String, Integer> playlistPositions) {
+        String insertTrackSql = """
+                INSERT INTO tracks(id, title, author, duration, genre, year)
+                VALUES(?,?,?,?,?,?)
+                """;
+        String insertAssociationSql = """
+                INSERT INTO playlist_tracks(playlist_id, track_id, position)
+                VALUES(?,?,?)
+                """;
+
+        try (Connection connection = connectionManager.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try (Statement pragma = connection.createStatement()) {
+                pragma.execute("PRAGMA foreign_keys = ON");
+            }
+
+            try {
+                insertTrack(connection, insertTrackSql, track);
+                insertPlaylistPositions(
+                        connection,
+                        insertAssociationSql,
+                        track.getId(),
+                        playlistPositions);
+                connection.commit();
+            } catch (SQLException exception) {
+                rollbackRestore(connection, exception);
+                throw new RepositoryException(
+                        "Errore nel ripristino transazionale della Track con id: ["
+                                + track.getId() + "]",
+                        exception);
+            }
+        } catch (SQLException exception) {
+            throw new RepositoryException(
+                    "Errore nell'apertura della transazione di ripristino della Track con id: ["
+                            + track.getId() + "]",
+                    exception);
+        }
+    }
+
+    /**
+     * Inserisce la traccia usando la connessione della transazione corrente.
+     */
+    private void insertTrack(Connection connection, String sql, Track track)
+            throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, track.getId());
+            statement.setString(2, track.getTitle());
+            statement.setString(3, track.getAuthor());
+            statement.setInt(4, track.getDuration());
+            statement.setString(5, track.getGenre());
+            statement.setInt(6, track.getYear());
+            statement.executeUpdate();
+        }
+    }
+
+    /**
+     * Ripristina in batch tutte le associazioni playlist-track.
+     */
+    private void insertPlaylistPositions(
+            Connection connection,
+            String sql,
+            String trackId,
+            Map<String, Integer> playlistPositions) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (Map.Entry<String, Integer> entry : playlistPositions.entrySet()) {
+                statement.setString(1, entry.getKey());
+                statement.setString(2, trackId);
+                statement.setInt(3, entry.getValue());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
+    /**
+     * Esegue il rollback conservando anche un eventuale errore del rollback
+     * come eccezione soppressa della causa originale.
+     */
+    private void rollbackRestore(Connection connection, SQLException cause) {
+        try {
+            connection.rollback();
+        } catch (SQLException rollbackException) {
+            cause.addSuppressed(rollbackException);
         }
     }
 }

@@ -1,6 +1,7 @@
 package it.unisa.sad.playlistmanager.persistence.repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import it.unisa.sad.playlistmanager.domain.model.Track;
@@ -42,5 +43,15 @@ public interface TrackRepository {
      * @return un Optional contenente la nuova traccia aggiornata se presente, altrimenti Optional.empty()
      */
     Optional<Track> update(Track track);
-    
+
+    /**
+     * Ripristina atomicamente una traccia eliminata e le posizioni che occupava
+     * nelle playlist.
+     *
+     * @param track traccia da ricreare con il suo identificativo originale
+     * @param playlistPositions associazione tra ID playlist e posizione originale
+     */
+    void restoreWithPlaylistPositions(
+            Track track,
+            Map<String, Integer> playlistPositions);
 }

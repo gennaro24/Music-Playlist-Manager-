@@ -785,4 +785,16 @@ public class TrackController {
             lblFeedback.setText(text);
         }
     }
+
+    /**
+     * TASK T3-12: Rinfresca in tempo reale lo stato dei dati visibili (Catalogo o Playlist)
+     * per riallineare la Tabella a seguito di operazioni mutative o comandi di Undo.
+     */
+    public void refresh() {
+        if (playlistViewMode && currentPlaylist != null) {
+            loadPlaylistTracks(currentPlaylist);
+        } else {
+            loadCatalog();
+        }
+    }
 }

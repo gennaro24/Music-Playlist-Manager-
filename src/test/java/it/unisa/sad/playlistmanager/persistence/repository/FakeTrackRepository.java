@@ -4,6 +4,7 @@ import it.unisa.sad.playlistmanager.domain.model.Track;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class FakeTrackRepository implements TrackRepository {
@@ -53,5 +54,24 @@ public class FakeTrackRepository implements TrackRepository {
             }
         }
         return Optional.empty();
+    }
+
+    @Override
+    public void restoreWithPlaylistPositions(
+            Track track,
+            Map<String, Integer> playlistPositions) {
+        simulatedCatalog.add(track);
+
+        if (linkedPlaylistRepo == null) {
+            return;
+        }
+
+        for (Map.Entry<String, Integer> entry : playlistPositions.entrySet()) {
+            List<Track> tracks = "1".equals(entry.getKey())
+                    ? linkedPlaylistRepo.tracksInPlaylist1
+                    : linkedPlaylistRepo.tracksInPlaylist2;
+            int index = Math.max(0, Math.min(entry.getValue() - 1, tracks.size()));
+            tracks.add(index, track);
+        }
     }
 }

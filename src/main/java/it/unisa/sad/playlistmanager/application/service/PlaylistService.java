@@ -1,6 +1,7 @@
 package it.unisa.sad.playlistmanager.application.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import it.unisa.sad.playlistmanager.application.exceptions.PlaylistNotFoundException;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
@@ -49,6 +50,33 @@ public class PlaylistService {
 
         return newPlaylist;
     }
+
+    /**
+     * Crea e salva una nuova playlist vuota con un id specifico.
+     * @param id
+     * @param name
+     * @return
+     */
+    public Playlist createPlaylist(String id,String name) {
+        validateText(name, "Il nome della playlist non può essere nullo o vuoto.");
+
+        Playlist newPlaylist = new Playlist(id, name);
+        playlistRepository.save(newPlaylist);
+
+        return newPlaylist;
+    }
+
+    /**
+     * Popola una playlist esistente con tracce.
+     */
+
+    public void populatePlaylist(String playlistId, List<Track> tracks){
+        getExistingPlaylist(playlistId); // Verifica che la playlist esista
+        for (Track track : tracks) {
+            addTrackToPlaylist(playlistId, track.getId());
+        }
+    }
+
 
     /**
      * Recupera tutte le playlist salvate.
@@ -122,6 +150,61 @@ public class PlaylistService {
     }
 
     /**
+     * Verifica se una traccia è già presente in una playlist.
+     * @param playlistId
+     * @param trackId
+     * @return
+     */
+    public boolean isTrackInPlaylist(String playlistId, String trackId) {
+        getExistingPlaylist(playlistId);
+        getExistingTrack(trackId);
+
+        return isTrackAlreadyInPlaylist(playlistId, trackId);
+    }
+
+    /**
+     * Restituisce la posizione di una traccia all'interno di una playlist.
+     * @param playlistId
+     * @param trackId
+     * @return Optional<Integer> contenente la posizione della traccia se presente, o vuoto se la traccia non è presente.
+     */
+    public Optional<Integer> getTrackPosition(String playlistId, String trackId) {
+        getExistingPlaylist(playlistId);
+        getExistingTrack(trackId);
+
+        return playlistRepository.getTrackPosition(playlistId, trackId);
+    }
+
+    /**
+     * Ripristina una traccia in una playlist alla posizione originale.
+     * @param playlistId
+     * @param trackId
+     * @param position
+     */
+    public void restoreTrackToPlaylist(String playlistId,String trackId,int position) {
+        getExistingPlaylist(playlistId);
+        getExistingTrack(trackId);
+
+        if (position < 1) {
+            throw new ValidationException(
+                    "La posizione deve essere maggiore di zero."
+            );
+        }
+
+        if (isTrackAlreadyInPlaylist(playlistId, trackId)) {
+            throw new ValidationException(
+                    "La traccia è già presente nella playlist."
+            );
+        }
+
+        playlistRepository.addTrackToPlaylistAtPosition(
+                playlistId,
+                trackId,
+                position
+        );
+    }
+
+    /**
      * Elimina una playlist.
      *
      * L'eliminazione riguarda la playlist e le associazioni con le tracce.
@@ -153,7 +236,6 @@ public class PlaylistService {
      */
     private Playlist getExistingPlaylist(String playlistId) {
         validateText(playlistId, "L'id della Playlist è nullo o vuoto.");
-
         return playlistRepository.findById(playlistId)
                 .orElseThrow(() -> new PlaylistNotFoundException("Playlist non trovata con l'ID specificato."));
     }

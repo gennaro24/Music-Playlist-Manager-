@@ -6,6 +6,7 @@ import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -76,6 +77,13 @@ class TrackServiceTest {
                 }
             }
             return Optional.empty();
+        }
+
+        @Override
+        public void restoreWithPlaylistPositions(
+                Track track,
+                Map<String, Integer> playlistPositions) {
+            simulatedDatabase.add(track);
         }
     }
 

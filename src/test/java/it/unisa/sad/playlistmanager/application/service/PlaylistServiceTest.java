@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -88,6 +89,11 @@ class PlaylistServiceTest {
         }
 
         @Override
+        public void addTrackToPlaylistAtPosition(String playlistId, String trackId, int position) {
+            // TODO: simulare l'inserimento della traccia nella posizione richiesta.
+        }
+
+        @Override
         public void removeTrackFromPlaylist(String playlistId, String trackId) {
             this.isRemoveTrackCalled = true;
             this.tracksInPlaylist1.removeIf(t -> t.getId().equals(trackId));
@@ -99,6 +105,12 @@ class PlaylistServiceTest {
                 return Collections.emptyList();
             }
             return this.tracksInPlaylist1;
+        }
+
+        @Override
+        public Optional<Integer> getTrackPosition(String playlistId, String trackId) {
+            // TODO: restituire la posizione simulata della traccia nella playlist.
+            return Optional.empty();
         }
 
         /**
@@ -172,6 +184,25 @@ class PlaylistServiceTest {
                 }
             }
             return Optional.empty();
+        }
+
+        @Override
+        public void restoreWithPlaylistPositions(
+                Track track,
+                Map<String, Integer> playlistPositions) {
+            simulatedCatalog.add(track);
+
+            if (linkedPlaylistRepo == null) {
+                return;
+            }
+
+            Integer position = playlistPositions.get("1");
+            if (position != null) {
+                int index = Math.max(
+                        0,
+                        Math.min(position - 1, linkedPlaylistRepo.tracksInPlaylist1.size()));
+                linkedPlaylistRepo.tracksInPlaylist1.add(index, track);
+            }
         }
     }
 

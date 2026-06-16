@@ -1,6 +1,13 @@
 package it.unisa.sad.playlistmanager.application.facade;
 
 import java.util.List;
+
+import it.unisa.sad.playlistmanager.application.command.CommandFactory;
+import it.unisa.sad.playlistmanager.application.command.UndoManager;
+import it.unisa.sad.playlistmanager.application.command.concreteCommands.AddTrackCommand;
+import it.unisa.sad.playlistmanager.application.command.concreteCommands.CreatePlaylistCommand;
+import it.unisa.sad.playlistmanager.application.command.concreteCommands.DeletePlaylistCommand;
+import it.unisa.sad.playlistmanager.application.command.concreteCommands.DeleteTrackCommand;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
 import it.unisa.sad.playlistmanager.application.service.PlaybackService;
@@ -22,6 +29,8 @@ public class MusicPlaylistManagerFacade {
     private final TrackService trackService;
     private final PlaylistService playlistService;
     private final PlaybackService playbackService;
+    private final CommandFactory commandFactory;
+    private final UndoManager undoManager;
 
     /**
      * Costruttore della Facade. Inietta le dipendenze dei servizi necessari.
@@ -35,9 +44,29 @@ public class MusicPlaylistManagerFacade {
      */
     public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService,
             PlaybackService playbackService) {
+        this(trackService, playlistService, playbackService, null, new UndoManager());
+    }
+
+    /**
+     * Costruttore completo usato dal bootstrap applicativo.
+     *
+     * @param trackService servizio delle tracce
+     * @param playlistService servizio delle playlist
+     * @param playbackService servizio di playback
+     * @param commandFactory factory condivisa dei command
+     * @param undoManager cronologia globale della sessione
+     */
+    public MusicPlaylistManagerFacade(
+            TrackService trackService,
+            PlaylistService playlistService,
+            PlaybackService playbackService,
+            CommandFactory commandFactory,
+            UndoManager undoManager) {
         this.playbackService = playbackService;
         this.trackService = trackService;
         this.playlistService = playlistService;
+        this.commandFactory = commandFactory;
+        this.undoManager = undoManager;
     }
 
     /**
@@ -56,8 +85,10 @@ public class MusicPlaylistManagerFacade {
      *                                  validazione del dominio.
      */
     public Track addTrack(String title, String author, int duration, String genre, int year) {
-        // Il pattern Facade si limita a delegare l'operazione al servizio competente
-        return this.trackService.addTrack(title, author, duration, genre, year);
+        AddTrackCommand command = commandFactory.createAddTrackCommand(
+                title, author, duration, genre, year);
+        undoManager.executeAndPush(command);
+        return command.getCreatedTrack();
     }
 
     /**
@@ -67,7 +98,9 @@ public class MusicPlaylistManagerFacade {
      * @return La playlist creata.
      */
     public Playlist createPlaylist(String name) {
-        return this.playlistService.createPlaylist(name);
+        CreatePlaylistCommand command = commandFactory.createCreatePlaylistCommand(name);
+        undoManager.executeAndPush(command);
+        return command.getCreatedPlaylist();
     }
 
     /**
@@ -77,8 +110,10 @@ public class MusicPlaylistManagerFacade {
      * @return La playlist eliminata.
      */
     public Playlist deletePlaylist(String playlistId) {
+        DeletePlaylistCommand command = commandFactory.createDeletePlaylistCommand(playlistId);
+        undoManager.executeAndPush(command);
         playbackService.handleDeletedPlaylist(playlistId);
-        return this.playlistService.deletePlaylist(playlistId);
+        return command.getDeletedPlaylist();
     }
 
     /**
@@ -128,7 +163,8 @@ public class MusicPlaylistManagerFacade {
      * @param trackId    Identificativo della traccia da aggiungere.
      */
     public void addTrackToPlaylist(String playlistId, String trackId) {
-        this.playlistService.addTrackToPlaylist(playlistId, trackId);
+        undoManager.executeAndPush(
+                commandFactory.createAddTrackToPlaylistCommand(playlistId, trackId));
     }
 
     /**
@@ -143,7 +179,8 @@ public class MusicPlaylistManagerFacade {
      *                                  vengono violate.
      */
     public void removeTrackFromPlaylist(String playlistId, String trackId) {
-        this.playlistService.removeTrackFromPlaylist(playlistId, trackId);
+        undoManager.executeAndPush(
+                commandFactory.createRemoveTrackFromPlaylistCommand(playlistId, trackId));
     }
 
     /**
@@ -294,8 +331,26 @@ public class MusicPlaylistManagerFacade {
      * @return la traccia eliminata da ritornare alla UI.
      */
     public Track deleteTrack(String trackId) {
+        DeleteTrackCommand command = commandFactory.createDeleteTrackCommand(trackId);
+        undoManager.executeAndPush(command);
         playbackService.handleDeletedTrack(trackId);
-        return trackService.deleteTrack(trackId);
+        return command.getDeletedTrack();
+    }
+
+    /**
+     * Annulla l'ultima operazione mutativa registrata nella sessione.
+     */
+    public void undoLastAction() {
+        undoManager.undoLast();
+    }
+
+    /**
+     * Indica se la cronologia contiene almeno un'operazione annullabile.
+     *
+     * @return true se e' disponibile un undo
+     */
+    public boolean canUndo() {
+        return undoManager.canUndo();
     }
 
     // il controller lo deve chiamare quando la traccia corrente termina.

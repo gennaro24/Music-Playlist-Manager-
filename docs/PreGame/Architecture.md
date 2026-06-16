@@ -22,7 +22,7 @@ At a high level, the system is divided into five main areas:
    Manages interaction with the user. It contains the FXML views and the controllers that receive UI events.
 
 3. **Application Module**
-   Coordinates application use cases. It exposes services and a facade used by the controllers. It does not contain UI code.
+   Coordinates application use cases. It exposes services and a facade used by the controllers and uses commands to represent undoable catalog and playlist mutations. It does not contain UI code.
 
 4. **Domain Module**
    Contains the core business concepts and playback rules, such as tracks, playlists, playback queues, state snapshots and playback strategies.
@@ -36,6 +36,7 @@ The main runtime dependency flow is:
 Main
 -> AppFactory / SqliteAppFactory
 -> Repository implementations and Application Services
+-> CommandFactory and UndoManager
 -> MusicPlaylistManagerFacade
 -> ControllerFactory
 -> JavaFX Controllers
@@ -49,6 +50,8 @@ User
 -> View
 -> Controller
 -> Application Facade
+-> CommandFactory / UndoManager (for undoable mutations)
+-> Command
 -> Application Service
 -> Domain Model / Playback Strategy
 -> Repository Interface
@@ -118,6 +121,18 @@ it.unisa.sad.playlistmanager
 |       `-- PlaybackController
 |
 |-- application
+|   |-- command
+|   |   |-- Command
+|   |   |-- CommandFactory
+|   |   |-- UndoManager
+|   |   `-- concreteCommands
+|   |       |-- AddTrackCommand
+|   |       |-- DeleteTrackCommand
+|   |       |-- CreatePlaylistCommand
+|   |       |-- DeletePlaylistCommand
+|   |       |-- AddTrackToPlaylistCommand
+|   |       `-- RemoveTrackFromPlaylistCommand
+|   |
 |   |-- facade
 |   |   `-- MusicPlaylistManagerFacade
 |   |
@@ -198,6 +213,7 @@ bootstrap
 - `DatabaseInitializer`;
 - SQLite repository implementations;
 - `TrackService`, `PlaylistService` and `PlaybackService`;
+- `CommandFactory` and the shared `UndoManager`;
 - `MusicPlaylistManagerFacade`.
 
 Repository implementations are assigned to repository interface references before being injected into services. This keeps application services independent from SQLite classes.
@@ -247,16 +263,27 @@ The `application` module coordinates use cases and acts as the boundary between 
 
 ```text
 application
+|-- command
 |-- facade
 |-- service
 `-- exceptions
 ```
 
+#### `application.command`
+
+**Responsibility:** represent undoable catalog and playlist mutations as command objects and manage their execution history.
+
+`Command` defines the `execute()` and `undo()` contract. `CommandFactory` creates concrete commands with the shared application services required by each use case. `UndoManager` executes commands, stores successfully executed commands in a LIFO stack and undoes the most recent command.
+
+Concrete commands contain only the state required to reverse their own operation. Commands that delete data preserve snapshots such as the deleted entity, playlist memberships and original track positions. They delegate persistence changes to `TrackService` and `PlaylistService`; they do not execute SQL directly.
+
 #### `application.facade`
 
 **Responsibility:** provide a simplified and unified entry point for controllers.
 
-`MusicPlaylistManagerFacade` delegates catalog and playlist operations to their specialized services and coordinates operations involving multiple services. For example, deleting a track or playlist also requires keeping playback state coherent.
+`MusicPlaylistManagerFacade` routes undoable catalog and playlist mutations through `CommandFactory` and `UndoManager`. Read operations, track metadata updates and playback operations continue to delegate directly to their specialized services.
+
+The facade also coordinates operations involving playback. Deleting a track or playlist stops or updates playback when the active source is affected. Undo restores catalog and playlist data but intentionally does not resume the previous playback session.
 
 The facade should coordinate use cases but should not absorb domain rules that belong in domain objects or specialized services.
 
@@ -360,10 +387,12 @@ The startup sequence is:
 3. SqliteAppFactory initializes the database
 4. SqliteAppFactory creates repository implementations
 5. Repository interfaces are injected into application services
-6. Services are injected into MusicPlaylistManagerFacade
-7. Main creates ControllerFactory with the configured facade
-8. FXMLLoader uses ControllerFactory to instantiate JavaFX controllers
-9. Controllers receive the same facade through constructor injection
+6. TrackService and PlaylistService are injected into CommandFactory
+7. SqliteAppFactory creates the shared UndoManager
+8. Services, CommandFactory and UndoManager are injected into MusicPlaylistManagerFacade
+9. Main creates ControllerFactory with the configured facade
+10. FXMLLoader uses ControllerFactory to instantiate JavaFX controllers
+11. Controllers receive the same facade through constructor injection
 ```
 
 This lifecycle guarantees that:
@@ -372,13 +401,14 @@ This lifecycle guarantees that:
 - controllers do not know how dependencies are built;
 - services can be tested with fake repository implementations;
 - controllers can be tested with a fake or specialized facade;
-- the application uses one coherent set of service and repository instances.
+- the application uses one coherent set of service and repository instances;
+- all undoable operations in the application session share one in-memory LIFO history.
 
 ---
 
 ## 6. Main Runtime Flows
 
-### Catalog or playlist operation
+### Read or non-undoable catalog operation
 
 ```text
 User action
@@ -393,6 +423,39 @@ User action
 ```
 
 Example: when the user updates a track, `TrackController` sends the request to the facade. `TrackService` validates the request and calls `TrackRepository.update(...)`. The SQLite implementation persists the new metadata, and the controller refreshes the catalog or current playlist view.
+
+### Undoable catalog or playlist mutation
+
+```text
+User action
+-> Controller
+-> MusicPlaylistManagerFacade
+-> CommandFactory creates the concrete Command
+-> UndoManager executes the Command
+-> Command delegates to TrackService or PlaylistService
+-> Repository interface
+-> SQLite repository
+-> UndoManager stores the successful Command
+-> Controller refreshes the View
+```
+
+The current undoable mutations are track creation and deletion, playlist creation and deletion, adding a track to a playlist and removing a track from a playlist. Each concrete command captures the minimum data required by its `undo()` operation, including original playlist positions when order must be restored.
+
+### Undo operation
+
+```text
+User undo action
+-> Controller
+-> MusicPlaylistManagerFacade.undoLastAction()
+-> UndoManager selects the most recent Command
+-> Command.undo()
+-> Application Service
+-> Repository interface
+-> SQLite repository
+-> UndoManager removes the restored Command from history
+```
+
+The history is maintained only in memory and lasts for the current application session. The current implementation supports undo but not redo.
 
 ### Playback operation
 
@@ -427,9 +490,10 @@ The current architecture applies the following patterns:
 
 - **MVC:** separates FXML views, JavaFX controllers and the layered Model.
 - **Facade:** provides controllers with one application entry point.
+- **Command:** represents reversible mutations and stores the state required to undo them.
 - **Repository:** separates application logic from SQLite persistence.
 - **Strategy:** encapsulates playback queue progression algorithms.
-- **Factory / Composition Root:** centralizes application instance creation.
+- **Factory / Composition Root:** centralizes application instance creation and concrete command creation.
 - **Dependency Injection:** supplies repositories to services and the facade to controllers.
 - **Immutable DTO:** `PlaybackSnapshot` exposes playback state without giving the UI ownership of service state.
 

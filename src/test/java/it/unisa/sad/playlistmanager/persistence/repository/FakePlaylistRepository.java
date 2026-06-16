@@ -57,6 +57,11 @@ public class FakePlaylistRepository implements PlaylistRepository {
     }
 
     @Override
+    public void addTrackToPlaylistAtPosition(String playlistId, String trackId, int position) {
+        // TODO: simulare l'inserimento della traccia nella posizione richiesta.
+    }
+
+    @Override
     public void removeTrackFromPlaylist(String playlistId, String trackId) {
         this.isRemoveTrackCalled = true;
         this.tracksInPlaylist1.removeIf(t -> t.getId().equals(trackId));
@@ -67,6 +72,12 @@ public class FakePlaylistRepository implements PlaylistRepository {
         if ("1".equals(playlistId)) return this.tracksInPlaylist1;
         if ("2".equals(playlistId)) return this.tracksInPlaylist2;
         return Collections.emptyList();
+    }
+
+    @Override
+    public Optional<Integer> getTrackPosition(String playlistId, String trackId) {
+        // TODO: restituire la posizione simulata della traccia nella playlist.
+        return Optional.empty();
     }
 
     @Override
