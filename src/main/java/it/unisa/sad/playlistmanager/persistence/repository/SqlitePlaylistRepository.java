@@ -4,7 +4,6 @@ import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.db.DatabaseConnectionManager;
 import it.unisa.sad.playlistmanager.persistence.exceptions.RepositoryException;
-import it.unisa.sad.playlistmanager.application.exceptions.PlaylistNotFoundException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -64,6 +63,58 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
 
         } catch (SQLException exception) {
             throw new RepositoryException("Errore nel salvataggio della Playlist con id: [" + playlist.getId() + "]", exception);
+        }
+    }
+    /**
+     * Salvataggio atomico di una playlist e delle tracce associate.
+     * Se una delle due operazioni fallisce, l'intera transazione viene annullata.
+     * @param playlist la playlist da salvare
+     * @param tracks le tracce da associare alla playlist
+     * @throws RepositoryException se si verifica un errore durante il salvataggio
+     *                             della playlist o delle tracce
+     */
+    @Override
+    public void saveWithTracks(Playlist playlist, List<Track> tracks) {
+        String insertPlaylistSql = """
+                INSERT INTO playlists(id, name)
+                VALUES (?, ?)
+                """;
+        String insertTrackSql = """
+                INSERT INTO playlist_tracks (playlist_id, track_id, position)
+                VALUES (?, ?, ?)
+                """;
+
+        try (Connection connection = connectionManager.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                try (PreparedStatement playlistStatement = connection.prepareStatement(insertPlaylistSql)) {
+                    playlistStatement.setString(1, playlist.getId());
+                    playlistStatement.setString(2, playlist.getName());
+                    playlistStatement.executeUpdate();
+                }
+
+                try (PreparedStatement trackStatement = connection.prepareStatement(insertTrackSql)) {
+                    int position = 1;
+                    for (Track track : tracks) {
+                        trackStatement.setString(1, playlist.getId());
+                        trackStatement.setString(2, track.getId());
+                        trackStatement.setInt(3, position++);
+                        trackStatement.addBatch();
+                    }
+                    trackStatement.executeBatch();
+                }
+
+                connection.commit();
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        } catch (SQLException exception) {
+            throw new RepositoryException(
+                    "Errore nel salvataggio transazionale della Playlist con id: ["
+                            + playlist.getId() + "]",
+                    exception);
         }
     }
 
@@ -337,12 +388,5 @@ public class SqlitePlaylistRepository implements PlaylistRepository {
             );
         }
     }
-
-
-    @Override
-    public Optional<Playlist> findByName(String name) {
-        return Optional.empty();
-    }
-
 
 }

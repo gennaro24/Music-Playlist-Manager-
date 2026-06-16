@@ -25,13 +25,7 @@ public class CreateAutoPlaylistCommand implements Command {
 
     @Override
     public void execute() {
-        // 1. Crea la playlist vuota sul database sfruttando il servizio esistente
-        createdPlaylist = playlistService.createPlaylist(name);
-
-        // 2. Associa tutte le tracce campionate dall'anteprima
-        for (Track track : matchingTracks) {
-            playlistService.addTrackToPlaylist(createdPlaylist.getId(), track.getId());
-        }
+        createdPlaylist = playlistService.createPlaylistWithTracks(name, matchingTracks);
     }
 
     @Override

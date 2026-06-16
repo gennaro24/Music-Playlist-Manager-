@@ -33,7 +33,6 @@ class AutoPlaylistServiceTest {
     private Track rock2020;
     private Track rock2021;
     private Track pop2020;
-    private Track pop2022;
     private Track jazz2020;
     private Tag favourite;
 
@@ -52,7 +51,6 @@ class AutoPlaylistServiceTest {
         rock2020 = trackService.addTrack("Rock 2020", "Autore", 100, "Rock", 2020);
         rock2021 = trackService.addTrack("Rock 2021", "Autore", 100, "Rock", 2021);
         pop2020 = trackService.addTrack("Pop 2020", "Autore", 100, "Pop", 2020);
-        pop2022 = trackService.addTrack("Pop 2022", "Autore", 100, "Pop", 2022);
         jazz2020 = trackService.addTrack("Jazz 2020", "Autore", 100, "Jazz", 2020);
 
         favourite = tagService.addTag("favourite");

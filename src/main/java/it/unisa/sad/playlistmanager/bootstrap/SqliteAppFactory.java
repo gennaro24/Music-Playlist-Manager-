@@ -23,7 +23,7 @@ import it.unisa.sad.playlistmanager.application.command.UndoManager;
 public class SqliteAppFactory implements AppFactory{
     //attributo per la connessione al database
     private DatabaseConnectionManager connectionManager;
-
+    
     /**
      * metodo responsabile della creazione della facade e dell'inizializzazione del database
      * @return la facade creata
@@ -32,7 +32,7 @@ public class SqliteAppFactory implements AppFactory{
     public MusicPlaylistManagerFacade createFacade() {
         try {
             //creazione del connection manager
-            DatabaseConnectionManager connectionManager = new DatabaseConnectionManager();
+            connectionManager = new DatabaseConnectionManager();
             //creazione del initializer
             DatabaseInitializer databaseInitializer = new DatabaseInitializer(connectionManager);
             //inizializzazione del database
@@ -69,7 +69,6 @@ public class SqliteAppFactory implements AppFactory{
                     undoManager,
                     autoPlaylistService);
         } catch (Exception e) {
-            //TODO: gestire l'eccezione
             throw new RuntimeException("Errore nella creazione della facade", e);
         }
        

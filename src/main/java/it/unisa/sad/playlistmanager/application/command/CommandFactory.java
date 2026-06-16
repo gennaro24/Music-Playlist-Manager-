@@ -4,7 +4,6 @@ import it.unisa.sad.playlistmanager.application.command.concreteCommands.AddTrac
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.AddTrackToPlaylistCommand;
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.CreateAutoPlaylistCommand;
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.CreatePlaylistCommand;
-import it.unisa.sad.playlistmanager.application.command.concreteCommands.CreateAutoPlaylistCommand;
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.DeletePlaylistCommand;
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.DeleteTrackCommand;
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.RemoveTrackFromPlaylistCommand;

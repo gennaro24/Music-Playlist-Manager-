@@ -215,7 +215,7 @@ public class SqliteTrackRepository implements TrackRepository {
 
             int rows = statement.executeUpdate();
             if (rows == 0) {
-                Optional.empty();
+                return Optional.empty(); // Nessuna riga aggiornata, la track non esiste
             }
             return Optional.of(track);
 
