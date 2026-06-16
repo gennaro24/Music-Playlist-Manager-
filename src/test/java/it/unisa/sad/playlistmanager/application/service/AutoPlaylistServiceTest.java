@@ -2,6 +2,7 @@ package it.unisa.sad.playlistmanager.application.service;
 
 import it.unisa.sad.playlistmanager.application.exceptions.ValidationException;
 import it.unisa.sad.playlistmanager.domain.model.AutoPlaylistCriteria;
+import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Tag;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.InMemoryPlaylistRepository;
@@ -145,5 +146,63 @@ class AutoPlaylistServiceTest {
     @Test
     void previewConCriteriaNullLanciaValidationException() {
         assertThrows(ValidationException.class, () -> autoPlaylistService.previewAutoPlaylist(null));
+    }
+
+    // ===== Scenario: createAutoPlaylist (T3-34) =====
+
+    @Test
+    void createAutoPlaylistConNRisultatiCreaPlaylistCorretta() {
+        Playlist playlist = autoPlaylistService.createAutoPlaylist(
+                "My Rock", AutoPlaylistCriteria.byGenre("Rock"));
+
+        assertNotNull(playlist);
+        assertNotNull(playlist.getId());
+        assertEquals("My Rock", playlist.getName());
+
+        List<Track> tracce = playlistService.getTracksForPlaylist(playlist.getId());
+        assertEquals(Set.of(rock2020.getId(), rock2021.getId()),
+                tracce.stream().map(Track::getId).collect(Collectors.toSet()));
+    }
+
+    @Test
+    void createAutoPlaylistConZeroRisultatiLanciaValidationException() {
+        assertThrows(ValidationException.class, () ->
+                autoPlaylistService.createAutoPlaylist(
+                        "Metal Vuota", AutoPlaylistCriteria.byGenre("Metal")));
+    }
+
+    @Test
+    void createAutoPlaylistConZeroRisultatiNonCreaAlcunaPlaylist() {
+        int playlistPrima = playlistService.getAllPlaylists().size();
+
+        assertThrows(ValidationException.class, () ->
+                autoPlaylistService.createAutoPlaylist(
+                        "Metal Vuota", AutoPlaylistCriteria.byGenre("Metal")));
+
+        assertEquals(playlistPrima, playlistService.getAllPlaylists().size());
+    }
+
+    @Test
+    void createAutoPlaylistConNomeNulloLanciaValidationException() {
+        assertThrows(ValidationException.class, () ->
+                autoPlaylistService.createAutoPlaylist(
+                        null, AutoPlaylistCriteria.byGenre("Rock")));
+    }
+
+    @Test
+    void createAutoPlaylistConNomeVuotoLanciaValidationException() {
+        assertThrows(ValidationException.class, () ->
+                autoPlaylistService.createAutoPlaylist(
+                        "   ", AutoPlaylistCriteria.byGenre("Rock")));
+    }
+
+    @Test
+    void createAutoPlaylistCreaPlaylistNelRepository() {
+        assertTrue(playlistService.getAllPlaylists().isEmpty());
+
+        autoPlaylistService.createAutoPlaylist(
+                "Pop 2020", AutoPlaylistCriteria.combined("Pop", 2020, null));
+
+        assertEquals(1, playlistService.getAllPlaylists().size());
     }
 }
