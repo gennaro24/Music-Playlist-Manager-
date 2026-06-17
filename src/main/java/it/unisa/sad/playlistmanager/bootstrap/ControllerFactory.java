@@ -38,7 +38,6 @@ public class ControllerFactory implements Callback<Class<?>, Object>{
             return controllerClass.getDeclaredConstructor().newInstance();
 
         } catch (Exception e) {
-            //TODO: gestire l'eccezione
             throw new RuntimeException("Errore nell'istanziazione del controller: " + controllerClass.getName(), e);
         }
     }

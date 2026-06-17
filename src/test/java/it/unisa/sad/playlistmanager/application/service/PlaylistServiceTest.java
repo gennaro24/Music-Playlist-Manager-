@@ -93,7 +93,6 @@ class PlaylistServiceTest {
 
         @Override
         public void addTrackToPlaylistAtPosition(String playlistId, String trackId, int position) {
-            // TODO: simulare l'inserimento della traccia nella posizione richiesta.
         }
 
         @Override
@@ -112,7 +111,6 @@ class PlaylistServiceTest {
 
         @Override
         public Optional<Integer> getTrackPosition(String playlistId, String trackId) {
-            // TODO: restituire la posizione simulata della traccia nella playlist.
             return Optional.empty();
         }
 

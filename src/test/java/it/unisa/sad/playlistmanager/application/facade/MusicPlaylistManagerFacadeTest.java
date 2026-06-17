@@ -11,6 +11,7 @@ import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.FakePlaylistRepository;
+import it.unisa.sad.playlistmanager.persistence.repository.FakeTrackRepository;
 
 import org.junit.jupiter.api.Test;
 
@@ -79,8 +80,7 @@ class MusicPlaylistManagerFacadeTest {
      */
     class FakePlaylistService extends PlaylistService {
         public FakePlaylistService() {
-            // TODO: sostituire con repository fake quando saranno aggiunti i test dei command playlist.
-            super(null, null);
+            super(new FakePlaylistRepository(), new FakeTrackRepository());
         }
     }
 
