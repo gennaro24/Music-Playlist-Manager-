@@ -2,7 +2,7 @@
 
 ## Sprint Goal
 
-Consolidare la release finale introducendo undo sulle operazioni principali di playlist e catalogo, gestione visuale dei tag sulle tracce e creazione automatica di playlist tramite criteri semplici come genere, anno o tag.
+Consolidare la release finale introducendo undo sulle operazioni principali di playlist e catalogo, gestione visuale dei tag sulle tracce e creazione automatica di playlist tramite criteri semplici come genere, anno o tag. Inoltre, refactoring finale per mitigare problemi di progettazione.
 
 ## Sprint 3 User Stories
 
@@ -15,7 +15,7 @@ Consolidare la release finale introducendo undo sulle operazioni principali di p
 | **US-23** | Undo aggiunta traccia alla playlist | **8** | Done |
 | **US-24** | Undo rimozione traccia dalla playlist | **13** | Done |
 | **US-27** | Aggiungere tag visuali alle tracce | **3** | Done |
-| **US-28** | Creare automaticamente playlist per genere, anno o tag | **5** | Doing |
+| **US-28** | Creare automaticamente playlist per genere, anno o tag | **5** | Done |
 | **Totale** | **Sprint 3 Scope** | **71 SP** |  |
 
 ## Task Breakdown
