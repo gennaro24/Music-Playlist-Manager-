@@ -103,6 +103,8 @@ public class MainViewController {
         
         try {
             if (facade.canUndo()) {
+                String preservedPlaylistId = selectedPlaylist != null ? selectedPlaylist.getId() : null;
+
                 // 1. Esecuzione dell'Undo sul motore applicativo
                 facade.undoLastAction();
                 
@@ -110,6 +112,14 @@ public class MainViewController {
                 if (playlistViewController != null) {
                     playlistViewController.loadPlaylists();
                 }
+
+                if (preservedPlaylistId != null) {
+                    selectedPlaylist = facade.getAllPlaylists().stream()
+                            .filter(playlist -> preservedPlaylistId.equals(playlist.getId()))
+                            .findFirst()
+                            .orElse(null);
+                }
+
                 if (trackContainerController != null) {
                     trackContainerController.refresh();
                 }

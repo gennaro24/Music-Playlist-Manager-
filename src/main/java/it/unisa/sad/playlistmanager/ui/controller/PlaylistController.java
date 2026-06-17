@@ -31,6 +31,12 @@ public class PlaylistController {
     /** Routine di callback per richiedere la modifica asincrona del testo informativo delle tracce. */
     public Consumer<String> onShowTracksTextChangeHandler;
 
+    /**
+     * Evita notifiche spurie di deselezione quando la ListView viene ricaricata
+     * (es. dopo un undo) e la selezione viene ripristinata subito dopo.
+     */
+    private boolean suppressSelectionNotification = false;
+
     /** Componente grafico ListView per la renderizzazione visiva dell'elenco delle playlist. */
     @FXML private ListView<Playlist> listPlaylists;
     
@@ -133,6 +139,9 @@ public class PlaylistController {
      */
     private void configurePlaylistSelectionListener() {
         listPlaylists.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            if (suppressSelectionNotification) {
+                return;
+            }
             if (newSel != null) {
                 // TASK T-100 & T-118: Mostra i pulsanti quando una riga è attiva
                 if (btnRemovePlaylist != null) {
@@ -350,7 +359,31 @@ public class PlaylistController {
      * e le riversa all'interno della lista grafica globale.
      */
     public void loadPlaylists() {
-        if (facade == null || listPlaylists == null) return;
-        listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
+        if (facade == null || listPlaylists == null) {
+            return;
+        }
+
+        Playlist selected = listPlaylists.getSelectionModel().getSelectedItem();
+        final String selectedId = selected != null ? selected.getId() : null;
+
+        suppressSelectionNotification = true;
+        try {
+            listPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
+
+            if (selectedId != null) {
+                listPlaylists.getItems().stream()
+                        .filter(playlist -> selectedId.equals(playlist.getId()))
+                        .findFirst()
+                        .ifPresent(playlist -> listPlaylists.getSelectionModel().select(playlist));
+            }
+        } finally {
+            suppressSelectionNotification = false;
+        }
+
+        if (selectedId != null
+                && listPlaylists.getSelectionModel().getSelectedItem() == null
+                && onPlaylistSelectedHandler != null) {
+            onPlaylistSelectedHandler.accept(null);
+        }
     }
 }
