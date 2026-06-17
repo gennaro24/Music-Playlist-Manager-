@@ -291,15 +291,12 @@ public class MainViewController {
         }
     }
     /**
-     * Sintonizza il listener reattivo sul TrackController. Quando viene generata una 
-     * playlist automatica, ordina al PlaylistController di riallineare la barra laterale.
+     * Sintonizza il listener reattivo sul PlaylistController. Dopo la creazione di una
+     * playlist automatica, aggiorna la vista tracce (dropdown playlist e contenuto tabella).
      */
     private void configurePlaylistCreationBehavior() {
         if (trackContainerController == null || playlistViewController == null) return;
         
-        trackContainerController.setOnPlaylistCreated(() -> {
-            // Comanda il ricaricamento istantaneo delle playlist a sinistra
-            playlistViewController.loadPlaylists();
-        });
+        playlistViewController.setOnPlaylistCreated(() -> trackContainerController.refresh());
     }
 }

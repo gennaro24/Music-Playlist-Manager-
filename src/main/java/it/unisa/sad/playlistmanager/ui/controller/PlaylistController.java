@@ -31,6 +31,9 @@ public class PlaylistController {
     /** Routine di callback per richiedere la modifica asincrona del testo informativo delle tracce. */
     public Consumer<String> onShowTracksTextChangeHandler;
 
+    /** Routine di callback invocata dopo la creazione di una playlist automatica. */
+    private Runnable onPlaylistCreatedHandler;
+
     /**
      * Evita notifiche spurie di deselezione quando la ListView viene ricaricata
      * (es. dopo un undo) e la selezione viene ripristinata subito dopo.
@@ -46,8 +49,8 @@ public class PlaylistController {
     /** Pulsante per l'eliminazione permanente della playlist selezionata (US-5.1). */
     @FXML private Button btnRemovePlaylist;
     
-    /** T-118: Pulsante per avviare la riproduzione dell'intera playlist selezionata. */
-    @FXML private Button btnPlayPlaylist;
+    /** Pulsante per creare una playlist automatica (US-28). */
+    @FXML private Button btnAutoPlaylist;
     
     /** Campo di testo a comparsa per digitare il nome della nuova playlist. */
     @FXML private TextField txtPlaylistName;
@@ -96,11 +99,6 @@ public class PlaylistController {
             btnRemovePlaylist.setVisible(false);
             btnRemovePlaylist.setManaged(false);
         }
-        // T-118: Il pulsante di riproduzione parte nascosto finché non selezioni una playlist
-        if (btnPlayPlaylist != null) {
-            btnPlayPlaylist.setVisible(false);
-            btnPlayPlaylist.setManaged(false);
-        }
     }
     
     /**
@@ -135,7 +133,7 @@ public class PlaylistController {
     
     /**
      * Sintonizza i listener reattivi sulla selezione delle celle, aggiornando dinamicamente
-     * la visibilità dei comandi di rimozione e riproduzione (Task T-100, T-102 e T-118).
+     * la visibilità dei comandi di rimozione (Task T-100, T-102).
      */
     private void configurePlaylistSelectionListener() {
         listPlaylists.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
@@ -143,14 +141,10 @@ public class PlaylistController {
                 return;
             }
             if (newSel != null) {
-                // TASK T-100 & T-118: Mostra i pulsanti quando una riga è attiva
+                // TASK T-100: Mostra il pulsante rimuovi quando una riga è attiva
                 if (btnRemovePlaylist != null) {
                     btnRemovePlaylist.setVisible(true);
                     btnRemovePlaylist.setManaged(true);
-                }
-                if (btnPlayPlaylist != null) {
-                    btnPlayPlaylist.setVisible(true);
-                    btnPlayPlaylist.setManaged(true);
                 }
                 
                 if (facade != null) {
@@ -169,14 +163,10 @@ public class PlaylistController {
                     onPlaylistSelectedHandler.accept(newSel);
                 }
             } else {
-                // TASK T-102 & T-118: Nasconde i pulsanti se non vi è selezione
+                // TASK T-102: Nasconde il pulsante rimuovi se non vi è selezione
                 if (btnRemovePlaylist != null) {
                     btnRemovePlaylist.setVisible(false);
                     btnRemovePlaylist.setManaged(false);
-                }
-                if (btnPlayPlaylist != null) {
-                    btnPlayPlaylist.setVisible(false);
-                    btnPlayPlaylist.setManaged(false);
                 }
                 if (onPlaylistSelectedHandler != null) {
                     onPlaylistSelectedHandler.accept(null);
@@ -201,6 +191,15 @@ public class PlaylistController {
      */
     public void setOnPlaylistSelected(Consumer<Playlist> handler) {
         this.onPlaylistSelectedHandler = handler;
+    }
+
+    /**
+     * Registra il gestore eventi da lanciare dopo la creazione di una playlist automatica.
+     *
+     * @param handler Routine di callback esposta dal coordinatore principale.
+     */
+    public void setOnPlaylistCreated(Runnable handler) {
+        this.onPlaylistCreatedHandler = handler;
     }
 
     /**
@@ -324,33 +323,22 @@ public class PlaylistController {
     }
 
     /**
-     * US-12 / T-118: Comanda l'avvio della riproduzione dell'intera playlist selezionata
-     * sfruttando il metodo esposto dalla Facade centralizzata.
-     *
-     * @param event Evento di click del mouse sul bottone Play Playlist.
+     * US-28: Apre il dialogo per creare una playlist automatica basata su criteri.
      */
     @FXML
-    private void handlePlayPlaylist(ActionEvent event) {
-        if (listPlaylists == null || lblPlaylistFeedback == null) return;
-        Playlist selected = listPlaylists.getSelectionModel().getSelectedItem();
-        
-        if (selected != null) {
-            try {
-                if (facade != null) {
-                    facade.playPlaylist(selected.getId());
-                    lblPlaylistFeedback.setStyle("-fx-text-fill: green;");
-                    lblPlaylistFeedback.setText("Riproduzione playlist avviata.");
-                }
-            } catch (PlaylistNotFoundException | ValidationException | IllegalArgumentException e) {
-                lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
-                lblPlaylistFeedback.setText(e.getMessage());
-            } catch (Exception e) {
-                lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
-                lblPlaylistFeedback.setText("Errore imprevisto durante l'avvio della playlist.");
-            }
-        } else {
+    private void handleCreateAutoPlaylist(ActionEvent event) {
+        if (facade == null) {
             lblPlaylistFeedback.setStyle("-fx-text-fill: red;");
-            lblPlaylistFeedback.setText("Seleziona una playlist per avviarla.");
+            lblPlaylistFeedback.setText("Errore interno: facade non inizializzata.");
+            return;
+        }
+
+        new AutoPlaylistDialog(facade).show();
+
+        loadPlaylists();
+
+        if (onPlaylistCreatedHandler != null) {
+            onPlaylistCreatedHandler.run();
         }
     }
 

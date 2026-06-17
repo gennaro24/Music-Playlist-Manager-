@@ -99,8 +99,8 @@
         <HBox alignment="CENTER_RIGHT" spacing="8.0" styleClass="action-toolbar" minHeight="40.0">
             <Button fx:id="btnPlayCatalog" managed="true" mnemonicParsing="false" onAction="#handlePlayCatalog"
                     text="▶ Riproduci catalogo" visible="true" styleClass="btn-primary" minHeight="34.0"/>
-            <Button fx:id="btnAutoPlaylist" mnemonicParsing="false" onAction="#handleCreateAutoPlaylist"
-                    text="Playlist automatica" styleClass="btn-secondary" minHeight="34.0"/>
+            <Button fx:id="btnPlayPlaylist" managed="false" mnemonicParsing="false" onAction="#handlePlayPlaylist"
+                    text="▶ Riproduci playlist" visible="false" styleClass="btn-secondary" minHeight="34.0"/>
             <HBox fx:id="hboxAddtoPlaylist" alignment="CENTER_LEFT" spacing="8.0"
                   visible="false" managed="false" styleClass="playlist-quick-add" minHeight="-Infinity">
                 <ComboBox fx:id="dropdownPlaylists" minWidth="180.0" prefWidth="180.0"

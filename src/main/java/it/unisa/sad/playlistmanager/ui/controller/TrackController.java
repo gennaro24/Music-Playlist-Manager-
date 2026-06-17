@@ -109,6 +109,9 @@ public class TrackController {
     /** Pulsante contestuale per riprodurre tutto il catalogo. */
     @FXML private Button btnPlayCatalog;
 
+    /** Pulsante per avviare la riproduzione della playlist visualizzata. */
+    @FXML private Button btnPlayPlaylist;
+
     /** Pannello per la gestione dei tag nel catalogo. */
     @FXML private VBox formTagManagement;
 
@@ -127,9 +130,6 @@ public class TrackController {
     /** Lista interna contenente la copia speculare delle tracce della playlist attiva. */
     private java.util.List<Track> currentPlaylistTracks = new java.util.ArrayList<>();
     
-    /** Routine di callback per notificare al coordinatore la creazione di una nuova playlist. */
-    private Runnable onPlaylistCreatedHandler;
-
     /**
      * Costruttore per Constructor Injection (Task T-63).
      *
@@ -762,15 +762,6 @@ public class TrackController {
         this.onTrackPlayRequestedHandler = handler;
     }
 
-    /**
-     * Registra il gestore eventi da lanciare non appena viene creata una playlist (manuale o automatica).
-     *
-     * @param handler Routine di callback esposta dal coordinatore principale.
-     */
-    public void setOnPlaylistCreated(Runnable handler) {
-        this.onPlaylistCreatedHandler = handler;
-    }
-
     @FXML
     private void handlePlayCatalog(ActionEvent event) {
         if (facade == null) {
@@ -927,6 +918,10 @@ public class TrackController {
             btnPlayCatalog.setVisible(true);
             btnPlayCatalog.setManaged(true);
         }
+        if (btnPlayPlaylist != null) {
+            btnPlayPlaylist.setVisible(false);
+            btnPlayPlaylist.setManaged(false);
+        }
         if (hboxCatalogForms != null) {
             hboxCatalogForms.setVisible(true);
             hboxCatalogForms.setManaged(true);
@@ -958,6 +953,10 @@ public class TrackController {
         if (btnPlayCatalog != null) {
             btnPlayCatalog.setVisible(false);
             btnPlayCatalog.setManaged(false);
+        }
+        if (btnPlayPlaylist != null) {
+            btnPlayPlaylist.setVisible(false);
+            btnPlayPlaylist.setManaged(false);
         }
         if (tableTracks != null) {
             tableTracks.getSelectionModel().clearSelection();
@@ -995,6 +994,10 @@ public class TrackController {
         if (btnPlayCatalog != null) {
             btnPlayCatalog.setVisible(false);
             btnPlayCatalog.setManaged(false);
+        }
+        if (btnPlayPlaylist != null) {
+            btnPlayPlaylist.setVisible(true);
+            btnPlayPlaylist.setManaged(true);
         }
         if (hboxCatalogForms != null) {
             hboxCatalogForms.setVisible(false);
@@ -1084,19 +1087,26 @@ public class TrackController {
         }
     }
     
+    /**
+     * US-12 / T-118: Avvia la riproduzione della playlist attualmente visualizzata.
+     */
     @FXML
-    private void handleCreateAutoPlaylist(ActionEvent event) {
+    private void handlePlayPlaylist(ActionEvent event) {
         if (facade == null) {
             labelFeedback("Errore interno: facade non inizializzata.", "red");
             return;
         }
-
-        new AutoPlaylistDialog(facade).show();
-        
-        refresh();
-        
-        if (onPlaylistCreatedHandler != null) {
-            onPlaylistCreatedHandler.run();
+        if (!playlistViewMode || currentPlaylist == null) {
+            labelFeedback("Seleziona una playlist per avviarla.", "red");
+            return;
+        }
+        try {
+            facade.playPlaylist(currentPlaylist.getId());
+            labelFeedback("Riproduzione playlist avviata.", "green");
+        } catch (PlaylistNotFoundException | ValidationException | IllegalArgumentException e) {
+            labelFeedback(e.getMessage(), "red");
+        } catch (Exception e) {
+            labelFeedback("Errore imprevisto durante l'avvio della playlist.", "red");
         }
     }
 }
