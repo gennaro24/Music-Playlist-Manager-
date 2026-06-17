@@ -578,6 +578,28 @@ class PlaybackServiceTest {
     }
 
     @Test
+    void testDeleteTrackFuturaInSequential_RimuoveLaTracciaDallaCodaCorrente() {
+        Track track1 = new Track("t-1", "Track 1", "Artist", 120, "Pop", 2020);
+        Track track2 = new Track("t-2", "Track 2", "Artist", 120, "Pop", 2020);
+        Track track3 = new Track("t-3", "Track 3", "Artist", 120, "Pop", 2020);
+        Track track4 = new Track("t-4", "Track 4", "Artist", 120, "Pop", 2020);
+        Track track5 = new Track("t-5", "Track 5", "Artist", 120, "Pop", 2020);
+        Playlist playlist = new Playlist("p-seq", "Sequential Playlist");
+
+        playbackService.playPlaylist(playlist, List.of(track1, track2, track3, track4, track5));
+        playbackService.skipToNext();
+        assertEquals(track2, playbackService.getCurrentTrack());
+
+        playbackService.handleDeletedTrack(track4.getId());
+
+        playbackService.skipToNext();
+        assertEquals(track3, playbackService.getCurrentTrack());
+
+        playbackService.skipToNext();
+        assertEquals(track5, playbackService.getCurrentTrack());
+    }
+
+    @Test
     void testSkip_Sequential_ResetTimer() {
         // GIVEN: playlist avviata, tick di 5 secondi
         playbackService.playPlaylist(samplePlaylist, playlistTracks);

@@ -329,11 +329,56 @@ public class PlaybackService {
     }
 
     public void handleDeletedTrack(String trackId) {
-        if (currentTrack != null && currentTrack.getId().equals(trackId)) {
+        if (currentQueue == null || currentQueue.isEmpty()) {
+            return;
+        }
+
+        boolean isCurrent = currentTrack != null && currentTrack.getId().equals(trackId);
+        boolean isInQueue = currentQueue.getTracks().stream()
+                .anyMatch(track -> track.getId().equals(trackId));
+
+        if (!isInQueue) {
+            return;
+        }
+
+        if (isCurrent) {
             currentTrack = null;
             currentQueue = null;
             currentState = PlaybackState.STOPPED;
             elapsedSeconds = 0;
+            return;
+        }
+
+        String currentTrackId = currentTrack != null ? currentTrack.getId() : null;
+        PlaybackSource source = currentQueue.getSource();
+        List<Track> updatedTracks = new ArrayList<>(currentQueue.getTracks());
+        updatedTracks.removeIf(track -> track.getId().equals(trackId));
+
+        if (updatedTracks.isEmpty()) {
+            currentTrack = null;
+            currentQueue = null;
+            currentState = PlaybackState.STOPPED;
+            elapsedSeconds = 0;
+            return;
+        }
+
+        currentQueue = new PlaybackQueue(updatedTracks, source);
+
+        if (currentTrackId == null) {
+            currentTrack = currentQueue.getCurrentTrack();
+            return;
+        }
+
+        for (int i = 0; i < updatedTracks.size(); i++) {
+            if (updatedTracks.get(i).getId().equals(currentTrackId)) {
+                currentQueue.setCurrentIndex(i);
+                currentTrack = currentQueue.getCurrentTrack();
+                break;
+            }
+        }
+
+        if (currentMode == PlaybackMode.SHUFFLE) {
+            playbackStrategy = new ShufflePlaybackStrategy(updatedTracks);
         }
     }
 

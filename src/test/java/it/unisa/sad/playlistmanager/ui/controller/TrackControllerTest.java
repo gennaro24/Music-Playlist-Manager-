@@ -1,8 +1,15 @@
 package it.unisa.sad.playlistmanager.ui.controller;
 
 import it.unisa.sad.playlistmanager.application.facade.MusicPlaylistManagerFacade;
+import it.unisa.sad.playlistmanager.application.service.PlaybackService;
+import it.unisa.sad.playlistmanager.application.service.PlaylistService;
+import it.unisa.sad.playlistmanager.application.service.TagService;
+import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
+import it.unisa.sad.playlistmanager.persistence.repository.FakePlaylistRepository;
+import it.unisa.sad.playlistmanager.persistence.repository.FakeTrackRepository;
+import it.unisa.sad.playlistmanager.persistence.repository.InMemoryTagRepository;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.control.Label;
@@ -48,7 +55,14 @@ class TrackControllerTest {
 
         // NOTA: Passiamo null al super() perché in questo test non ci servono i Service reali
         public FakeFacade() {
-            super(null, null, null, null);
+            super(
+                    new TrackService(new FakeTrackRepository()),
+                    new PlaylistService(new FakePlaylistRepository(), new FakeTrackRepository()),
+                    new PlaybackService(new FakePlaylistRepository()),
+                    new TagService(
+                            new InMemoryTagRepository(new FakeTrackRepository()),
+                            new FakeTrackRepository())
+            );
         }
 
         @Override

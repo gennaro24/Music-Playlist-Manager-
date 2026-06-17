@@ -69,6 +69,10 @@ public class MainViewController {
     private void initialize() {
         configurePlaylistSelectionBehavior();
         configureTrackPlaybackBehavior();
+        
+        // INNESTATO SPRINT 3: Sincronizzazione della creazione playlist automatica
+        configurePlaylistCreationBehavior();
+        
         updateTitleLabel();
     
         // T3-11: Avvia il monitoraggio reattivo dello stato del pulsante Undo
@@ -99,6 +103,8 @@ public class MainViewController {
         
         try {
             if (facade.canUndo()) {
+                String preservedPlaylistId = selectedPlaylist != null ? selectedPlaylist.getId() : null;
+
                 // 1. Esecuzione dell'Undo sul motore applicativo
                 facade.undoLastAction();
                 
@@ -106,6 +112,14 @@ public class MainViewController {
                 if (playlistViewController != null) {
                     playlistViewController.loadPlaylists();
                 }
+
+                if (preservedPlaylistId != null) {
+                    selectedPlaylist = facade.getAllPlaylists().stream()
+                            .filter(playlist -> preservedPlaylistId.equals(playlist.getId()))
+                            .findFirst()
+                            .orElse(null);
+                }
+
                 if (trackContainerController != null) {
                     trackContainerController.refresh();
                 }
@@ -275,5 +289,17 @@ public class MainViewController {
         } else {
             labelPageTitle.setText("Home");
         }
+    }
+    /**
+     * Sintonizza il listener reattivo sul TrackController. Quando viene generata una 
+     * playlist automatica, ordina al PlaylistController di riallineare la barra laterale.
+     */
+    private void configurePlaylistCreationBehavior() {
+        if (trackContainerController == null || playlistViewController == null) return;
+        
+        trackContainerController.setOnPlaylistCreated(() -> {
+            // Comanda il ricaricamento istantaneo delle playlist a sinistra
+            playlistViewController.loadPlaylists();
+        });
     }
 }

@@ -11,6 +11,7 @@ import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackState;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.persistence.repository.FakePlaylistRepository;
+import it.unisa.sad.playlistmanager.persistence.repository.FakeTrackRepository;
 
 import org.junit.jupiter.api.Test;
 
@@ -79,8 +80,7 @@ class MusicPlaylistManagerFacadeTest {
      */
     class FakePlaylistService extends PlaylistService {
         public FakePlaylistService() {
-            // TODO: sostituire con repository fake quando saranno aggiunti i test dei command playlist.
-            super(null, null);
+            super(new FakePlaylistRepository(), new FakeTrackRepository());
         }
     }
 
@@ -116,8 +116,14 @@ class MusicPlaylistManagerFacadeTest {
     @Test
     void testGetAllTracksDelegaCorrettamente() {
         FakeTrackService fakeService = new FakeTrackService();
+        FakePlaylistService fakePlaylistService = new FakePlaylistService();
+        FakeTagService fakeTagService = new FakeTagService();
         
-        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(fakeService, null, null, null);
+        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(
+                fakeService,
+                fakePlaylistService,
+                null,
+                fakeTagService);
 
         List<Track> result = facade.getAllTracks();
 
@@ -131,10 +137,17 @@ class MusicPlaylistManagerFacadeTest {
      */
     @Test
     void testSetPlaybackModeDelegaCorrettamente() {
+        FakeTrackService fakeTrackService = new FakeTrackService();
+        FakePlaylistService fakePlaylistService = new FakePlaylistService();
         FakePlaybackService fakePlaybackService = new FakePlaybackService();
+        FakeTagService fakeTagService = new FakeTagService();
         
         // Inizializziamo la Facade passando il PlaybackService finto
-        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(null, null, fakePlaybackService, null);
+        MusicPlaylistManagerFacade facade = new MusicPlaylistManagerFacade(
+                fakeTrackService,
+                fakePlaylistService,
+                fakePlaybackService,
+                fakeTagService);
 
         // Chiamiamo il nuovo metodo
         PlaybackSnapshot result = facade.setPlaybackMode(PlaybackMode.SHUFFLE);

@@ -72,7 +72,7 @@ class MusicPlaylistManagerFacadeUndoTest {
     @Test
     void operazioniMultipleAnnullateInOrdineLifo() {
         Playlist playlist = facade.createPlaylist("La mia playlist");
-        Track track = facade.addTrack("Titolo", "Autore", 100, "Pop", 2020);
+        facade.addTrack("Titolo", "Autore", 100, "Pop", 2020);
 
         facade.undoLastAction();
         assertTrue(facade.getAllTracks().isEmpty());

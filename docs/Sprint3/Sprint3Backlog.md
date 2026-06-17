@@ -2,19 +2,21 @@
 
 ## Sprint Goal
 
-Consolidare la release finale introducendo undo sulle operazioni principali di playlist e catalogo, gestione visuale dei tag sulle tracce e creazione automatica di playlist tramite criteri semplici come genere, anno o tag.
+Consolidare la release finale introducendo undo sulle operazioni principali di playlist e catalogo, gestione visuale dei tag sulle tracce e creazione automatica di playlist tramite criteri semplici come genere, anno o tag. Inoltre, refactoring finale per mitigare problemi di progettazione.
 
 ## Sprint 3 User Stories
 
 | ID Story | User Story | Story Points | Stato |
 |---|---|---:|---|
-| **US-19** | Undo creazione globale canzone | **8** | In Progress |
-| **US-20** | Undo eliminazione globale canzone | **13** | To Do |
-| **US-23** | Undo aggiunta traccia alla playlist | **8** | To Do |
-| **US-24** | Undo rimozione traccia dalla playlist | **13** | To Do |
-| **US-27** | Aggiungere tag visuali alle tracce | **3** | To Do |
-| **US-28** | Creare automaticamente playlist per genere, anno o tag | **5** | To Do |
-| **Totale** | **Sprint 3 Scope** | **50 SP** |  |
+| **US-19** | Undo creazione globale canzone | **8** | Done |
+| **US-20** | Undo eliminazione globale canzone | **13** | Done |
+| **US-21** | Undo creazione globale playlist   | **8**  | Done |
+| **US-22** | Undo eliminazione globale playlist| **13** | Done
+| **US-23** | Undo aggiunta traccia alla playlist | **8** | Done |
+| **US-24** | Undo rimozione traccia dalla playlist | **13** | Done |
+| **US-27** | Aggiungere tag visuali alle tracce | **3** | Done |
+| **US-28** | Creare automaticamente playlist per genere, anno o tag | **5** | Done |
+| **Totale** | **Sprint 3 Scope** | **71 SP** |  |
 
 ## Task Breakdown
 

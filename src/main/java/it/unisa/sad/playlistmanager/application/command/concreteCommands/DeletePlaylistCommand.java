@@ -52,8 +52,10 @@ public class DeletePlaylistCommand implements Command {
             return;
         }
 
-        playlistService.createPlaylist(deletedPlaylist.getId(), deletedPlaylist.getName());
-        playlistService.populatePlaylist(deletedPlaylist.getId(), deletedTracks);
+        playlistService.createPlaylistWithTracks(
+                deletedPlaylist.getId(),
+                deletedPlaylist.getName(),
+                deletedTracks);
 
         // Lo stato corrente del command viene eliminato solo dopo il ripristino.
         deletedPlaylist = null;

@@ -9,6 +9,7 @@ import it.unisa.sad.playlistmanager.persistence.repository.SqliteTagRepository;
 import it.unisa.sad.playlistmanager.persistence.repository.TagRepository;
 import it.unisa.sad.playlistmanager.persistence.repository.TrackRepository;
 import it.unisa.sad.playlistmanager.persistence.repository.PlaylistRepository;
+import it.unisa.sad.playlistmanager.application.service.AutoPlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TagService;
@@ -17,12 +18,12 @@ import it.unisa.sad.playlistmanager.application.command.CommandFactory;
 import it.unisa.sad.playlistmanager.application.command.UndoManager;
 
 /**
- * Factort responsabile della creazione della facade e del connection manager
+ * Factory responsabile della creazione della facade e del connection manager
  */
 public class SqliteAppFactory implements AppFactory{
     //attributo per la connessione al database
     private DatabaseConnectionManager connectionManager;
-
+    
     /**
      * metodo responsabile della creazione della facade e dell'inizializzazione del database
      * @return la facade creata
@@ -31,7 +32,7 @@ public class SqliteAppFactory implements AppFactory{
     public MusicPlaylistManagerFacade createFacade() {
         try {
             //creazione del connection manager
-            DatabaseConnectionManager connectionManager = new DatabaseConnectionManager();
+            connectionManager = new DatabaseConnectionManager();
             //creazione del initializer
             DatabaseInitializer databaseInitializer = new DatabaseInitializer(connectionManager);
             //inizializzazione del database
@@ -53,6 +54,8 @@ public class SqliteAppFactory implements AppFactory{
             PlaybackService playbackService = new PlaybackService(playlistRepository);
             //creazione del tag service
             TagService tagService = new TagService(tagRepository, trackRepository);
+            //creazione del servizio delle playlist automatiche con gli stessi service condivisi
+            AutoPlaylistService autoPlaylistService = new AutoPlaylistService(trackService, tagService, playlistService);
             //creazione dell'infrastruttura command con gli stessi service condivisi
             CommandFactory commandFactory = new CommandFactory(trackService, playlistService, tagService);
             UndoManager undoManager = new UndoManager();
@@ -63,9 +66,9 @@ public class SqliteAppFactory implements AppFactory{
                     playbackService,
                     tagService,
                     commandFactory,
-                    undoManager);
+                    undoManager,
+                    autoPlaylistService);
         } catch (Exception e) {
-            //TODO: gestire l'eccezione
             throw new RuntimeException("Errore nella creazione della facade", e);
         }
        

@@ -10,10 +10,12 @@ import it.unisa.sad.playlistmanager.application.command.concreteCommands.DeleteP
 import it.unisa.sad.playlistmanager.application.command.concreteCommands.DeleteTrackCommand;
 import it.unisa.sad.playlistmanager.domain.model.PlaybackSnapshot;
 import it.unisa.sad.playlistmanager.application.exceptions.TrackNotFoundException;
+import it.unisa.sad.playlistmanager.application.service.AutoPlaylistService;
 import it.unisa.sad.playlistmanager.application.service.PlaybackService;
 import it.unisa.sad.playlistmanager.application.service.PlaylistService;
 import it.unisa.sad.playlistmanager.application.service.TagService;
 import it.unisa.sad.playlistmanager.application.service.TrackService;
+import it.unisa.sad.playlistmanager.domain.model.AutoPlaylistCriteria;
 import it.unisa.sad.playlistmanager.domain.model.Playlist;
 import it.unisa.sad.playlistmanager.domain.model.Track;
 import it.unisa.sad.playlistmanager.domain.model.Tag;
@@ -34,8 +36,11 @@ public class MusicPlaylistManagerFacade {
     private final CommandFactory commandFactory;
     private final UndoManager undoManager;
     private final TagService tagService;
+    private final AutoPlaylistService autoPlaylistService;
+
     /**
      * Costruttore della Facade. Inietta le dipendenze dei servizi necessari.
+     * Questo costruttore è pensato per essere usato nei test.
      *
      * @param trackService    Il servizio incaricato della logica di business delle
      *                        tracce.
@@ -44,17 +49,32 @@ public class MusicPlaylistManagerFacade {
      * @param playbackService Il servizio incaricato della logica di business del
      *                        playback.
      */
-    public MusicPlaylistManagerFacade(TrackService trackService, PlaylistService playlistService,
-            PlaybackService playbackService, TagService tagService) {
-        this(trackService, playlistService, playbackService,tagService, null, new UndoManager());
+    public MusicPlaylistManagerFacade(
+        TrackService trackService,
+        PlaylistService playlistService,
+        PlaybackService playbackService,
+        TagService tagService) {
+            this(
+                    trackService,
+                    playlistService,
+                    playbackService,
+                    tagService,
+                    new CommandFactory(trackService, playlistService, tagService),
+                    new UndoManager()
+            );
     }
 
     /**
-     * Costruttore completo usato dal bootstrap applicativo.
+     * Costruttore con i servizi e l'infrastruttura command/undo.
+     *
+     * Mantiene la firma precedente: costruisce internamente un
+     * {@link AutoPlaylistService} di default a partire dai service gia' iniettati,
+     * cosi' i chiamatori esistenti non devono cambiare.
      *
      * @param trackService servizio delle tracce
      * @param playlistService servizio delle playlist
      * @param playbackService servizio di playback
+     * @param tagService servizio dei tag
      * @param commandFactory factory condivisa dei command
      * @param undoManager cronologia globale della sessione
      */
@@ -65,12 +85,36 @@ public class MusicPlaylistManagerFacade {
             TagService tagService,
             CommandFactory commandFactory,
             UndoManager undoManager) {
+        this(trackService, playlistService, playbackService, tagService, commandFactory, undoManager,
+                new AutoPlaylistService(trackService, tagService, playlistService));
+    }
+
+    /**
+     * Costruttore completo usato dal bootstrap applicativo.
+     *
+     * @param trackService servizio delle tracce
+     * @param playlistService servizio delle playlist
+     * @param playbackService servizio di playback
+     * @param tagService servizio dei tag
+     * @param commandFactory factory condivisa dei command
+     * @param undoManager cronologia globale della sessione
+     * @param autoPlaylistService servizio delle playlist automatiche
+     */
+    public MusicPlaylistManagerFacade(
+            TrackService trackService,
+            PlaylistService playlistService,
+            PlaybackService playbackService,
+            TagService tagService,
+            CommandFactory commandFactory,
+            UndoManager undoManager,
+            AutoPlaylistService autoPlaylistService) {
         this.playbackService = playbackService;
         this.trackService = trackService;
         this.playlistService = playlistService;
         this.tagService = tagService;
         this.commandFactory = commandFactory;
         this.undoManager = undoManager;
+        this.autoPlaylistService = autoPlaylistService;
     }
 
     /**
@@ -402,5 +446,61 @@ public class MusicPlaylistManagerFacade {
 
     public List<Tag> getTagsForTrack(String trackId) {
         return tagService.getTagsForTrack(trackId);
+    }
+
+    //====================METODI PER LE PLAYLIST AUTOMATICHE=====================:
+
+    /**
+     * Espone al Presentation Layer l'anteprima di una playlist automatica:
+     * restituisce le tracce del catalogo che soddisfano i criteri indicati, senza
+     * creare alcuna playlist. Pass-through verso {@link AutoPlaylistService}.
+     *
+     * @param criteria criteri di genere, anno e tag scelti dall'utente
+     * @return le tracce corrispondenti, eventualmente lista vuota
+     */
+    public List<Track> previewAutoPlaylist(AutoPlaylistCriteria criteria) {
+        return autoPlaylistService.previewAutoPlaylist(criteria);
+    }
+
+    /**
+     * TASK T3-30: Espone al Presentation Layer il caso d'uso di creazione effettiva
+     * di una playlist automatica basata sui criteri specificati.
+     *
+     * @param name     Il nome da assegnare alla playlist.
+     * @param criteria I criteri di filtraggio (genere, anno, tag).
+     * @return La playlist generata e salvata su database.
+     */
+    /**
+     * TASK SPRINT 3: Gestione transazionale e annullabile della playlist automatica.
+     * Include validazione preventiva anti-duplicazione e iniezione nell'UndoManager.
+     */
+    public Playlist createAutoPlaylist(String name, AutoPlaylistCriteria criteria) {
+        // 1. Recupera l'anteprima delle tracce dal servizio di Adinolfi
+        List<Track> matchingTracks = autoPlaylistService.previewAutoPlaylist(criteria);
+        
+        // 2. VALIDAZIONE: Verifica che il nome non sia vuoto
+        if (name == null || name.trim().isEmpty()) {
+            throw new it.unisa.sad.playlistmanager.application.exceptions.ValidationException("Il nome della playlist automatica è obbligatorio.");
+        }
+        
+        // 3. VALIDAZIONE BUG UNIQUE: Controlla preventivamente se esiste già una playlist con lo stesso nome
+        boolean nameExists = playlistService.getAllPlaylists().stream()
+                .anyMatch(p -> p.getName().equalsIgnoreCase(name.trim()));
+        if (nameExists) {
+            throw new it.unisa.sad.playlistmanager.application.exceptions.ValidationException("Esiste già una playlist denominata '" + name + "'. Scegli un nome univoco.");
+        }
+        
+        // 4. VALIDAZIONE: Impedisce la creazione di playlist vuote
+        if (matchingTracks == null || matchingTracks.isEmpty()) {
+            throw new it.unisa.sad.playlistmanager.application.exceptions.ValidationException("Nessuna traccia soddisfa i criteri scelti. Impossibile creare la playlist.");
+        }
+
+        // 5. INTEGRAZIONE UNDO: Incapsula nel comando e registra nella cronologia della sessione
+        it.unisa.sad.playlistmanager.application.command.concreteCommands.CreateAutoPlaylistCommand command = 
+                commandFactory.createCreateAutoPlaylistCommand(name.trim(), matchingTracks);
+        
+        undoManager.executeAndPush(command);
+        
+        return command.getCreatedPlaylist();
     }
 }

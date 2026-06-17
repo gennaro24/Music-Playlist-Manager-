@@ -126,6 +126,9 @@ public class TrackController {
     
     /** Lista interna contenente la copia speculare delle tracce della playlist attiva. */
     private java.util.List<Track> currentPlaylistTracks = new java.util.ArrayList<>();
+    
+    /** Routine di callback per notificare al coordinatore la creazione di una nuova playlist. */
+    private Runnable onPlaylistCreatedHandler;
 
     /**
      * Costruttore per Constructor Injection (Task T-63).
@@ -759,6 +762,15 @@ public class TrackController {
         this.onTrackPlayRequestedHandler = handler;
     }
 
+    /**
+     * Registra il gestore eventi da lanciare non appena viene creata una playlist (manuale o automatica).
+     *
+     * @param handler Routine di callback esposta dal coordinatore principale.
+     */
+    public void setOnPlaylistCreated(Runnable handler) {
+        this.onPlaylistCreatedHandler = handler;
+    }
+
     @FXML
     private void handlePlayCatalog(ActionEvent event) {
         if (facade == null) {
@@ -1057,7 +1069,7 @@ public class TrackController {
     }
 
     /**
-     * TASK T3-12: Rinfresca in tempo reale lo stato dei dati visibili (Catalogo o Playlist)
+     * Rinfresca in tempo reale lo stato dei dati visibili (Catalogo o Playlist)
      * per riallineare la Tabella a seguito di operazioni mutative o comandi di Undo.
      */
     public void refresh() {
@@ -1065,6 +1077,26 @@ public class TrackController {
             loadPlaylistTracks(currentPlaylist);
         } else {
             loadCatalog();
+        }
+        // Sincronizza anche il dropdown di aggiunta rapida alla playlist
+        if (facade != null && dropdownPlaylists != null) {
+            dropdownPlaylists.setItems(FXCollections.observableArrayList(facade.getAllPlaylists()));
+        }
+    }
+    
+    @FXML
+    private void handleCreateAutoPlaylist(ActionEvent event) {
+        if (facade == null) {
+            labelFeedback("Errore interno: facade non inizializzata.", "red");
+            return;
+        }
+
+        new AutoPlaylistDialog(facade).show();
+        
+        refresh();
+        
+        if (onPlaylistCreatedHandler != null) {
+            onPlaylistCreatedHandler.run();
         }
     }
 }

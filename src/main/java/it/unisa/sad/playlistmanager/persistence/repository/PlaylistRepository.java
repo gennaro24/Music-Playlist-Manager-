@@ -22,20 +22,19 @@ public interface PlaylistRepository {
     void save(Playlist playlist);
 
     /**
+     * Metodo per salvare una playlist insieme alle tracce associate. Rende l'operazione atomica, garantendo che entrambe le entità siano salvate insieme.
+     * @param playlist
+     * @param tracks
+     */
+    void saveWithTracks(Playlist playlist, List<Track> tracks);
+
+    /**
      * Cerca una playlist nel sistema di persistenza tramite il suo id.
      *
      * @param id identificativo della playlist da cercare
      * @return un Optional contenente la playlist se presente, altrimenti Optional.empty()
      */
     Optional<Playlist> findById(String id);
-
-    /**
-     * Cerca una playlist nel sistema di persistenza tramite il suo nome.
-     *
-     * @param name nome della playlist da cercare
-     * @return un Optional contenente la playlist se presente, altrimenti Optional.empty()
-     */
-    Optional<Playlist> findByName(String name);
 
     /**
      * Restituisce tutte le playlist presenti nel sistema di persistenza.

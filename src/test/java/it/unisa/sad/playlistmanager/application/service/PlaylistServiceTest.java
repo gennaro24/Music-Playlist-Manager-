@@ -62,15 +62,18 @@ class PlaylistServiceTest {
         }
 
         @Override
+        public void saveWithTracks(Playlist playlist, List<Track> tracks) {
+            save(playlist);
+            if ("1".equals(playlist.getId())) {
+                this.tracksInPlaylist1 = new ArrayList<>(tracks);
+            }
+        }
+
+        @Override
         public Optional<Playlist> findById(String id) {
             return this.simulatedPlaylists.stream()
                     .filter(p -> p.getId().equals(id))
                     .findFirst();
-        }
-
-        @Override
-        public Optional<Playlist> findByName(String name) {
-            return Optional.empty();
         }
 
         @Override
@@ -90,7 +93,6 @@ class PlaylistServiceTest {
 
         @Override
         public void addTrackToPlaylistAtPosition(String playlistId, String trackId, int position) {
-            // TODO: simulare l'inserimento della traccia nella posizione richiesta.
         }
 
         @Override
@@ -109,7 +111,6 @@ class PlaylistServiceTest {
 
         @Override
         public Optional<Integer> getTrackPosition(String playlistId, String trackId) {
-            // TODO: restituire la posizione simulata della traccia nella playlist.
             return Optional.empty();
         }
 

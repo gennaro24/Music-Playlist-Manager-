@@ -1,0 +1,500 @@
+/* ==========================================================================
+   Music Playlist Manager — tema base
+   ========================================================================== */
+
+.root,
+.app-root {
+    -fx-font-family: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: #f1f5f9;
+}
+
+/* --------------------------------------------------------------------------
+   Header e layout principale
+   -------------------------------------------------------------------------- */
+
+.app-header {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #e2e8f0 transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 8 16 8 16;
+}
+
+.app-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
+}
+
+.btn-undo {
+    -fx-background-color: #f8fafc;
+    -fx-text-fill: #334155;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 14 6 14;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.btn-undo:hover {
+    -fx-background-color: #e2e8f0;
+}
+
+.content-panel {
+    -fx-background-color: #f8fafc;
+    -fx-padding: 16;
+    -fx-spacing: 8;
+    -fx-min-height: 0;
+}
+
+.page-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
+}
+
+.secondary-toolbar {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 4 0;
+}
+
+.secondary-toolbar .button {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #1e40af;
+    -fx-border-color: #bfdbfe;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 14 6 14;
+    -fx-cursor: hand;
+}
+
+.secondary-toolbar .button:hover {
+    -fx-background-color: #eff6ff;
+}
+
+/* --------------------------------------------------------------------------
+   Sidebar playlist
+   -------------------------------------------------------------------------- */
+
+.sidebar {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent #e2e8f0 transparent transparent;
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 16;
+    -fx-spacing: 12;
+}
+
+.sidebar .list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.sidebar .list-cell {
+    -fx-padding: 8 10 8 10;
+    -fx-background-color: transparent;
+}
+
+.sidebar .list-cell:filled:selected,
+.sidebar .list-cell:filled:selected:focused {
+    -fx-background-color: #dbeafe;
+    -fx-text-fill: #1e3a8a;
+}
+
+.sidebar .list-cell:filled:hover {
+    -fx-background-color: #f1f5f9;
+}
+
+/* --------------------------------------------------------------------------
+   Card e sezioni (TrackView)
+   -------------------------------------------------------------------------- */
+
+.track-view {
+    -fx-spacing: 12;
+    -fx-min-height: 0;
+}
+
+.catalog-forms-row {
+    -fx-spacing: 24;
+}
+
+.playlist-quick-add {
+    -fx-spacing: 10;
+    -fx-alignment: center-left;
+    -fx-padding: 6 0 0 0;
+}
+
+.playlist-quick-add .combo-box {
+    -fx-min-width: 200;
+    -fx-pref-width: 220;
+}
+
+.btn-primary,
+.button.btn-primary {
+    -fx-background-color: #2563eb;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #2563eb;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 8 16 8 16;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-min-height: 34;
+    -fx-background-insets: 0;
+    -fx-cursor: hand;
+}
+
+.btn-primary:hover,
+.button.btn-primary:hover {
+    -fx-background-color: #1d4ed8;
+    -fx-border-color: #1d4ed8;
+}
+
+.btn-secondary,
+.button.btn-secondary {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #334155;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 16 8 16;
+    -fx-font-size: 13px;
+    -fx-min-height: 34;
+    -fx-background-insets: 0;
+    -fx-cursor: hand;
+}
+
+.btn-secondary:hover,
+.button.btn-secondary:hover {
+    -fx-background-color: #f8fafc;
+}
+
+.btn-danger,
+.button.btn-danger {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #b91c1c;
+    -fx-border-color: #fecaca;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 16 8 16;
+    -fx-font-size: 13px;
+    -fx-min-height: 34;
+    -fx-background-insets: 0;
+    -fx-cursor: hand;
+}
+
+.btn-danger:hover,
+.button.btn-danger:hover {
+    -fx-background-color: #fef2f2;
+}
+
+.btn-add-to-playlist,
+.button.btn-add-to-playlist {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #1e40af;
+    -fx-border-color: #93c5fd;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 18 8 18;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-min-width: 110;
+    -fx-pref-width: 110;
+    -fx-min-height: 34;
+    -fx-background-insets: 0;
+    -fx-cursor: hand;
+}
+
+.btn-add-to-playlist:hover,
+.button.btn-add-to-playlist:hover {
+    -fx-background-color: #eff6ff;
+}
+
+.form-actions-row {
+    -fx-spacing: 10;
+    -fx-padding: 4 0 0 0;
+    -fx-min-height: 40;
+}
+
+.card {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 10;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 16;
+    -fx-spacing: 12;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.06), 8, 0, 0, 2);
+}
+
+.section-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
+}
+
+.card .text-field,
+.card .combo-box {
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-color: #cbd5e1;
+    -fx-background-color: #ffffff;
+}
+
+.card .text-field:focused {
+    -fx-border-color: #3b82f6;
+}
+
+.data-table {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 10;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-min-height: 150;
+}
+
+.data-table .column-header-background {
+    -fx-background-color: #f8fafc;
+    -fx-background-radius: 10 10 0 0;
+}
+
+.data-table .column-header,
+.data-table .filler {
+    -fx-size: 36;
+    -fx-border-color: transparent transparent #e2e8f0 transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.data-table .column-header .label {
+    -fx-font-weight: bold;
+    -fx-text-fill: #475569;
+}
+
+.data-table .table-row-cell {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #f1f5f9 transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.data-table .table-row-cell:odd {
+    -fx-background-color: #fafbfc;
+}
+
+.data-table .table-row-cell:selected {
+    -fx-background-color: #dbeafe;
+    -fx-text-fill: #0f172a;
+}
+
+.data-table .table-row-cell:selected .text {
+    -fx-fill: #0f172a;
+}
+
+.data-table .placeholder .label {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 13px;
+}
+
+/* --------------------------------------------------------------------------
+   Toolbar azioni TrackView
+   -------------------------------------------------------------------------- */
+
+.action-toolbar {
+    -fx-spacing: 8;
+    -fx-padding: 8 0 0 0;
+    -fx-min-height: 42;
+    -fx-alignment: center-right;
+}
+
+.track-bottom-panel {
+    -fx-spacing: 6;
+    -fx-padding: 0 0 4 0;
+    -fx-min-height: 70;
+}
+
+/* --------------------------------------------------------------------------
+   Feedback (default; il controller può sovrascrivere il colore inline)
+   -------------------------------------------------------------------------- */
+
+.feedback-label {
+    -fx-font-size: 12px;
+    -fx-padding: 4 0 0 0;
+    -fx-text-fill: #64748b;
+}
+
+/* --------------------------------------------------------------------------
+   Player bar
+   -------------------------------------------------------------------------- */
+
+.player-bar {
+    -fx-background-color: #1e293b;
+    -fx-padding: 12 20 12 20;
+    -fx-spacing: 16;
+    -fx-border-color: #0f172a transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-pref-height: 80;
+    -fx-min-height: 80;
+}
+
+.player-bar .label {
+    -fx-text-fill: #f8fafc;
+}
+
+.player-track-info {
+    -fx-spacing: 2;
+    -fx-pref-width: 280;
+}
+
+.player-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f8fafc;
+}
+
+.player-artist {
+    -fx-font-size: 12px;
+    -fx-text-fill: #94a3b8;
+}
+
+.player-meta-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #94a3b8;
+}
+
+.player-status {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e2e8f0;
+}
+
+.player-timer {
+    -fx-font-size: 13px;
+    -fx-text-fill: #cbd5e1;
+    -fx-font-family: "Consolas", "Courier New", monospace;
+}
+
+.player-timer-separator {
+    -fx-text-fill: #94a3b8;
+}
+
+.player-controls {
+    -fx-spacing: 10;
+    -fx-padding: 0 8 0 0;
+}
+
+.btn-player {
+    -fx-background-color: #334155;
+    -fx-text-fill: #f1f5f9;
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+    -fx-pref-width: 40;
+    -fx-pref-height: 40;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+}
+
+.btn-player:hover {
+    -fx-background-color: #475569;
+}
+
+.btn-player-primary {
+    -fx-background-color: #2563eb;
+    -fx-text-fill: white;
+    -fx-background-radius: 22;
+    -fx-border-radius: 22;
+    -fx-min-width: 44;
+    -fx-min-height: 44;
+    -fx-pref-width: 44;
+    -fx-pref-height: 44;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.btn-player-primary:hover {
+    -fx-background-color: #1d4ed8;
+}
+
+.btn-player-toggle {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e2e8f0;
+    -fx-border-color: #64748b;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12 8 12;
+    -fx-min-width: 80;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+
+.btn-player-toggle:hover {
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #94a3b8;
+    -fx-background-color: #334155;
+}
+
+.btn-player-toggle-active {
+    -fx-text-fill: #86efac;
+    -fx-border-color: #86efac;
+    -fx-font-weight: bold;
+    -fx-background-color: #334155;
+}
+
+.btn-player-toggle-active:hover {
+    -fx-text-fill: #bbf7d0;
+}
+
+/* --------------------------------------------------------------------------
+   Dialog e Alert
+   -------------------------------------------------------------------------- */
+
+.app-alert {
+    -fx-background-color: #ffffff;
+}
+
+.app-alert > .content.label {
+    -fx-text-fill: #334155;
+    -fx-font-size: 13px;
+    -fx-wrap-text: true;
+}
+
+.app-alert .header-panel {
+    -fx-background-color: #f8fafc;
+}
+
+.app-alert .header-panel .label {
+    -fx-text-fill: #0f172a;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.app-alert .button-bar .button {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #334155;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 14 6 14;
+    -fx-background-insets: 0;
+    -fx-cursor: hand;
+}
+
+.app-alert .button-bar .button:default {
+    -fx-background-color: #2563eb;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #2563eb;
+    -fx-font-weight: bold;
+}
+
+.app-alert .button-bar .button:hover {
+    -fx-background-color: #f8fafc;
+}
+
+.app-alert .button-bar .button:default:hover {
+    -fx-background-color: #1d4ed8;
+    -fx-border-color: #1d4ed8;
+}
