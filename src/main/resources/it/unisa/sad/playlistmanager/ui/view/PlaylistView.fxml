@@ -16,8 +16,8 @@
 
     <Button fx:id="btnCreatePlaylist" maxWidth="Infinity" onAction="#handleCreatePlaylist"
             text="Nuova playlist" styleClass="btn-primary"/>
-    <Button fx:id="btnPlayPlaylist" maxWidth="Infinity" onAction="#handlePlayPlaylist"
-            text="▶ Riproduci playlist" visible="false" styleClass="btn-secondary"/>
+    <Button fx:id="btnAutoPlaylist" maxWidth="Infinity" onAction="#handleCreateAutoPlaylist"
+            text="Playlist automatica" styleClass="btn-secondary"/>
     <Button fx:id="btnRemovePlaylist" maxWidth="Infinity" onAction="#handleRemovePlaylist"
             text="Rimuovi playlist" visible="false" styleClass="btn-danger"/>
     <Label fx:id="lblPlaylistFeedback" text="" styleClass="feedback-label"/>
