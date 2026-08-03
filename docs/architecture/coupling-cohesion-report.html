@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Report Accoppiamento e Coesione — Music Playlist Manager</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --text: #e7ecf3;
+      --muted: #9aa8bc;
+      --ok: #3dd68c;
+      --warn: #f5a524;
+      --bad: #f76e6e;
+      --accent: #5b9fd4;
+      --line: #2a3a4f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1c3a5a 0%, var(--bg) 55%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      padding: 2rem 1.5rem 1rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    header h1 { margin: 0 0 .4rem; font-size: 1.75rem; }
+    header p { margin: 0; color: var(--muted); max-width: 70ch; }
+    main { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1.25rem 1.4rem;
+      margin: 1rem 0;
+    }
+    h2 { margin: 0 0 .8rem; font-size: 1.2rem; }
+    h3 { margin: 1rem 0 .5rem; font-size: 1rem; color: var(--accent); }
+    .badge {
+      display: inline-block;
+      padding: .15rem .55rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .ok { background: color-mix(in srgb, var(--ok) 25%, transparent); color: var(--ok); }
+    .warn { background: color-mix(in srgb, var(--warn) 25%, transparent); color: var(--warn); }
+    .bad { background: color-mix(in srgb, var(--bad) 25%, transparent); color: var(--bad); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .92rem;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: .55rem .45rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    .score { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .layers {
+      display: grid;
+      gap: .65rem;
+      margin-top: .8rem;
+    }
+    .layer {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: .75rem 1rem;
+      background: #121a26;
+    }
+    .layer strong { color: var(--accent); }
+    .arrow {
+      text-align: center;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+    .matrix {
+      display: grid;
+      grid-template-columns: 110px repeat(5, 1fr);
+      gap: 4px;
+      font-size: .78rem;
+      margin-top: .8rem;
+    }
+    .matrix div {
+      background: #121a26;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: .45rem;
+      text-align: center;
+    }
+    .matrix .head { color: var(--muted); font-weight: 600; }
+    .yes { color: var(--ok); }
+    .no { color: var(--muted); }
+    .forbidden { color: var(--bad); }
+    ul { margin: .4rem 0 .2rem 1.1rem; color: var(--muted); }
+    li { margin: .25rem 0; }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #0d131c;
+      padding: .1rem .35rem;
+      border-radius: 4px;
+      font-size: .85em;
+    }
+    .howto {
+      display: grid;
+      gap: .5rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 800px) {
+      .howto { grid-template-columns: 1fr 1fr; }
+    }
+    footer {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem 2rem;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Report Accoppiamento e Coesione</h1>
+    <p>
+      Music Playlist Manager — analisi architetturale basata su layering ArchUnit,
+      dimensioni delle classi (proxy di coesione) e regole di dipendenza tra moduli.
+      Complementa JDepend (metriche package, limitato su Java 17).
+    </p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Verdetto complessivo</h2>
+      <p>
+        <span class="badge ok">Accoppiamento tra strati: buono (4.3/5)</span>
+        <span class="badge warn">Coesione locale UI: da migliorare (3.0/5)</span>
+        <span class="badge ok">ArchUnit: regole di layering</span>
+      </p>
+      <ul>
+        <li>Domain indipendente; UI non tocca Persistence né Application Services.</li>
+        <li>Repository astratti + DI in <code>SqliteAppFactory</code> → basso accoppiamento.</li>
+        <li>Punto debole: <code>TrackController</code> troppo grande (bassa coesione).</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>1. Layering (accoppiamento consentito)</h2>
+      <div class="layers">
+        <div class="layer"><strong>UI</strong> — controller JavaFX / dialoghi → parla solo con Facade + Domain</div>
+        <div class="arrow">↓ dipende da</div>
+        <div class="layer"><strong>Application</strong> — Facade, Service, Command, Undo</div>
+        <div class="arrow">↓ dipende da</div>
+        <div class="layer"><strong>Domain</strong> — model + strategy (nucleo stabile)</div>
+        <div class="arrow">↑ usato da Persistence</div>
+        <div class="layer"><strong>Persistence</strong> — Repository interface + SQLite</div>
+        <div class="arrow">↑ wiring</div>
+        <div class="layer"><strong>Bootstrap</strong> — composition root (<code>SqliteAppFactory</code>, <code>ControllerFactory</code>)</div>
+      </div>
+
+      <h3>Matrice dipendenze (chi → a chi)</h3>
+      <div class="matrix">
+        <div class="head"></div>
+        <div class="head">Domain</div>
+        <div class="head">Application</div>
+        <div class="head">Persistence</div>
+        <div class="head">UI</div>
+        <div class="head">Bootstrap</div>
+
+        <div class="head">Domain</div>
+        <div class="yes">stesso layer</div>
+        <div class="forbidden">no</div>
+        <div class="forbidden">no</div>
+        <div class="forbidden">no</div>
+        <div class="forbidden">no</div>
+
+        <div class="head">Application</div>
+        <div class="yes">sì</div>
+        <div class="yes">stesso layer</div>
+        <div class="yes">sì*</div>
+        <div class="forbidden">no</div>
+        <div class="forbidden">no</div>
+
+        <div class="head">Persistence</div>
+        <div class="yes">sì</div>
+        <div class="forbidden">no</div>
+        <div class="yes">stesso layer</div>
+        <div class="forbidden">no</div>
+        <div class="forbidden">no</div>
+
+        <div class="head">UI</div>
+        <div class="yes">sì</div>
+        <div class="yes">Facade</div>
+        <div class="forbidden">no</div>
+        <div class="yes">stesso layer</div>
+        <div class="forbidden">no</div>
+
+        <div class="head">Bootstrap</div>
+        <div class="yes">sì</div>
+        <div class="yes">sì</div>
+        <div class="yes">sì</div>
+        <div class="yes">sì</div>
+        <div class="yes">stesso layer</div>
+      </div>
+      <p style="color:var(--muted);font-size:.85rem;margin-top:.6rem;">
+        * Application dipende dalle <em>interfacce</em> Repository (DIP), non dai dettagli SQLite nei service.
+      </p>
+    </section>
+
+    <section>
+      <h2>2. Accoppiamento — valutazione per modulo</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Modulo</th>
+            <th>Accoppiamento</th>
+            <th>Evidenza</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>domain</code></td>
+            <td class="score" style="color:var(--ok)">5/5</td>
+            <td>Nessuna dipendenza verso UI/Application/Persistence. Solo Java + domain.</td>
+          </tr>
+          <tr>
+            <td><code>persistence</code></td>
+            <td class="score" style="color:var(--ok)">5/5</td>
+            <td>Dipende da Domain. Interfacce Repository + implementazioni SQLite.</td>
+          </tr>
+          <tr>
+            <td><code>application.service</code></td>
+            <td class="score" style="color:var(--ok)">4/5</td>
+            <td>Dipende da interfacce Repository (DIP). Testabili con Fake/InMemory.</td>
+          </tr>
+          <tr>
+            <td><code>application.command</code></td>
+            <td class="score" style="color:var(--ok)">4/5</td>
+            <td>Ciclo command ↔ concreteCommands (atteso nel pattern Command).</td>
+          </tr>
+          <tr>
+            <td><code>application.facade</code></td>
+            <td class="score" style="color:var(--warn)">3/5</td>
+            <td>Isola bene la UI, ma conosce molti service/command concreti.</td>
+          </tr>
+          <tr>
+            <td><code>ui</code></td>
+            <td class="score" style="color:var(--ok)">4/5</td>
+            <td>Solo Facade + Domain + JavaFX. Nessun import Persistence/Service.</td>
+          </tr>
+          <tr>
+            <td><code>bootstrap</code></td>
+            <td class="score" style="color:var(--ok)">5/5</td>
+            <td>Composition root: unico posto che collega i concreti.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. Coesione — proxy per dimensione classe</h2>
+      <p style="color:var(--muted);margin-top:0;">
+        Classi molto grandi spesso mescolano più responsabilità (bassa coesione).
+        Soglia indicativa: &gt;400 LOC = attenzione; &gt;800 LOC = criticità.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Classe</th>
+            <th>~LOC</th>
+            <th>Coesione</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>TrackController</td>
+            <td>1026</td>
+            <td><span class="badge bad">Bassa</span></td>
+            <td>Catalogo + playlist + tag + dialoghi UI.</td>
+          </tr>
+          <tr>
+            <td>MusicPlaylistManagerFacade</td>
+            <td>464</td>
+            <td><span class="badge warn">Media</span></td>
+            <td>Coerente col pattern Facade, ma cresciuta.</td>
+          </tr>
+          <tr>
+            <td>PlaybackService</td>
+            <td>428+</td>
+            <td><span class="badge warn">Media</span></td>
+            <td>Context Strategy + stato player: ambito unico ma ampio.</td>
+          </tr>
+          <tr>
+            <td>PlaylistController</td>
+            <td>350</td>
+            <td><span class="badge warn">Media</span></td>
+            <td>Ancora gestibile.</td>
+          </tr>
+          <tr>
+            <td>TrackService / TagService / Commands</td>
+            <td>&lt;200</td>
+            <td><span class="badge ok">Alta</span></td>
+            <td>Una responsabilità chiara per classe.</td>
+          </tr>
+          <tr>
+            <td>domain.model / strategy</td>
+            <td>piccole</td>
+            <td><span class="badge ok">Alta</span></td>
+            <td>Entità e algoritmi ben separati.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. Regole ArchUnit (verifica automatica)</h2>
+      <div class="howto">
+        <div>
+          <h3>File</h3>
+          <p><code>src/test/java/.../architecture/ArchitectureTest.java</code></p>
+          <h3>Comando</h3>
+          <p><code>mvn test -Dtest=ArchitectureTest</code></p>
+          <p>oppure tutti i test: <code>mvn test</code></p>
+        </div>
+        <div>
+          <h3>Regole controllate</h3>
+          <ul>
+            <li>Layered architecture (Domain / Application / Persistence / UI / Bootstrap)</li>
+            <li>Domain indipendente dagli altri layer</li>
+            <li>UI ↛ Persistence</li>
+            <li>UI ↛ application.service</li>
+            <li>Persistence ↛ UI / Application</li>
+            <li>Domain solo su domain + Java</li>
+            <li>Interfacce *Repository in persistence.repository</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top:1rem;">
+        Se i test ArchUnit sono <span class="badge ok">verdi</span>, l’accoppiamento tra strati rispetta le regole.
+        Se falliscono, il messaggio indica le classi che violano il design.
+      </p>
+    </section>
+
+    <section>
+      <h2>5. Confronto con JDepend</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Aspetto</th>
+            <th>JDepend</th>
+            <th>ArchUnit + questo report</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Metriche Ca/Ce/I</td>
+            <td>Sì (parziali su Java 17)</td>
+            <td>No metriche numeriche; sì regole</td>
+          </tr>
+          <tr>
+            <td>Layering “UI non usa Persistence”</td>
+            <td>Incompleto</td>
+            <td>Verificato da test automatici</td>
+          </tr>
+          <tr>
+            <td>Coesione classi</td>
+            <td>No</td>
+            <td>Proxy via LOC + valutazione SRP</td>
+          </tr>
+          <tr>
+            <td>Bytecode Java 17</td>
+            <td>Problemi (Unknown constant 18)</td>
+            <td>OK</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>6. Azioni consigliate</h2>
+      <ul>
+        <li>Spezzare <code>TrackController</code> (coesione UI).</li>
+        <li>Tenere ArchUnit in CI / prima della discussione: <code>mvn test -Dtest=ArchitectureTest</code>.</li>
+        <li>Nella relazione: allegare questo HTML + screenshot test ArchUnit verdi + nota limiti JDepend.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    Generato per il progetto Music Playlist Manager (SAD Gruppo 14).
+    Apri questo file nel browser: <code>docs/architecture/coupling-cohesion-report.html</code>
+  </footer>
+</body>
+</html>
