@@ -9,7 +9,7 @@ import java.util.Deque;
  * Viene chiamato dalla facade applicativa per eseguire e registrare i command
  * creati da {@link CommandFactory}. La cronologia e' LIFO: l'ultima operazione
  * completata e' la prima a essere annullata.
- *
+ * risulta essere il nostro invoker della command pattern
  * @author Foschillo G.
  * @version 1.0
  */
@@ -37,8 +37,11 @@ public class UndoManager {
         if (!canUndo()) {
             return;
         }
+        //recupero l'ultimo command dalla cronologia
         Command command = history.peek();
+        //eseguo l'undo del command
         command.undo();
+        //rimuovo il command dalla cronologia
         history.pop();
     }
 

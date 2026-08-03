@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TrackTest {
 
+    //--- TEST CREAZIONE TRACCE ---
     @Test
     void testCreazioneTracciaValida() {
         String id = "123-abc";
@@ -26,6 +27,7 @@ class TrackTest {
         assertEquals(year, track.getYear());
     }
 
+    //--- TEST CREAZIONE TRACCE SENZA ID ---
     @Test
     void testCreazioneTracciaValidaSenzaIdGeneraUUID() {
         Track track = new Track(null, "Imagine", "John Lennon", 183, "Pop", 1971);
@@ -35,30 +37,35 @@ class TrackTest {
         assertEquals("Imagine", track.getTitle());
     }
 
+    //--- TEST CREAZIONE TRACCE CON TITOLO MANCANTE ---
     @Test
     void testErroreTitoloMancante() {
         assertThrows(ValidationException.class, () -> new Track("1", null, "Autore", 200, "Pop", 2020));
         assertThrows(ValidationException.class, () -> new Track("1", "   ", "Autore", 200, "Pop", 2020));
     }
 
+    //--- TEST CREAZIONE TRACCE CON AUTORE MANCANTE ---
     @Test
     void testErroreAutoreMancante() {
         assertThrows(ValidationException.class, () -> new Track("1", "Titolo", null, 200, "Pop", 2020));
         assertThrows(ValidationException.class, () -> new Track("1", "Titolo", "   ", 200, "Pop", 2020));
     }
 
+    //--- TEST CREAZIONE TRACCE CON DURATA ZERO O NEGATIVA ---
     @Test
     void testErroreDurataZeroONegativa() {
         assertThrows(ValidationException.class, () -> new Track("1", "Titolo", "Autore", 0, "Pop", 2020));
         assertThrows(ValidationException.class, () -> new Track("1", "Titolo", "Autore", -10, "Pop", 2020));
     }
 
+    //--- TEST CREAZIONE TRACCE CON ANNO NEL FUTURO ---
     @Test
     void testErroreAnnoNelFuturo() {
         int nextYear = Year.now().getValue() + 1;
         assertThrows(ValidationException.class, () -> new Track("1", "Titolo", "Autore", 200, "Pop", nextYear));
     }
 
+    //--- TEST CREAZIONE TRACCE CON ANNO ZERO O NEGATIVO ---
     @Test
     void testErroreAnnoZeroONegativo() {
         assertThrows(ValidationException.class, () -> new Track("1", "Titolo", "Autore", 200, "Pop", 0));

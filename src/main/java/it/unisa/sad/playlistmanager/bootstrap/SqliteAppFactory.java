@@ -16,7 +16,10 @@ import it.unisa.sad.playlistmanager.application.service.TagService;
 import it.unisa.sad.playlistmanager.application.service.PlaybackService;
 import it.unisa.sad.playlistmanager.application.command.CommandFactory;
 import it.unisa.sad.playlistmanager.application.command.UndoManager;
-
+/**
+ * Questo riduce l’accoppiamento e rispetta Dependency Inversion / Separation of Concerns.
+ * SqliteAppFactory
+ */
 /**
  * Factory responsabile della creazione della facade e del connection manager
  */

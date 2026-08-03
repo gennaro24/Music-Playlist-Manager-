@@ -68,16 +68,19 @@ public class PlaybackService {
         if (mode == PlaybackMode.SEQUENTIAL) {
             this.playbackStrategy = new SequentialPlaybackStrategy();
         } else if (mode == PlaybackMode.SHUFFLE) {
+            // Se la sorgente è single, la modalità di riproduzione deve essere sequenziale
             if (currentQueue != null && currentQueue.getSource() == PlaybackSource.SINGLE) {
                 this.playbackStrategy = new SequentialPlaybackStrategy();
                 return;
             }
 
+            //se la coda non è vuota, prendo le tracce dalla coda, altrimenti prendo la traccia corrente
             List<Track> currentTracks = java.util.Collections.emptyList();
-
+            // Se la coda non è vuota, prendo le tracce dalla coda, altrimenti prendo la traccia corrente
             if (currentQueue != null && !currentQueue.isEmpty()) {
                 currentTracks = currentQueue.getTracks();
             } else if (currentTrack != null) {
+                //se c'è una traccia in riproduzione, la prendo
                 currentTracks = List.of(currentTrack);
             }
 
@@ -128,6 +131,11 @@ public class PlaybackService {
         return true;
     }
 
+    /**
+     * Avanza di un "tick" il playback e restituisce lo snapshot aggiornato.
+     *
+     * @return snapshot aggiornato del playback
+     */
     public void tick() {
         if (currentState != PlaybackState.PLAYING || currentTrack == null) {
             return;
@@ -147,20 +155,26 @@ public class PlaybackService {
      * selezionata prima dell'avvio.
      */
     public void playPlaylist(String playlistId) {
+        //se il repository non è inizializzato, lancio un'eccezione
         if (playlistRepository == null) {
             throw new ValidationException("PlaylistRepository non inizializzato.");
         }
 
+        //cerco la playlist nel repository
         Playlist playlist = playlistRepository.findById(playlistId)
                 .orElseThrow(() -> new PlaylistNotFoundException("Playlist non trovata."));
 
+        //cerco le tracce nella playlist
         List<Track> tracks = playlistRepository.findTracksByPlaylistId(playlistId);
 
+        //se la playlist è vuota, lancio un'eccezione
         if (tracks.isEmpty()) {
             throw new ValidationException("Impossibile avviare una playlist vuota.");
         }
 
+        //imposto la playlist corrente
         this.currentPlaylist = playlist;
+        //avvio la coda di riproduzione
         startQueue(tracks, PlaybackSource.PLAYLIST);
     }
 
@@ -177,31 +191,41 @@ public class PlaybackService {
         startQueue(tracks, PlaybackSource.PLAYLIST);
     }
 
+    /**
+     * Pausa il playback.
+     */
     public void pause() {
+        //se sto riproducendo, pauso
         if (currentState == PlaybackState.PLAYING) {
             currentState = PlaybackState.PAUSED;
         }
     }
 
     public void skipToNext() {
+        //se la coda è vuota o la sorgente è null, non faccio nulla
         if (currentQueue == null || currentQueue.isEmpty()) {
             return;
         }
-
+        //recupero la strategia di riproduzione in base alla modalità corrente
         PlaybackStrategy strategy = getStrategyForMode(currentMode);
+        //vado alla prossima traccia
         Track nextTrack = strategy.getNextTrack(currentQueue);
-
+        //se c'è una prossima traccia, imposto l'indice della traccia corrente
         if (nextTrack != null) {
             int nextIndex = currentQueue.getTracks().indexOf(nextTrack);
             currentQueue.setCurrentIndex(nextIndex);
+            //imposto la traccia corrente
             this.currentTrack = nextTrack;
+            //imposto il tempo trascorso
             this.elapsedSeconds = 0; // Il timer si azzera correttamente nel core di business
         } else {
+            //se non c'è una prossima traccia, stoppo la riproduzione
             // Gestiamo la transizione pulita di fermo sia in modalità sequenziale che in
             // shuffle
             if (currentMode == PlaybackMode.SEQUENTIAL || currentMode == PlaybackMode.SHUFFLE) {
                 this.currentState = PlaybackState.STOPPED;
                 this.currentTrack = null;
+                //imposto il tempo trascorso
                 this.elapsedSeconds = 0;
             }
             if (currentMode == PlaybackMode.REPEAT_ALL) {
@@ -214,6 +238,7 @@ public class PlaybackService {
                     this.currentTrack = currentQueue.getCurrentTrack();
                 }
             }
+            //se la modalità è repeat one, riavvio la stessa traccia
             if (currentMode == PlaybackMode.REPEAT_ONE) {
                 currentQueue.setCurrentIndex(0);
                 this.currentTrack = currentQueue.getCurrentTrack();
@@ -231,40 +256,52 @@ public class PlaybackService {
         // ripresa senza ricreare la sorgente di playback.
         if (currentTrack != null && currentTrack.getId().equals(track.getId())) {
             refreshCurrentTrack(track);
+            
             if (currentState == PlaybackState.PAUSED || currentState == PlaybackState.STOPPED) {
                 currentState = PlaybackState.PLAYING;
             }
             return;
         }
 
+        //imposto la traccia corrente
         currentTrack = track;
+        //imposto la playlist a null perchè sto riproducendo una singola traccia
         currentPlaylist = null;
-        //current queue è la coda di riproduzione corrente
+        //current queue è la coda di riproduzione corrente e la sorgente è SINGLE
         currentQueue = new PlaybackQueue(List.of(track), PlaybackSource.SINGLE);
-
+        //imposto la strategia di riproduzione in base alla modalità corrente
         playbackStrategy = currentMode == PlaybackMode.SHUFFLE
-                ? new SequentialPlaybackStrategy()
-                : getStrategyForMode(currentMode);
+                ? new SequentialPlaybackStrategy() //perche sto riproducendo una sola traccia
+                : getStrategyForMode(currentMode); //altrimenti stratey corrente
         currentState = PlaybackState.PLAYING;
         elapsedSeconds = 0;
     }
 
+    /**
+     * 
+     * @param updatedTrack
+     */
     private void refreshCurrentTrack(Track updatedTrack) {
+        //aggiorno la traccia corrente
         this.currentTrack = updatedTrack;
 
+        //se la coda è vuota, non faccio nulla
         if (currentQueue == null || currentQueue.isEmpty()) {
             return;
         }
 
+        //cerco la traccia nella coda
         List<Track> updatedTracks = new ArrayList<>(currentQueue.getTracks());
         int currentIndex = currentQueue.getCurrentIndex();
         int indexToUpdate = -1;
 
+        //se la traccia è nella coda, aggiorno la traccia corrente
         if (currentIndex >= 0
                 && currentIndex < updatedTracks.size()
                 && updatedTracks.get(currentIndex).getId().equals(updatedTrack.getId())) {
             indexToUpdate = currentIndex;
         } else {
+            //itero tutta la coda per trovare la traccia
             for (int i = 0; i < updatedTracks.size(); i++) {
                 if (updatedTracks.get(i).getId().equals(updatedTrack.getId())) {
                     indexToUpdate = i;
@@ -273,13 +310,19 @@ public class PlaybackService {
             }
         }
 
+        //se la traccia non è nella coda, non faccio nulla
         if (indexToUpdate == -1) {
             return;
         }
 
+        //aggiorno la traccia nella coda
         updatedTracks.set(indexToUpdate, updatedTrack);
+
+        //aggiorno la sorgente della coda
         PlaybackSource source = currentQueue.getSource();
+        //creo una nuova coda con le tracce aggiornate
         currentQueue = new PlaybackQueue(updatedTracks, source);
+        //imposto l'indice della traccia corrente
         currentQueue.setCurrentIndex(indexToUpdate);
     }
 
@@ -287,23 +330,33 @@ public class PlaybackService {
      * Inizializza una nuova coda senza sovrascrivere la modalità scelta dalla UI.
      */
     private void startQueue(List<Track> tracks, PlaybackSource source) {
+        //creo una nuova coda con le tracce e la sorgente
         this.currentQueue = new PlaybackQueue(tracks, source);
 
+        //se la modalità è shuffle, imposto la strategia di riproduzione
         if (currentMode == PlaybackMode.SHUFFLE) {
             this.playbackStrategy = new ShufflePlaybackStrategy(tracks);
+            //vado alla prossima traccia
             Track firstTrack = playbackStrategy.getNextTrack(currentQueue);
             if (firstTrack != null) {
+                //imposto l'indice della traccia corrente
                 currentQueue.setCurrentIndex(currentQueue.getTracks().indexOf(firstTrack));
+                //imposto la traccia corrente
                 this.currentTrack = firstTrack;
             } else {
+                //se non c'è una prossima traccia, imposto la traccia corrente
                 this.currentTrack = currentQueue.getCurrentTrack();
             }
         } else {
+            //imposto la strategia di riproduzione in base alla modalità corrente
             this.playbackStrategy = getStrategyForMode(currentMode);
+            //imposto la traccia corrente
             this.currentTrack = currentQueue.getCurrentTrack();
         }
 
+        //imposto lo stato di riproduzione
         this.currentState = PlaybackState.PLAYING;
+        //imposto il tempo trascorso
         this.elapsedSeconds = 0;
     }
 
@@ -392,6 +445,10 @@ public class PlaybackService {
         }
     }
 
+    /**
+     * Gestione dell'evento di completamento di una traccia.
+     * @return lo snapshot aggiornato del playback
+     */
     public PlaybackSnapshot handleTrackCompleted() {
         if (currentTrack == null) {
             currentState = PlaybackState.STOPPED;

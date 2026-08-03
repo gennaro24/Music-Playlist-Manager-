@@ -47,6 +47,9 @@ public class AutoPlaylistDialog {
         this.facade = facade;
     }
 
+    /**
+     * Mostra la finestra di dialogo per la creazione di una playlist automatica.
+     */
     public void show() {
         if (facade == null) {
             return;
@@ -66,11 +69,13 @@ public class AutoPlaylistDialog {
         configureTagCombo();
         configureResultsList();
 
+        //aggiorno la preview quando cambia il nome, il genere, l'anno o il tag
         txtName.textProperty().addListener((obs, oldV, newV) -> updatePreview(dialog));
         cmbGenre.valueProperty().addListener((obs, oldV, newV) -> updatePreview(dialog));
         cmbYear.valueProperty().addListener((obs, oldV, newV) -> updatePreview(dialog));
         cmbTag.valueProperty().addListener((obs, oldV, newV) -> updatePreview(dialog));
 
+        //creo il form per i criteri
         GridPane criteriaForm = new GridPane();
         criteriaForm.setHgap(10);
         criteriaForm.setVgap(10);
@@ -84,15 +89,18 @@ public class AutoPlaylistDialog {
         criteriaForm.add(new Label("Tag"), 0, 3);
         criteriaForm.add(cmbTag, 1, 3);
 
+        //imposto la larghezza dei combo box
         cmbGenre.setPrefWidth(260);
         cmbYear.setPrefWidth(260);
         cmbTag.setPrefWidth(260);
 
+        //creo il titolo per la preview
         Label lblPreviewTitle = new Label("Anteprima");
         lblPreviewTitle.setStyle("-fx-font-weight: bold;");
         VBox.setVgrow(listResults, Priority.ALWAYS);
         listResults.setPrefHeight(220);
 
+        //creo il contenitore per i criteri, la preview e l'info
         VBox content = new VBox(8, criteriaForm, lblPreviewTitle, listResults, lblInfo);
         content.setPadding(new Insets(6));
         content.setPrefWidth(420);
@@ -103,6 +111,11 @@ public class AutoPlaylistDialog {
         dialog.showAndWait();
     }
 
+    /**
+     * Converte il risultato del dialogo in un button type, ovvero il pulsante per creare la playlist.
+     * @param dialogButton il pulsante premuto
+     * @return il button type corrispondente
+     */
     private ButtonType convertCreateResult(ButtonType dialogButton) {
         if (dialogButton != btnTypeCrea) {
             return null;
@@ -120,6 +133,10 @@ public class AutoPlaylistDialog {
         }
     }
 
+    /**
+     * Costruisce i criteri di ricerca per la playlist automatica.
+     * @return i criteri di ricerca
+     */
     private AutoPlaylistCriteria buildCriteria() {
         String genre = cmbGenre.getValue();
         Integer year = cmbYear.getValue();
@@ -133,6 +150,10 @@ public class AutoPlaylistDialog {
         return AutoPlaylistCriteria.combined(genre, year, tagId);
     }
 
+    /**
+     * Aggiorna la preview delle tracce in base ai criteri selezionati.
+     * @param dialog la finestra di dialogo
+     */
     private void updatePreview(Dialog<ButtonType> dialog) {
         AutoPlaylistCriteria criteria = buildCriteria();
         Button btnCrea = (Button) dialog.getDialogPane().lookupButton(btnTypeCrea);
@@ -192,6 +213,9 @@ public class AutoPlaylistDialog {
         }
     }
 
+    /**
+     * Configura il combo box per i generi.
+     */
     private void configureGenreCombo() {
         List<String> genres = facade.getAllTracks().stream()
                 .map(Track::getGenre)
@@ -208,6 +232,9 @@ public class AutoPlaylistDialog {
         cmbGenre.setCellFactory(lv -> stringCell("Qualsiasi genere"));
     }
 
+    /**
+     * Configura il combo box per gli anni.
+     */
     private void configureYearCombo() {
         List<Integer> years = facade.getAllTracks().stream()
                 .map(Track::getYear)
@@ -223,6 +250,9 @@ public class AutoPlaylistDialog {
         cmbYear.setCellFactory(lv -> yearCell());
     }
 
+    /**
+     * Configura il combo box per i tag.
+     */
     private void configureTagCombo() {
         List<Tag> items = new ArrayList<>();
         items.add(null);
@@ -233,6 +263,9 @@ public class AutoPlaylistDialog {
         cmbTag.setCellFactory(lv -> tagCell());
     }
 
+    /**
+     * Configura la lista per le tracce.
+     */
     private void configureResultsList() {
         listResults.setPlaceholder(new Label("Nessuna traccia da mostrare."));
         listResults.setCellFactory(lv -> new ListCell<Track>() {
@@ -249,6 +282,11 @@ public class AutoPlaylistDialog {
         });
     }
 
+    /**
+     * Crea una cella per i generi.
+     * @param anyLabel il testo da mostrare se il genere è null
+     * @return la cella per i generi
+     */
     private ListCell<String> stringCell(String anyLabel) {
         return new ListCell<String>() {
             @Override
@@ -263,6 +301,10 @@ public class AutoPlaylistDialog {
         };
     }
 
+    /**
+     * Crea una cella per gli anni.
+     * @return la cella per gli anni
+     */
     private ListCell<Integer> yearCell() {
         return new ListCell<Integer>() {
             @Override
@@ -277,6 +319,10 @@ public class AutoPlaylistDialog {
         };
     }
 
+    /**
+     * Crea una cella per i tag.
+     * @return la cella per i tag
+     */
     private ListCell<Tag> tagCell() {
         return new ListCell<Tag>() {
             @Override
@@ -291,6 +337,11 @@ public class AutoPlaylistDialog {
         };
     }
 
+    /**
+     * Mostra una alert per la creazione di una playlist.
+     * @param playlistName il nome della playlist
+     * @param trackCount il numero di tracce
+     */
     private void showPlaylistCreatedAlert(String playlistName, int trackCount) {
         Alert alert = StyledAlertFactory.create(Alert.AlertType.INFORMATION);
         alert.setTitle("Playlist Creata");
@@ -301,6 +352,10 @@ public class AutoPlaylistDialog {
         alert.showAndWait();
     }
 
+    /**
+     * Mostra una alert per un errore di validazione.
+     * @param message il messaggio dell'errore
+     */
     private void showValidationErrorAlert(String message) {
         Alert alert = StyledAlertFactory.create(Alert.AlertType.ERROR);
         alert.setTitle("Errore di Validazione");

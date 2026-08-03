@@ -23,6 +23,7 @@
     </top>
 
     <left>
+        <!-- Inclusione della vista delle playlist -->
         <fx:include fx:id="playlistView" source="PlaylistView.fxml"/>
     </left>
 
@@ -35,6 +36,7 @@
                 <Region prefWidth="12"/>
             </ToolBar>
 
+            <!-- Inclusione della vista dei brani -->
             <fx:include fx:id="trackContainer" source="TrackView.fxml"
                         visible="false" managed="false"
                         maxHeight="Infinity" maxWidth="Infinity"
@@ -45,6 +47,7 @@
     </center>
 
     <bottom>
+    <!-- Inclusione della vista di riproduzione -->
         <fx:include fx:id="playbackView" source="PlaybackView.fxml"/>
     </bottom>
 

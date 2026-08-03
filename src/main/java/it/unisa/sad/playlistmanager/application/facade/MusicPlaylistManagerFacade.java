@@ -290,7 +290,9 @@ public class MusicPlaylistManagerFacade {
      * Risolve la richiesta di riproduzione globale e abilita lo shuffle sul catalogo.
      */
     public PlaybackSnapshot playCatalog() {
+        //recupero tutte le tracce
         List<Track> allTracks = this.trackService.getAllTracks();
+        //avvio la coda di riproduzione
         this.playbackService.playCatalog(allTracks);
         return getPlaybackSnapshot();
     }
@@ -359,7 +361,9 @@ public class MusicPlaylistManagerFacade {
      * @return snapshot aggiornato del playback
      */
     public PlaybackSnapshot tickPlayback() {
+        //avanzamento del playback di un secondo
         playbackService.tick();
+        //restituisco lo snapshot aggiornato
         return playbackService.getSnapshot();
     }
 
@@ -478,12 +482,12 @@ public class MusicPlaylistManagerFacade {
         // 1. Recupera l'anteprima delle tracce dal servizio di Adinolfi
         List<Track> matchingTracks = autoPlaylistService.previewAutoPlaylist(criteria);
         
-        // 2. VALIDAZIONE: Verifica che il nome non sia vuoto
+        // 2. VALIDAZIONE: Verifica che il nome della playlist non sia vuoto
         if (name == null || name.trim().isEmpty()) {
             throw new it.unisa.sad.playlistmanager.application.exceptions.ValidationException("Il nome della playlist automatica è obbligatorio.");
         }
         
-        // 3. VALIDAZIONE BUG UNIQUE: Controlla preventivamente se esiste già una playlist con lo stesso nome
+        // 3. VALIDAZIONE BUG UNIQUE: Controlla preventivamente se esiste già una playlist con lo stesso nome, evitando duplicati
         boolean nameExists = playlistService.getAllPlaylists().stream()
                 .anyMatch(p -> p.getName().equalsIgnoreCase(name.trim()));
         if (nameExists) {

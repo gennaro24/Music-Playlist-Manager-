@@ -56,8 +56,10 @@ public class AutoPlaylistService {
             throw new ValidationException("I criteri della playlist automatica non possono essere nulli.");
         }
 
+        //recupero tutte le tracce
         List<Track> tracks = trackService.getAllTracks();
 
+        //filtro per genere
         if (criteria.hasGenreCriteria()) {
             String genre = criteria.getGenre();
             tracks = tracks.stream()
@@ -65,6 +67,7 @@ public class AutoPlaylistService {
                     .collect(Collectors.toList());
         }
 
+        //filtro per anno
         if (criteria.hasYearCriteria()) {
             int year = criteria.getYear();
             tracks = tracks.stream()
@@ -72,6 +75,7 @@ public class AutoPlaylistService {
                     .collect(Collectors.toList());
         }
 
+        //filtro per tag
         if (criteria.hasTagCriteria()) {
             Set<String> taggedTrackIds = tagService.getTracksByTag(criteria.getTagId())
                     .stream()
@@ -82,6 +86,7 @@ public class AutoPlaylistService {
                     .collect(Collectors.toList());
         }
 
+        //restituisco le tracce filtrate
         return tracks;
     }
 

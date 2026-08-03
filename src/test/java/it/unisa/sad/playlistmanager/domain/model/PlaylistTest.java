@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PlaylistTest {
 
+    //--- TEST CREAZIONE PLAYLIST ---
     @Test
     void testCreazionePlaylistValida() {
         Playlist playlist = new Playlist("p-1", "Rock Classics");

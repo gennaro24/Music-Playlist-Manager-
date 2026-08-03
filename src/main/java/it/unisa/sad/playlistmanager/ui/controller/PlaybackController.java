@@ -226,9 +226,11 @@ public class PlaybackController {
         if (playbackTimeline != null) {
             playbackTimeline.stop();
         }
+        //creo un nuovo timeline che si attiva ogni secondo e aggiorna la vista del lettore
         playbackTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
             if (facade == null) return;
             PlaybackSnapshot snapshot = facade.tickPlayback();
+            //aggiorno la vista del lettore con il nuovo snapshot
             updatePlaybackView(snapshot);
         }));
         playbackTimeline.setCycleCount(Timeline.INDEFINITE);
